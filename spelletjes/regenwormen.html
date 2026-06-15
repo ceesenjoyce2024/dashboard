@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Regenwormen Champions League</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sand: #e8e4d9; --sand-light: #f2efe6; --sand-dark: #d8d4c6;
+    --olive: #5c5a2e; --olive-mid: #7a7838; --olive-light: #c8c89a;
+    --text: #3d3b1e; --text-muted: #7a7860; --card-bg: #f7f4ec;
+    --accent: #27500A; --accent-mid: #3B6D11; --accent-light: #EAF3DE;
+    --gold: #8a6a10; --red-light: #fdf0f0; --red: #8a2828;
+    --radius: 10px; --radius-lg: 14px;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--sand); color: var(--text); min-height: 100vh; }
+  header { background: var(--accent); color: var(--sand-light); padding: 1rem 1.5rem; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-family: var(--serif); font-size: 18px; font-weight: 600; }
+  .back-btn { color: rgba(242,239,230,0.8); text-decoration: none; font-size: 20px; line-height: 1; flex-shrink: 0; }
+  .back-btn:hover { color: var(--sand-light); }
+  .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--olive-light); margin-left: auto; flex-shrink: 0; }
+  .tabs-bar { background: var(--card-bg); border-bottom: 1px solid var(--sand-dark); display: flex; overflow-x: auto; padding: 0 0.75rem; align-items: center; }
+  .tabs-bar::-webkit-scrollbar { display: none; }
+  .tab { padding: 12px 14px; font-size: 13px; font-weight: 500; color: var(--text-muted); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; flex-shrink: 0; font-family: var(--sans); transition: all 0.15s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent-mid); }
+  .tab-add { padding: 8px 10px; font-size: 18px; color: var(--text-muted); border: none; background: none; cursor: pointer; flex-shrink: 0; line-height: 1; margin-left: 2px; }
+  .tab-add:hover { color: var(--accent-mid); }
+  main { max-width: 700px; margin: 0 auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+  .card { background: var(--card-bg); border-radius: var(--radius-lg); border: 1px solid var(--sand-dark); overflow: hidden; }
+  .card-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--sand-dark); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+  .card-body { padding: 16px; }
+  .stand-grid { display: flex; flex-direction: column; gap: 10px; }
+  .stand-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--sand-light); border-radius: var(--radius); border: 1px solid var(--sand-dark); }
+  .stand-item.rank-1 { background: var(--accent-light); border-color: #b8d890; }
+  .stand-rank { font-size: 18px; width: 28px; text-align: center; flex-shrink: 0; }
+  .stand-name { font-size: 15px; font-weight: 500; flex: 1; }
+  .stand-stats { display: flex; gap: 14px; }
+  .stand-stat { text-align: center; }
+  .stand-stat-val { font-size: 18px; font-weight: 600; color: var(--accent-mid); display: block; }
+  .stand-item.rank-1 .stand-stat-val { color: var(--gold); }
+  .stand-stat-lbl { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .form-grid { display: flex; flex-direction: column; gap: 12px; }
+  .form-row { display: flex; align-items: center; gap: 10px; }
+  .form-row label { font-size: 14px; font-weight: 500; min-width: 72px; }
+  .form-row input[type="date"] { flex: 1; padding: 8px 12px; border: 1px solid var(--sand-dark); border-radius: var(--radius); font-size: 14px; background: var(--sand-light); color: var(--text); outline: none; }
+  .form-row input[type="date"]:focus { border-color: var(--olive-mid); }
+  .score-inputs { display: grid; gap: 8px; }
+  .score-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--sand-light); border-radius: var(--radius); border: 1px solid var(--sand-dark); }
+  .score-row .pname { font-size: 14px; font-weight: 500; flex: 1; }
+  .score-row input { width: 80px; padding: 6px 10px; border: 1px solid var(--sand-dark); border-radius: 8px; font-size: 16px; text-align: center; background: var(--card-bg); color: var(--text); outline: none; }
+  .hint { font-size: 12px; color: var(--text-muted); }
+  .btn-save { width: 100%; padding: 11px; border-radius: var(--radius); border: none; background: var(--accent); color: var(--sand-light); font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--sans); }
+  .btn-save:hover { opacity: 0.88; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { padding: 8px 10px; text-align: left; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--sand-dark); white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--sand-dark); color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--sand-light); }
+  .date-cell { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+  .score-cell { text-align: center; font-weight: 500; }
+  .score-cell.winner { color: var(--accent-mid); font-weight: 700; }
+  .score-cell.winner::after { content: ' ✓'; font-size: 11px; }
+  .del-btn { padding: 3px 8px; border-radius: 6px; border: 1px solid var(--sand-dark); background: none; color: var(--text-muted); cursor: pointer; font-size: 11px; }
+  .del-btn:hover { background: var(--red-light); color: var(--red); }
+  .del-comp-btn { font-size: 11px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--sand-dark); background: none; color: var(--text-muted); cursor: pointer; }
+  .del-comp-btn:hover { background: var(--red-light); color: var(--red); }
+  .games-wrap { overflow-x: auto; }
+  .empty { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 14px; }
+  .loading { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 14px; }
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(60,58,30,0.45); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--card-bg); border-radius: var(--radius-lg); padding: 1.5rem; width: 100%; max-width: 400px; border: 1px solid var(--sand-dark); }
+  .modal h2 { font-family: var(--serif); font-size: 18px; font-weight: 600; color: var(--olive); margin-bottom: 1rem; }
+  .modal-field { margin-bottom: 12px; }
+  .modal-field label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
+  .modal-field input { width: 100%; padding: 8px 12px; border: 1px solid var(--sand-dark); border-radius: var(--radius); font-size: 14px; background: var(--sand-light); color: var(--text); outline: none; font-family: var(--sans); }
+  .player-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .player-tag { display: flex; align-items: center; gap: 8px; background: var(--sand-light); border-radius: 8px; padding: 6px 10px; font-size: 14px; border: 1px solid var(--sand-dark); }
+  .player-tag span { flex: 1; }
+  .player-tag button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; line-height: 1; }
+  .add-player-row { display: flex; gap: 8px; }
+  .add-player-row input { flex: 1; padding: 7px 10px; border: 1px solid var(--sand-dark); border-radius: var(--radius); font-size: 14px; background: var(--sand-light); color: var(--text); outline: none; font-family: var(--sans); }
+  .add-player-row button { padding: 7px 14px; border-radius: var(--radius); border: 1px solid var(--sand-dark); background: var(--sand-light); color: var(--text); cursor: pointer; font-size: 14px; font-weight: 500; font-family: var(--sans); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 1rem; }
+  .btn-cancel { flex: 1; padding: 10px; border-radius: var(--radius); border: 1px solid var(--sand-dark); background: var(--sand-light); color: var(--text); cursor: pointer; font-size: 14px; font-weight: 500; font-family: var(--sans); }
+  .btn-create { flex: 1; padding: 10px; border-radius: var(--radius); border: none; background: var(--accent); color: var(--sand-light); cursor: pointer; font-size: 14px; font-weight: 600; font-family: var(--sans); }
+  #toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--olive); color: var(--sand-light); padding: 9px 20px; border-radius: 999px; font-size: 13px; font-weight: 500; transition: transform 0.25s; z-index: 999; pointer-events: none; }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="back-btn">‹</a>
+  <span style="font-size:22px">🪱</span>
+  <h1>Regenwormen Champions League</h1>
+  <div class="conn-dot"></div>
+</header>
+<div class="tabs-bar" id="tabBar"><div class="loading" style="padding:12px 8px;font-size:13px">Laden…</div></div>
+<main id="mainContent"><div class="loading">Laden…</div></main>
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2>Nieuwe competitie</h2>
+    <div class="modal-field"><label>Naam</label><input type="text" id="compName" placeholder="Naam van de competitie"></div>
+    <div class="modal-field">
+      <label>Spelers</label>
+      <div class="player-list" id="playerList"></div>
+      <div class="add-player-row">
+        <input type="text" id="newPlayerInput" placeholder="Naam toevoegen" onkeydown="if(event.key==='Enter')addPlayer()">
+        <button onclick="addPlayer()">+ Voeg toe</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuleren</button>
+      <button class="btn-create" onclick="createComp()">Aanmaken</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+var sbClient = window.supabase.createClient('https://hvpooifxqhovskwgzpbr.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g');
+var MEDALS=['🥇','🥈','🥉',''];var comps=[];var activeCompId=null;var modalPlayers=[];var toastTimer;
+async function laadComps(){var res=await sbClient.from('regenwormen_comps').select('*').order('label');if(res.error){console.error(res.error);return;}comps=res.data.map(function(r){return{id:r.id,label:r.label,players:r.players};});if(!activeCompId||!comps.find(function(c){return c.id===activeCompId;})){activeCompId=comps.length?comps[0].id:null;}renderTabs();if(activeCompId)laadGames(activeCompId);else document.getElementById('mainContent').innerHTML='<div class="empty">Nog geen competities. Maak er een aan met de + knop.</div>';}
+async function laadGames(compId){document.getElementById('mainContent').innerHTML='<div class="loading">Laden…</div>';var res=await sbClient.from('regenwormen_games').select('*').eq('comp_id',compId);if(res.error){console.error(res.error);return;}var games=res.data.map(function(r){return{key:r.id,d:r.datum,s:r.scores};});games.sort(function(a,b){return a.d.split('-').reverse().join('').localeCompare(b.d.split('-').reverse().join(''));});renderAll(compId,games);}
+function renderTabs(){document.getElementById('tabBar').innerHTML=comps.map(function(c){return'<button class="tab'+(c.id===activeCompId?' active':'')+'\" onclick="switchComp(\''+c.id+'\')">'+c.label+'</button>';}).join('')+'<button class="tab-add" onclick="openModal()" title="Nieuwe competitie">＋</button>';}
+function switchComp(id){activeCompId=id;renderTabs();laadGames(id);}
+function getWinner(scores){var max=-Infinity,winner=null;Object.keys(scores).forEach(function(p){if(typeof scores[p]==='number'&&scores[p]>max){max=scores[p];winner=p;}});return winner;}
+function calcStandings(games,players){var stats={};players.forEach(function(p){stats[p]={wins:0,games:0,total:0};});games.forEach(function(g){var sc=g.s||{};players.forEach(function(p){if(p in sc){stats[p].games++;stats[p].total+=sc[p];}});var w=getWinner(sc);if(w&&w in stats)stats[w].wins++;});return players.map(function(p){return{name:p,wins:stats[p].wins,games:stats[p].games,total:stats[p].total,avg:stats[p].games?Math.round(stats[p].total/stats[p].games):0};}).sort(function(a,b){return b.total-a.total||b.wins-a.wins;});}
+function renderAll(compId,games){var comp=comps.find(function(c){return c.id===compId;});if(!comp)return;var players=comp.players;var standings=calcStandings(games,players);var now=new Date();var todayVal=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+var standHTML='<div class="card"><div class="card-head"><span class="card-title">Stand</span><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;color:var(--text-muted)">'+games.length+' potjes</span><button class="del-comp-btn" onclick="deleteComp(\''+compId+'\')">Verwijder competitie</button></div></div><div class="card-body"><div class="stand-grid">'+standings.map(function(s,i){return'<div class="stand-item'+(i===0?' rank-1':'')+'"><div class="stand-rank">'+MEDALS[Math.min(i,3)]+'</div><div class="stand-name">'+s.name+'</div><div class="stand-stats"><div class="stand-stat"><span class="stand-stat-val">'+s.total+'</span><span class="stand-stat-lbl">totaal pts</span></div><div class="stand-stat"><span class="stand-stat-val">'+s.wins+'</span><span class="stand-stat-lbl">gewonnen</span></div><div class="stand-stat"><span class="stand-stat-val">'+s.avg+'</span><span class="stand-stat-lbl">gem. pts</span></div></div></div>';}).join('')+'</div></div></div>';
+var scoreInputs=players.map(function(p){return'<div class="score-row"><span class="pname">'+p+'</span><input type="number" id="sc_'+p+'" min="0" value="0" inputmode="numeric"></div>';}).join('');
+var formHTML='<div class="card"><div class="card-head"><span class="card-title">Potje toevoegen</span></div><div class="card-body"><div class="form-grid"><div class="form-row"><label>Datum</label><input type="date" id="new_date" value="'+todayVal+'"></div><div class="score-inputs">'+scoreInputs+'</div><p class="hint">Vul de wormen-score in. Hoogste score = winnaar.</p><button class="btn-save" onclick="saveGame(\''+compId+'\')">Potje opslaan</button></div></div></div>';
+var tableRows=[].concat(games).reverse().map(function(g){var sc=g.s||{};var winner=getWinner(sc);return'<tr><td class="date-cell">'+g.d+'</td>'+players.map(function(p){return'<td class="score-cell'+(p===winner?' winner':'')+'>'+(p in sc?sc[p]:'—')+'</td>';}).join('')+'<td><button class="del-btn" onclick="deleteGame(\''+compId+'\',\''+g.key+'\')">✕</button></td></tr>';}).join('');
+var tableHTML='<div class="card"><div class="card-head"><span class="card-title">Alle potjes</span></div><div class="games-wrap"><table><thead><tr><th>Datum</th>'+players.map(function(p){return'<th style="text-align:center">'+p+'</th>';}).join('')+'<th></th></tr></thead><tbody>'+(tableRows||'<tr><td colspan="'+(players.length+2)+'" class="empty">Nog geen potjes</td></tr>')+'</tbody></table></div></div>';
+document.getElementById('mainContent').innerHTML=standHTML+formHTML+tableHTML;}
+async function saveGame(compId){var comp=comps.find(function(c){return c.id===compId;});var dateInput=document.getElementById('new_date').value;if(!dateInput){showToast('Kies een datum');return;}var parts=dateInput.split('-');var dateStr=parts[2]+'-'+parts[1]+'-'+parts[0];var scores={};comp.players.forEach(function(p){scores[p]=parseInt(document.getElementById('sc_'+p).value)||0;});var newId=String(Date.now())+Math.random().toString(36).substr(2,5);var res=await sbClient.from('regenwormen_games').insert({id:newId,comp_id:compId,datum:dateStr,scores:scores});if(res.error){showToast('Fout bij opslaan');console.error(res.error);return;}showToast('Potje opgeslagen ✓');comp.players.forEach(function(p){document.getElementById('sc_'+p).value=0;});laadGames(compId);}
+async function deleteGame(compId,key){if(!confirm('Potje verwijderen?'))return;var res=await sbClient.from('regenwormen_games').delete().eq('id',key);if(res.error){showToast('Fout bij verwijderen');return;}showToast('Potje verwijderd');laadGames(compId);}
+async function deleteComp(compId){if(!confirm('Hele competitie verwijderen inclusief alle potjes?'))return;await sbClient.from('regenwormen_games').delete().eq('comp_id',compId);var res=await sbClient.from('regenwormen_comps').delete().eq('id',compId);if(res.error){showToast('Fout bij verwijderen');return;}showToast('Competitie verwijderd');activeCompId=null;laadComps();}
+function openModal(){modalPlayers=[];document.getElementById('compName').value='';document.getElementById('newPlayerInput').value='';renderPlayerList();document.getElementById('modalBg').classList.add('open');setTimeout(function(){document.getElementById('compName').focus();},100);}
+function closeModal(){document.getElementById('modalBg').classList.remove('open');}
+function renderPlayerList(){document.getElementById('playerList').innerHTML=modalPlayers.map(function(p,i){return'<div class="player-tag"><span>'+p+'</span><button onclick="removePlayer('+i+')">×</button></div>';}).join('');}
+function addPlayer(){var input=document.getElementById('newPlayerInput');var name=input.value.trim();if(!name)return;if(modalPlayers.indexOf(name)>=0){showToast('Naam bestaat al');return;}modalPlayers.push(name);input.value='';renderPlayerList();input.focus();}
+function removePlayer(i){modalPlayers.splice(i,1);renderPlayerList();}
+async function createComp(){var label=document.getElementById('compName').value.trim();if(!label){showToast('Geef een naam op');return;}if(modalPlayers.length<2){showToast('Voeg minimaal 2 spelers toe');return;}if(comps.find(function(c){return c.label===label;})){showToast('Naam bestaat al');return;}var newId='comp_'+Date.now();var res=await sbClient.from('regenwormen_comps').insert({id:newId,label:label,players:modalPlayers});if(res.error){showToast('Fout bij aanmaken');console.error(res.error);return;}showToast(label+' aangemaakt ✓');activeCompId=newId;closeModal();laadComps();}
+function showToast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('show');},2500);}
+laadComps();
+</script>
+</body>
+</html>

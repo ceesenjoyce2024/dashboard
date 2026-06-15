@@ -1,1 +1,92 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Champions League — Spelkeuze</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sand: #e8e4d9; --sand-light: #f2efe6; --sand-dark: #d8d4c6;
+    --olive: #5c5a2e; --olive-mid: #7a7838; --olive-light: #c8c89a;
+    --text: #3d3b1e; --text-muted: #7a7860; --card-bg: #f7f4ec;
+    --radius: 10px; --radius-lg: 14px;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--sand); color: var(--text); min-height: 100vh; }
 
+  header {
+    background: var(--olive); color: var(--sand-light);
+    padding: 16px 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .back-btn {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    color: var(--sand-light); padding: 6px 12px; border-radius: 7px;
+    font-size: 13px; text-decoration: none; white-space: nowrap;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.25); }
+  header h1 { font-family: var(--serif); font-size: 19px; font-weight: 600; }
+  .trophy { font-size: 22px; }
+
+  main { max-width: 500px; margin: 0 auto; padding: 28px 16px; }
+  .intro { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+
+  .game-list { display: flex; flex-direction: column; gap: 12px; }
+  .game-card {
+    background: var(--card-bg); border: 1px solid var(--sand-dark);
+    border-radius: var(--radius-lg); padding: 18px 20px;
+    display: flex; align-items: center; gap: 16px;
+    cursor: pointer; text-decoration: none; color: var(--text);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .game-card:hover { border-color: var(--olive-light); background: #edeade; }
+  .game-icon { font-size: 28px; width: 44px; text-align: center; flex-shrink: 0; }
+  .tile-wrap { width: 44px; height: 44px; flex-shrink: 0; }
+  .tile-img-crop { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; display: block; }
+  .game-info { flex: 1; }
+  .game-name { font-family: var(--serif); font-size: 16px; font-weight: 600; color: var(--olive); margin-bottom: 2px; }
+  .game-sub { font-size: 13px; color: var(--text-muted); }
+  .game-arrow { font-size: 18px; color: var(--olive-light); flex-shrink: 0; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/" class="back-btn">‹ Dashboard</a>
+  <span class="trophy">🏆</span>
+  <h1>Champions League</h1>
+</header>
+<main>
+  <p class="intro">Kies een spel om de stand en uitslagen te bekijken.</p>
+  <div class="game-list">
+    <a href="bananas.html" class="game-card">
+      <div class="game-icon">🍌</div>
+      <div class="game-info">
+        <div class="game-name">Bananas</div>
+        <div class="game-sub">Woordspel met letter-tegels</div>
+      </div>
+      <span class="game-arrow">›</span>
+    </a>
+    <a href="regenwormen.html" class="game-card">
+      <div class="game-icon">🪱</div>
+      <div class="game-info">
+        <div class="game-name">Regenwormen</div>
+        <div class="game-sub">Dobbelspel om de meeste wormen</div>
+      </div>
+      <span class="game-arrow">›</span>
+    </a>
+    <a href="rummikub.html" class="game-card">
+      <div class="tile-wrap"><img src="rummikub-joker.png" class="tile-img-crop" alt="Rummikub joker"></div>
+      <div class="game-info">
+        <div class="game-name">Rummikub</div>
+        <div class="game-sub">Stand, uitslagen en statistieken</div>
+      </div>
+      <span class="game-arrow">›</span>
+    </a>
+  </div>
+</main>
+</body>
+</html>
