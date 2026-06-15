@@ -6,21 +6,29 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Eikenlaan Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --green: #1a6b3a;
-    --green-light: #e8f5ee;
-    --green-mid: #2d8a50;
-    --text: #1a1a1a;
-    --text-muted: #6b7280;
-    --border: #e5e7eb;
-    --bg: #f8faf9;
-    --card-bg: #ffffff;
-    --radius: 14px;
-    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --sand:       #e8e4d9;
+    --sand-light: #f2efe6;
+    --sand-dark:  #d8d4c6;
+    --olive:      #5c5a2e;
+    --olive-mid:  #7a7838;
+    --olive-light:#c8c89a;
+    --text:       #3d3b1e;
+    --text-muted: #7a7860;
+    --card-bg:    #f7f4ec;
+    --radius:     12px;
+    --serif:      'Playfair Display', Georgia, serif;
+    --sans:       'Inter', system-ui, sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+  body {
+    font-family: var(--sans);
+    background: var(--sand);
+    color: var(--text);
+    min-height: 100vh;
+  }
 
   /* ── Login ── */
   #login-screen {
@@ -29,154 +37,212 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
+    background: var(--sand);
   }
   .login-card {
     background: var(--card-bg);
-    border: 1px solid var(--border);
+    border: 1px solid var(--sand-dark);
     border-radius: var(--radius);
-    padding: 40px 36px;
+    padding: 44px 40px;
     width: 100%;
     max-width: 400px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    box-shadow: 0 4px 32px rgba(60,58,30,0.08);
     text-align: center;
   }
   .login-logo {
-    width: 64px; height: 64px;
-    background: var(--green-light);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 30px;
-    margin: 0 auto 20px;
+    font-family: var(--serif);
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    color: var(--olive-mid);
+    text-transform: uppercase;
+    margin-bottom: 6px;
   }
-  .login-card h2 { font-size: 22px; font-weight: 700; color: var(--green); margin-bottom: 6px; }
-  .login-card > p { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; line-height: 1.5; }
+  .login-card h2 {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--olive);
+    margin-bottom: 8px;
+    letter-spacing: -0.3px;
+  }
+  .login-card > p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+  .divider {
+    width: 40px; height: 1px;
+    background: var(--olive-light);
+    margin: 0 auto 28px;
+  }
 
   .field { text-align: left; margin-bottom: 14px; }
-  .field label { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 600;
+    color: var(--text-muted); margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
   .field input {
     width: 100%; padding: 11px 14px;
-    border: 1.5px solid var(--border); border-radius: 10px;
-    font-size: 15px; font-family: var(--font); outline: none;
-    transition: border-color 0.2s;
+    border: 1px solid var(--sand-dark);
+    border-radius: 8px;
+    font-size: 14px; font-family: var(--sans);
+    background: var(--sand-light);
+    color: var(--text);
+    outline: none; transition: border-color 0.2s;
   }
-  .field input:focus { border-color: var(--green-mid); }
+  .field input:focus { border-color: var(--olive-mid); background: white; }
 
   .login-btn {
-    width: 100%; padding: 13px;
-    background: var(--green); color: white;
-    border: none; border-radius: 10px;
-    font-size: 15px; font-weight: 600;
+    width: 100%; padding: 12px;
+    background: var(--olive); color: var(--sand-light);
+    border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
     cursor: pointer; transition: background 0.2s;
-    font-family: var(--font); margin-top: 4px;
+    font-family: var(--sans); margin-top: 6px;
   }
-  .login-btn:hover { background: var(--green-mid); }
-  .login-btn:disabled { opacity: 0.6; cursor: default; }
+  .login-btn:hover { background: var(--olive-mid); }
+  .login-btn:disabled { opacity: 0.55; cursor: default; }
 
   .login-error {
-    margin-top: 14px; font-size: 13px; color: #dc2626;
-    background: #fef2f2; border: 1px solid #fecaca;
+    margin-top: 14px; font-size: 13px; color: #8b3a2a;
+    background: #f5ece9; border: 1px solid #dfc0b8;
     border-radius: 8px; padding: 10px 14px;
     display: none; text-align: left;
   }
 
   /* ── Header ── */
   .header {
-    background: var(--green); color: white;
-    padding: 16px 24px;
+    background: var(--olive);
+    color: var(--sand-light);
+    padding: 16px 28px;
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
   }
-  .header-left { display: flex; align-items: center; gap: 12px; }
-  .logo-circle {
-    width: 40px; height: 40px;
-    background: rgba(255,255,255,0.15); border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-wordmark {
+    font-family: var(--serif);
+    font-size: 18px; font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--sand-light);
   }
-  .header h1 { font-size: 19px; font-weight: 600; }
-  .header p { font-size: 12px; opacity: 0.7; margin-top: 1px; }
+  .header-sub {
+    font-size: 11px; opacity: 0.65;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .header-divider {
+    width: 1px; height: 32px;
+    background: rgba(242,239,230,0.2);
+  }
   .logout-btn {
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.25);
-    color: white; padding: 7px 14px; border-radius: 8px;
-    font-size: 13px; cursor: pointer; transition: background 0.2s; white-space: nowrap;
+    background: transparent;
+    border: 1px solid rgba(242,239,230,0.3);
+    color: var(--sand-light);
+    padding: 7px 14px; border-radius: 7px;
+    font-size: 12px; font-weight: 500; letter-spacing: 0.04em;
+    cursor: pointer; transition: background 0.2s; white-space: nowrap;
+    font-family: var(--sans);
   }
-  .logout-btn:hover { background: rgba(255,255,255,0.25); }
+  .logout-btn:hover { background: rgba(242,239,230,0.12); }
 
-  /* ── Dashboard ── */
-  #dashboard-screen { display: none; }
+  /* ── Dashboard body ── */
+  #dashboard-screen, #ouder-screen { display: none; }
 
   .welcome-bar {
-    background: var(--green-light);
-    border-bottom: 1px solid #c9e8d5;
-    padding: 12px 24px; font-size: 14px; color: var(--green);
+    background: var(--sand-light);
+    border-bottom: 1px solid var(--sand-dark);
+    padding: 11px 28px;
+    font-size: 13px; color: var(--text-muted);
+    letter-spacing: 0.02em;
   }
-  .welcome-bar strong { font-weight: 600; }
+  .welcome-bar strong { color: var(--olive); font-weight: 600; }
 
-  .main { padding: 28px 24px; max-width: 860px; margin: 0 auto; }
-
-  .section-title {
-    font-size: 11px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--text-muted); margin-bottom: 14px; margin-top: 32px;
+  .main {
+    padding: 32px 28px;
+    max-width: 880px;
+    margin: 0 auto;
   }
-  .section-title:first-child { margin-top: 0; }
+
+  .section-label {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px; margin-top: 36px;
+  }
+  .section-label:first-child { margin-top: 0; }
+  .section-label span {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: var(--sand-dark);
+  }
 
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap: 14px;
+    gap: 12px;
   }
 
   .app-card {
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 22px 18px;
+    background: var(--card-bg);
+    border: 1px solid var(--sand-dark);
+    border-radius: var(--radius);
+    padding: 22px 18px;
     text-decoration: none; color: var(--text);
-    display: flex; flex-direction: column; gap: 8px;
-    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    display: flex; flex-direction: column; gap: 9px;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.2s;
   }
   .app-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.09);
-    border-color: #c9e8d5;
+    box-shadow: 0 6px 24px rgba(60,58,30,0.1);
+    border-color: var(--olive-light);
   }
 
   .app-icon {
-    width: 44px; height: 44px; border-radius: 11px;
-    display: flex; align-items: center; justify-content: center; font-size: 21px;
+    width: 42px; height: 42px; border-radius: 10px;
+    background: var(--sand);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    border: 1px solid var(--sand-dark);
   }
-  .icon-green  { background: #e8f5ee; }
-  .icon-red    { background: #fef2f2; }
-  .icon-blue   { background: #eff6ff; }
-  .icon-amber  { background: #fffbeb; }
-  .icon-purple { background: #faf5ff; }
 
-  .app-name { font-size: 15px; font-weight: 600; }
-  .app-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+  .app-name {
+    font-family: var(--serif);
+    font-size: 16px; font-weight: 600;
+    color: var(--olive); line-height: 1.2;
+  }
+  .app-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
 
   .app-badge {
-    display: inline-block; font-size: 11px; font-weight: 500;
-    padding: 3px 8px; border-radius: 20px; margin-top: 2px; align-self: flex-start;
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 3px 8px; border-radius: 20px; margin-top: 2px;
+    align-self: flex-start; letter-spacing: 0.05em; text-transform: uppercase;
   }
-  .badge-public  { background: #dcfce7; color: #15803d; }
-  .badge-private { background: #e0e7ff; color: #3730a3; }
+  .badge-public  { background: #e8ead6; color: var(--olive); border: 1px solid var(--olive-light); }
+  .badge-private { background: var(--sand); color: var(--text-muted); border: 1px solid var(--sand-dark); }
 
   .public-note {
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: 10px; padding: 13px 16px;
-    font-size: 13px; color: var(--text-muted);
-    margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    background: var(--sand-light);
+    border: 1px solid var(--sand-dark);
+    border-radius: 9px; padding: 12px 16px;
+    font-size: 12px; color: var(--text-muted);
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px; line-height: 1.5;
   }
-  .public-note span { font-size: 17px; flex-shrink: 0; }
-
-  /* ── Ouder-dashboard (alleen hockey) ── */
-  #ouder-screen { display: none; }
+  .public-note span { font-size: 16px; flex-shrink: 0; }
 
   @media (max-width: 480px) {
-    .header h1 { font-size: 16px; }
+    .header-wordmark { font-size: 16px; }
     .main { padding: 20px 16px; }
     .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-    .app-card { padding: 16px 12px; }
-    .login-card { padding: 32px 20px; }
+    .app-card { padding: 15px 12px; }
+    .login-card { padding: 32px 24px; }
+    .header { padding: 14px 16px; }
   }
 </style>
 </head>
@@ -185,8 +251,9 @@
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">🏡</div>
-    <h2>Eikenlaan</h2>
+    <div class="login-logo">Eikenlaan</div>
+    <h2>Dashboard</h2>
+    <div class="divider"></div>
     <p>Log in met je e-mailadres en wachtwoord.</p>
     <div class="field">
       <label>E-mailadres</label>
@@ -201,90 +268,92 @@
   </div>
 </div>
 
-<!-- VOLLEDIG DASHBOARD (admin) -->
+<!-- VOLLEDIG DASHBOARD -->
 <div id="dashboard-screen">
   <div class="header">
     <div class="header-left">
-      <div class="logo-circle">🏡</div>
       <div>
-        <h1>Eikenlaan Dashboard</h1>
-        <p id="user-email-display"></p>
+        <div class="header-wordmark">Eikenlaan</div>
+        <div class="header-sub">Dashboard</div>
       </div>
+      <div class="header-divider"></div>
+      <div style="font-size:12px;opacity:0.65;" id="user-email-display"></div>
     </div>
     <button class="logout-btn" onclick="logout()">Uitloggen</button>
   </div>
-  <div class="welcome-bar">Welkom terug, <strong id="user-name-display"></strong>!</div>
-  <div class="main">
+  <div class="welcome-bar">Welkom terug, <strong id="user-name-display"></strong></div>
 
-    <div class="section-title">Persoonlijk</div>
+  <div class="main">
+    <div class="section-label"><span>Persoonlijk</span></div>
     <div class="grid">
       <a class="app-card" href="./hartslag/">
-        <div class="app-icon icon-red">❤️</div>
+        <div class="app-icon">❤️</div>
         <div class="app-name">Hartslag</div>
         <div class="app-desc">Bloeddruk & hartslag bijhouden</div>
         <span class="app-badge badge-private">Privé</span>
       </a>
       <a class="app-card" href="./dagboek/">
-        <div class="app-icon icon-amber">📔</div>
+        <div class="app-icon">📔</div>
         <div class="app-name">Dagboek</div>
         <div class="app-desc">Dagelijkse status bijhouden</div>
         <span class="app-badge badge-private">Privé</span>
       </a>
       <a class="app-card" href="./spelletjes/">
-        <div class="app-icon icon-purple">🎲</div>
+        <div class="app-icon">🎲</div>
         <div class="app-name">Spelletjes</div>
         <div class="app-desc">Champions League bordspellen</div>
         <span class="app-badge badge-private">Privé</span>
       </a>
     </div>
 
-    <div class="section-title">Hockey — MHC Rosmalen</div>
+    <div class="section-label"><span>Hockey — MHC Rosmalen</span></div>
     <div class="public-note">
       <span>👥</span>
       <span>De hockey-apps zijn ook openbaar te bekijken zonder inloggen — ideaal om te delen met andere ouders.</span>
     </div>
     <div class="grid">
       <a class="app-card" href="./mo11-1/">
-        <div class="app-icon icon-green">🏑</div>
+        <div class="app-icon">🏑</div>
         <div class="app-name">MO11-1</div>
         <div class="app-desc">Statistieken & standen</div>
         <span class="app-badge badge-public">Publiek leesbaar</span>
       </a>
       <a class="app-card" href="./mo12-1/">
-        <div class="app-icon icon-green">🏑</div>
+        <div class="app-icon">🏑</div>
         <div class="app-name">MO12-1</div>
         <div class="app-desc">Statistieken & standen</div>
         <span class="app-badge badge-public">Publiek leesbaar</span>
       </a>
     </div>
-
   </div>
 </div>
 
-<!-- OUDER DASHBOARD (alleen hockey) -->
+<!-- OUDER DASHBOARD -->
 <div id="ouder-screen">
   <div class="header">
     <div class="header-left">
-      <div class="logo-circle">🏑</div>
       <div>
-        <h1>MHC Rosmalen</h1>
-        <p id="ouder-email-display"></p>
+        <div class="header-wordmark">MHC Rosmalen</div>
+        <div class="header-sub">Hockey statistieken</div>
       </div>
+      <div class="header-divider"></div>
+      <div style="font-size:12px;opacity:0.65;" id="ouder-email-display"></div>
     </div>
     <button class="logout-btn" onclick="logout()">Uitloggen</button>
   </div>
-  <div class="welcome-bar">Welkom, <strong id="ouder-name-display"></strong>!</div>
+  <div class="welcome-bar">Welkom, <strong id="ouder-name-display"></strong></div>
+
   <div class="main">
-    <div class="section-title">Hockey statistieken</div>
+    <div class="section-label"><span>Hockey statistieken</span></div>
     <div class="grid">
       <a class="app-card" href="./mo11-1/">
-        <div class="app-icon icon-green">🏑</div>
+        <div class="app-icon">🏑</div>
         <div class="app-name">MO11-1</div>
         <div class="app-desc">Statistieken bekijken & invullen</div>
         <span class="app-badge badge-public">Toegankelijk</span>
       </a>
       <a class="app-card" href="./mo12-1/">
-        <div class="app-icon icon-green">🏑</div>
+        <div class="app-icon">🏑</div>
         <div class="app-name">MO12-1</div>
         <div class="app-desc">Statistieken bekijken & invullen</div>
         <span class="app-badge badge-public">Toegankelijk</span>
@@ -304,7 +373,6 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) showCorrectDashboard(session.user);
-
   sb.auth.onAuthStateChange((_e, session) => {
     if (session) showCorrectDashboard(session.user);
     else showLogin();
@@ -312,37 +380,33 @@ async function init() {
 }
 
 function showCorrectDashboard(user) {
-  if (user.email === ADMIN_EMAIL) {
-    showAdminDashboard(user);
-  } else {
-    showOuderDashboard(user);
-  }
+  user.email === ADMIN_EMAIL ? showAdminDashboard(user) : showOuderDashboard(user);
 }
 
 function showAdminDashboard(user) {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('ouder-screen').style.display = 'none';
-  document.getElementById('dashboard-screen').style.display = 'block';
+  hide('login-screen'); hide('ouder-screen');
+  show('dashboard-screen');
   document.getElementById('user-email-display').textContent = user.email;
-  const name = user.email.split('@')[0];
-  document.getElementById('user-name-display').textContent =
-    name.charAt(0).toUpperCase() + name.slice(1);
+  document.getElementById('user-name-display').textContent = formatName(user.email);
 }
 
 function showOuderDashboard(user) {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('dashboard-screen').style.display = 'none';
-  document.getElementById('ouder-screen').style.display = 'block';
+  hide('login-screen'); hide('dashboard-screen');
+  show('ouder-screen');
   document.getElementById('ouder-email-display').textContent = user.email;
-  const name = user.email.split('@')[0];
-  document.getElementById('ouder-name-display').textContent =
-    name.charAt(0).toUpperCase() + name.slice(1);
+  document.getElementById('ouder-name-display').textContent = formatName(user.email);
 }
 
 function showLogin() {
-  document.getElementById('dashboard-screen').style.display = 'none';
-  document.getElementById('ouder-screen').style.display = 'none';
+  hide('dashboard-screen'); hide('ouder-screen');
   document.getElementById('login-screen').style.display = 'flex';
+}
+
+function show(id) { document.getElementById(id).style.display = 'block'; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+function formatName(email) {
+  const n = email.split('@')[0];
+  return n.charAt(0).toUpperCase() + n.slice(1);
 }
 
 async function doLogin() {
@@ -353,33 +417,26 @@ async function doLogin() {
 
   if (!email || !password) {
     err.textContent = 'Vul je e-mailadres en wachtwoord in.';
-    err.style.display = 'block';
-    return;
+    err.style.display = 'block'; return;
   }
-
-  btn.disabled = true;
-  btn.textContent = 'Inloggen…';
+  btn.disabled = true; btn.textContent = 'Inloggen…';
   err.style.display = 'none';
 
   const { error } = await sb.auth.signInWithPassword({ email, password });
-
   if (error) {
-    err.textContent = 'Inloggen mislukt: controleer je e-mailadres en wachtwoord.';
+    err.textContent = 'Inloggen mislukt — controleer je e-mailadres en wachtwoord.';
     err.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = 'Inloggen';
+    btn.disabled = false; btn.textContent = 'Inloggen';
   }
 }
 
-async function logout() {
-  await sb.auth.signOut();
-}
+async function logout() { await sb.auth.signOut(); }
 
-['email-input', 'password-input'].forEach(id => {
+['email-input','password-input'].forEach(id =>
   document.getElementById(id).addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
-  });
-});
+  })
+);
 
 init();
 </script>
