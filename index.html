@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Eikenlaan Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --green: #1a6b3a;
+    --green-light: #e8f5ee;
+    --green-mid: #2d8a50;
+    --text: #1a1a1a;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --bg: #f8faf9;
+    --card-bg: #ffffff;
+    --radius: 14px;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── Login ── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .login-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    text-align: center;
+  }
+  .login-logo {
+    width: 64px; height: 64px;
+    background: var(--green-light);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+    margin: 0 auto 20px;
+  }
+  .login-card h2 { font-size: 22px; font-weight: 700; color: var(--green); margin-bottom: 6px; }
+  .login-card > p { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; line-height: 1.5; }
+
+  .field { text-align: left; margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; }
+  .field input {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 15px; font-family: var(--font); outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--green-mid); }
+
+  .login-btn {
+    width: 100%; padding: 13px;
+    background: var(--green); color: white;
+    border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+    font-family: var(--font); margin-top: 4px;
+  }
+  .login-btn:hover { background: var(--green-mid); }
+  .login-btn:disabled { opacity: 0.6; cursor: default; }
+
+  .login-error {
+    margin-top: 14px; font-size: 13px; color: #dc2626;
+    background: #fef2f2; border: 1px solid #fecaca;
+    border-radius: 8px; padding: 10px 14px;
+    display: none; text-align: left;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--green); color: white;
+    padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo-circle {
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,0.15); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .header h1 { font-size: 19px; font-weight: 600; }
+  .header p { font-size: 12px; opacity: 0.7; margin-top: 1px; }
+  .logout-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white; padding: 7px 14px; border-radius: 8px;
+    font-size: 13px; cursor: pointer; transition: background 0.2s; white-space: nowrap;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+  /* ── Dashboard ── */
+  #dashboard-screen { display: none; }
+
+  .welcome-bar {
+    background: var(--green-light);
+    border-bottom: 1px solid #c9e8d5;
+    padding: 12px 24px; font-size: 14px; color: var(--green);
+  }
+  .welcome-bar strong { font-weight: 600; }
+
+  .main { padding: 28px 24px; max-width: 860px; margin: 0 auto; }
+
+  .section-title {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); margin-bottom: 14px; margin-top: 32px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 14px;
+  }
+
+  .app-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 18px;
+    text-decoration: none; color: var(--text);
+    display: flex; flex-direction: column; gap: 8px;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  }
+  .app-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+    border-color: #c9e8d5;
+  }
+
+  .app-icon {
+    width: 44px; height: 44px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center; font-size: 21px;
+  }
+  .icon-green  { background: #e8f5ee; }
+  .icon-red    { background: #fef2f2; }
+  .icon-blue   { background: #eff6ff; }
+  .icon-amber  { background: #fffbeb; }
+  .icon-purple { background: #faf5ff; }
+
+  .app-name { font-size: 15px; font-weight: 600; }
+  .app-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+  .app-badge {
+    display: inline-block; font-size: 11px; font-weight: 500;
+    padding: 3px 8px; border-radius: 20px; margin-top: 2px; align-self: flex-start;
+  }
+  .badge-public  { background: #dcfce7; color: #15803d; }
+  .badge-private { background: #e0e7ff; color: #3730a3; }
+
+  .public-note {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 13px 16px;
+    font-size: 13px; color: var(--text-muted);
+    margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .public-note span { font-size: 17px; flex-shrink: 0; }
+
+  /* ── Ouder-dashboard (alleen hockey) ── */
+  #ouder-screen { display: none; }
+
+  @media (max-width: 480px) {
+    .header h1 { font-size: 16px; }
+    .main { padding: 20px 16px; }
+    .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .app-card { padding: 16px 12px; }
+    .login-card { padding: 32px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🏡</div>
+    <h2>Eikenlaan</h2>
+    <p>Log in met je e-mailadres en wachtwoord.</p>
+    <div class="field">
+      <label>E-mailadres</label>
+      <input type="email" id="email-input" placeholder="jouw@email.nl" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Wachtwoord</label>
+      <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Inloggen</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- VOLLEDIG DASHBOARD (admin) -->
+<div id="dashboard-screen">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-circle">🏡</div>
+      <div>
+        <h1>Eikenlaan Dashboard</h1>
+        <p id="user-email-display"></p>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Uitloggen</button>
+  </div>
+  <div class="welcome-bar">Welkom terug, <strong id="user-name-display"></strong>!</div>
+  <div class="main">
+
+    <div class="section-title">Persoonlijk</div>
+    <div class="grid">
+      <a class="app-card" href="./hartslag/">
+        <div class="app-icon icon-red">❤️</div>
+        <div class="app-name">Hartslag</div>
+        <div class="app-desc">Bloeddruk & hartslag bijhouden</div>
+        <span class="app-badge badge-private">Privé</span>
+      </a>
+      <a class="app-card" href="./dagboek/">
+        <div class="app-icon icon-amber">📔</div>
+        <div class="app-name">Dagboek</div>
+        <div class="app-desc">Dagelijkse status bijhouden</div>
+        <span class="app-badge badge-private">Privé</span>
+      </a>
+      <a class="app-card" href="./spelletjes/">
+        <div class="app-icon icon-purple">🎲</div>
+        <div class="app-name">Spelletjes</div>
+        <div class="app-desc">Champions League bordspellen</div>
+        <span class="app-badge badge-private">Privé</span>
+      </a>
+    </div>
+
+    <div class="section-title">Hockey — MHC Rosmalen</div>
+    <div class="public-note">
+      <span>👥</span>
+      <span>De hockey-apps zijn ook openbaar te bekijken zonder inloggen — ideaal om te delen met andere ouders.</span>
+    </div>
+    <div class="grid">
+      <a class="app-card" href="./mo11-1/">
+        <div class="app-icon icon-green">🏑</div>
+        <div class="app-name">MO11-1</div>
+        <div class="app-desc">Statistieken & standen</div>
+        <span class="app-badge badge-public">Publiek leesbaar</span>
+      </a>
+      <a class="app-card" href="./mo12-1/">
+        <div class="app-icon icon-green">🏑</div>
+        <div class="app-name">MO12-1</div>
+        <div class="app-desc">Statistieken & standen</div>
+        <span class="app-badge badge-public">Publiek leesbaar</span>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<!-- OUDER DASHBOARD (alleen hockey) -->
+<div id="ouder-screen">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-circle">🏑</div>
+      <div>
+        <h1>MHC Rosmalen</h1>
+        <p id="ouder-email-display"></p>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Uitloggen</button>
+  </div>
+  <div class="welcome-bar">Welkom, <strong id="ouder-name-display"></strong>!</div>
+  <div class="main">
+    <div class="section-title">Hockey statistieken</div>
+    <div class="grid">
+      <a class="app-card" href="./mo11-1/">
+        <div class="app-icon icon-green">🏑</div>
+        <div class="app-name">MO11-1</div>
+        <div class="app-desc">Statistieken bekijken & invullen</div>
+        <span class="app-badge badge-public">Toegankelijk</span>
+      </a>
+      <a class="app-card" href="./mo12-1/">
+        <div class="app-icon icon-green">🏑</div>
+        <div class="app-name">MO12-1</div>
+        <div class="app-desc">Statistieken bekijken & invullen</div>
+        <span class="app-badge badge-public">Toegankelijk</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://hvpooifxqhovskwgzpbr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g';
+const ADMIN_EMAIL = 'cees@eikenlaan.com';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) showCorrectDashboard(session.user);
+
+  sb.auth.onAuthStateChange((_e, session) => {
+    if (session) showCorrectDashboard(session.user);
+    else showLogin();
+  });
+}
+
+function showCorrectDashboard(user) {
+  if (user.email === ADMIN_EMAIL) {
+    showAdminDashboard(user);
+  } else {
+    showOuderDashboard(user);
+  }
+}
+
+function showAdminDashboard(user) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('ouder-screen').style.display = 'none';
+  document.getElementById('dashboard-screen').style.display = 'block';
+  document.getElementById('user-email-display').textContent = user.email;
+  const name = user.email.split('@')[0];
+  document.getElementById('user-name-display').textContent =
+    name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+function showOuderDashboard(user) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard-screen').style.display = 'none';
+  document.getElementById('ouder-screen').style.display = 'block';
+  document.getElementById('ouder-email-display').textContent = user.email;
+  const name = user.email.split('@')[0];
+  document.getElementById('ouder-name-display').textContent =
+    name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+function showLogin() {
+  document.getElementById('dashboard-screen').style.display = 'none';
+  document.getElementById('ouder-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function doLogin() {
+  const email    = document.getElementById('email-input').value.trim();
+  const password = document.getElementById('password-input').value;
+  const btn      = document.getElementById('login-btn');
+  const err      = document.getElementById('login-error');
+
+  if (!email || !password) {
+    err.textContent = 'Vul je e-mailadres en wachtwoord in.';
+    err.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Inloggen…';
+  err.style.display = 'none';
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    err.textContent = 'Inloggen mislukt: controleer je e-mailadres en wachtwoord.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Inloggen';
+  }
+}
+
+async function logout() {
+  await sb.auth.signOut();
+}
+
+['email-input', 'password-input'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+init();
+</script>
+</body>
+</html>
