@@ -1,1 +1,823 @@
 
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Rosmalen MO12-1 — Hockey Stats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sand:#e8e4d9;--sand-light:#f2efe6;--sand-dark:#d8d4c6;
+    --olive:#5c5a2e;--olive-mid:#7a7838;--olive-light:#c8c89a;
+    --text:#3d3b1e;--text-muted:#7a7860;--text-faint:#a8a890;
+    --card-bg:#f7f4ec;
+    --green:#1A9E6E;--green-dark:#0F6E4A;--green-light:#D6F5EA;
+    --amber:#8a6a10;--amber-light:#faeeda;
+    --red:#8a2828;--red-light:#fdf0f0;
+    --blue:#2A7FD4;--blue-light:#E6F1FB;
+    --radius:12px;--radius-sm:8px;
+    --serif:'Playfair Display',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);background:var(--sand);color:var(--text);min-height:100vh;font-size:15px;}
+
+  /* Header */
+  .header{background:var(--olive);padding:0 1.5rem;position:sticky;top:0;z-index:100;}
+  .header-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:12px;height:54px;}
+  .back-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:var(--sand-light);padding:5px 11px;border-radius:7px;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0;}
+  .back-btn:hover{background:rgba(255,255,255,0.25);}
+  .logo{width:34px;height:34px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+  .header-title{color:var(--sand-light);}
+  .header-title h1{font-family:var(--serif);font-size:17px;font-weight:600;line-height:1.1;}
+  .header-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(242,239,230,0.7);}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--olive-light);}
+
+  /* Nav */
+  .nav-wrap{background:var(--card-bg);border-bottom:1px solid var(--sand-dark);overflow-x:auto;}
+  .nav{max-width:960px;margin:0 auto;display:flex;padding:0 1rem;}
+  .nav-btn{font-family:var(--sans);font-size:13px;font-weight:500;padding:13px 15px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s;}
+  .nav-btn.active{color:var(--olive);border-bottom-color:var(--olive-mid);}
+  .nav-btn:hover:not(.active){color:var(--text);}
+  .nav-btn.invoer-btn{margin-left:auto;color:var(--olive-mid);display:flex;align-items:center;gap:5px;}
+
+  /* Main */
+  .main{max-width:960px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+  .section{display:none;}.section.active{display:block;}
+
+  /* Metrics */
+  .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-bottom:1.5rem;}
+  .metric{background:var(--card-bg);border-radius:var(--radius-sm);border:1px solid var(--sand-dark);padding:14px 12px;}
+  .metric-label{font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+  .metric-value{font-family:var(--serif);font-size:26px;font-weight:700;color:var(--text);}
+  .metric-value.green{color:var(--green);}.metric-value.red{color:var(--red);}.metric-value.amber{color:var(--amber);}
+  .metric-sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
+
+  /* Cards */
+  .card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--sand-dark);padding:1.25rem;margin-bottom:14px;}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+  .card-title{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--text-muted);letter-spacing:.03em;}
+
+  /* Tables */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:1px solid var(--sand-dark);}
+  td{padding:9px 10px;border-bottom:1px solid var(--sand-dark);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}tr:hover td{background:var(--sand-light);}
+  .score{font-family:var(--serif);font-size:16px;font-weight:700;}
+
+  /* Badges */
+  .badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;letter-spacing:.03em;}
+  .badge-W{background:var(--green-light);color:var(--green-dark);}
+  .badge-G{background:var(--amber-light);color:var(--amber);}
+  .badge-V{background:var(--red-light);color:var(--red);}
+  .badge-sc{background:var(--green-light);color:var(--green-dark);font-size:10px;}
+  .badge-assist{background:var(--blue-light);color:#0F4A8B;font-size:10px;}
+  .rank{font-family:var(--serif);font-size:13px;font-weight:700;color:var(--text-faint);}
+
+  /* Tabs */
+  .tab-bar{display:flex;gap:4px;margin-bottom:1rem;}
+  .tab-btn{font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px;border:1px solid var(--sand-dark);background:var(--sand-light);color:var(--text-muted);cursor:pointer;transition:all .15s;font-family:var(--sans);}
+  .tab-btn.active{background:var(--olive);border-color:var(--olive);color:var(--sand-light);}
+
+  /* Comp header */
+  .comp-header{display:flex;align-items:flex-end;gap:12px;margin-bottom:1.25rem;}
+  .comp-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--olive);}
+  .comp-sub{font-size:13px;color:var(--text-muted);margin-bottom:3px;}
+
+  /* Forms */
+  .form-section{margin-bottom:1.5rem;}
+  .form-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--sand-dark);}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;}
+  .form-group{display:flex;flex-direction:column;gap:5px;}
+  .form-group label{font-size:12px;font-weight:500;color:var(--text-muted);}
+  .form-group input,.form-group select{font-family:var(--sans);font-size:14px;padding:9px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none;transition:border-color .15s;}
+  .form-group input:focus,.form-group select:focus{border-color:var(--olive-mid);}
+
+  /* Buttons */
+  .btn-primary{font-family:var(--sans);font-weight:500;background:var(--olive);color:var(--sand-light);border:none;padding:11px 24px;border-radius:var(--radius-sm);font-size:15px;cursor:pointer;transition:background .15s;}
+  .btn-primary:hover{background:var(--olive-mid);}
+  .btn-sm{font-family:var(--sans);font-size:12px;padding:6px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text-muted);cursor:pointer;}
+  .btn-sm:hover{border-color:var(--olive-light);color:var(--olive);}
+  .btn-danger{font-size:12px;padding:5px 10px;border:1px solid #dfc0b8;border-radius:var(--radius-sm);background:var(--red-light);color:var(--red);cursor:pointer;}
+
+  /* Goal rows */
+  .goal-row{background:var(--sand-light);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--sand-dark);}
+  .goal-row select{font-size:13px;padding:6px 10px;border:1px solid var(--sand-dark);border-radius:6px;background:var(--card-bg);color:var(--text);font-family:var(--sans);}
+  .sc-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;}
+  .sc-toggle input{width:15px;height:15px;accent-color:var(--olive);}
+
+  /* Stand */
+  .stand-table td.rosmalen{background:rgba(92,90,46,0.05);font-weight:600;}
+  .stand-table tr.rosmalen-row td{background:rgba(92,90,46,0.05);}
+  .stand-pos{font-family:var(--serif);font-weight:700;font-size:14px;color:var(--text-faint);}
+  .stand-pos.p1{color:#C8960A;}.stand-pos.p2{color:#888;}.stand-pos.p3{color:#A0522D;}
+
+  /* Poule */
+  .poule-invoer{background:var(--sand-light);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;border:1px solid var(--sand-dark);}
+  .poule-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;}
+  .poule-row input,.poule-row select{font-family:var(--sans);font-size:13px;padding:6px 10px;border:1px solid var(--sand-dark);border-radius:6px;background:var(--card-bg);color:var(--text);}
+  .score-in{width:52px;text-align:center;font-family:var(--serif);font-weight:700;}
+  .vs-label{font-family:var(--serif);font-weight:700;font-size:13px;color:var(--text-faint);}
+  .totaal-ranglijst{font-size:11px;}
+  .totaal-ranglijst td,.totaal-ranglijst th{padding:5px 4px;}
+
+  /* Spelers */
+  .empty{text-align:center;padding:2rem 0;color:var(--text-faint);font-size:13px;}
+  .speler-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--sand-dark);}
+  .speler-item:last-child{border-bottom:none;}
+  .speler-avatar{width:32px;height:32px;border-radius:50%;background:#e8ead6;color:var(--olive);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+
+  /* Loading */
+  .loading{position:fixed;inset:0;background:var(--sand);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:999;}
+  .spinner{width:36px;height:36px;border:3px solid var(--sand-dark);border-top-color:var(--olive);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* Toast */
+  .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--olive);color:var(--sand-light);padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;z-index:200;animation:fadeInUp .2s ease;box-shadow:0 4px 20px rgba(0,0,0,0.15);}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  /* Page title */
+  .page-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--olive);margin-bottom:1.25rem;}
+
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(60,58,30,0.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem;}
+  .modal{background:var(--card-bg);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2);border:1px solid var(--sand-dark);}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+  .modal-title{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--olive);}
+
+  @media(max-width:600px){
+    .metric-grid{grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1rem;}
+    .metric{padding:8px;}.metric-label{font-size:10px;}.metric-value{font-size:18px;}
+    .form-grid{grid-template-columns:1fr 1fr;}
+    th.hide-mob,td.hide-mob{display:none;}
+    .totaal-ranglijst td,.totaal-ranglijst th{padding:4px 3px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <p style="font-size:14px;color:var(--text-muted)">Gegevens laden…</p>
+</div>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="back-btn">‹ Dashboard</a>
+    <div class="logo">🏑</div>
+    <div class="header-title"><h1>Rosmalen MO12-1</h1></div>
+    <div class="header-status">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">–</span>
+    </div>
+  </div>
+</header>
+
+<div class="nav-wrap">
+  <nav class="nav" id="mainNav">
+    <button class="nav-btn active" onclick="showSection('totaal')">Totaal</button>
+    <button class="nav-btn" onclick="showSection('voorcomp')">Voorcomp.</button>
+    <button class="nav-btn" onclick="showSection('najaarscomp')">Najaarscomp.</button>
+    <button class="nav-btn" onclick="showSection('zaalcomp')">Zaalcomp.</button>
+    <button class="nav-btn" onclick="showSection('lentecomp')">Lentecomp.</button>
+    <button class="nav-btn" onclick="showSection('oefenwedstrijden')">Oefenwedstr.</button>
+    <button class="nav-btn invoer-btn" onclick="showSection('invoer')">＋ Wedstrijd</button>
+    <button class="nav-btn" onclick="showSection('spelers')">Speelsters</button>
+    <button class="nav-btn" onclick="showSection('tegenstanders')">Tegenstanders</button>
+  </nav>
+</div>
+
+<main class="main">
+  <div class="section active" id="totaal"></div>
+  <div class="section" id="voorcomp"></div>
+  <div class="section" id="najaarscomp"></div>
+  <div class="section" id="zaalcomp"></div>
+  <div class="section" id="lentecomp"></div>
+  <div class="section" id="oefenwedstrijden"></div>
+  <div class="section" id="invoer"></div>
+  <div class="section" id="spelers"></div>
+  <div class="section" id="tegenstanders"></div>
+</main>
+
+<div id="goals_modal" style="display:none" class="modal-overlay" onclick="closeGoalsModal(event)">
+  <div class="modal" id="goals_modal_inner"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+var sbClient = window.supabase.createClient(
+  'https://hvpooifxqhovskwgzpbr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g'
+);
+
+var COMPS = [
+  { id:'voorcomp', naam:'Voorcompetitie' },
+  { id:'najaarscomp', naam:'Najaarscompetitie' },
+  { id:'zaalcomp', naam:'Zaalcompetitie' },
+  { id:'lentecomp', naam:'Lentecompetitie' },
+  { id:'oefenwedstrijden', naam:'Oefenwedstrijden' }
+];
+
+var state = {
+  spelers: [],
+  wedstrijden: {},
+  poulewedstrijden: {},
+  tegenstanders: {}
+};
+var currentSection = 'totaal';
+
+async function laadAlleData() {
+  document.getElementById('statusDot').style.background = '#E8A020';
+  document.getElementById('statusText').textContent = 'Laden…';
+  try {
+    var cfgRes = await sbClient.from('mo12_config').select('*');
+    if (cfgRes.data) {
+      cfgRes.data.forEach(function(row) {
+        if (row.sleutel === 'spelers') state.spelers = row.waarde;
+        if (row.sleutel === 'tegenstanders') state.tegenstanders = row.waarde || {};
+      });
+    }
+    var wRes = await sbClient.from('mo12_wedstrijden').select('*');
+    state.wedstrijden = {};
+    if (wRes.data) wRes.data.forEach(function(w) {
+      w.goals = w.goals || [];
+      state.wedstrijden[w.id] = w;
+    });
+    var pRes = await sbClient.from('mo12_poulewedstrijden').select('*');
+    state.poulewedstrijden = {};
+    if (pRes.data) pRes.data.forEach(function(p) { state.poulewedstrijden[p.id] = p; });
+    document.getElementById('statusDot').style.background = '#5DCAA5';
+    document.getElementById('statusText').textContent = 'Live';
+  } catch(e) {
+    console.error('Laad fout:', e);
+    document.getElementById('statusDot').style.background = '#DC4B4B';
+    document.getElementById('statusText').textContent = 'Fout';
+  }
+}
+
+async function saveWedstrijd(w) {
+  var res = await sbClient.from('mo12_wedstrijden').upsert({
+    id:w.id, competitie:w.competitie, datum:w.datum,
+    thu:w.thu, teg:w.teg, dv:w.dv, dt:w.dt, goals:w.goals
+  }, { onConflict:'id' });
+  if (res.error) console.error('saveWedstrijd:', res.error);
+}
+
+async function savePouleWedstrijd(p) {
+  var res = await sbClient.from('mo12_poulewedstrijden').upsert({
+    id:p.id, competitie:p.competitie, datum:p.datum,
+    t1:p.t1, t2:p.t2, s1:p.s1, s2:p.s2
+  }, { onConflict:'id' });
+  if (res.error) console.error('savePoule:', res.error);
+}
+
+async function saveConfig() {
+  await sbClient.from('mo12_config').upsert([
+    { sleutel:'spelers', waarde:state.spelers },
+    { sleutel:'tegenstanders', waarde:state.tegenstanders }
+  ], { onConflict:'sleutel' });
+}
+
+function hideLoading() { document.getElementById('loading').style.display = 'none'; }
+
+function toast(msg) {
+  var t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(function() { t.remove(); }, 2500);
+}
+
+window.showSection = function(id) {
+  currentSection = id;
+  document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  var navIds = ['totaal','voorcomp','najaarscomp','zaalcomp','lentecomp','oefenwedstrijden','invoer','spelers','tegenstanders'];
+  var idx = navIds.indexOf(id);
+  if (idx >= 0) document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  render(id);
+}
+
+function render(id) {
+  if (id === 'totaal') renderTotaal();
+  else if (id === 'invoer') renderInvoer();
+  else if (id === 'spelers') renderSpelers();
+  else if (id === 'tegenstanders') renderTegenstanders();
+  else renderComp(id);
+}
+
+function allWedstrijden() { return Object.values(state.wedstrijden); }
+function wedstrijdenVoor(compId) { return Object.values(state.wedstrijden).filter(function(w) { return w.competitie === compId; }); }
+
+function resultaat(w) {
+  if (w.dv > w.dt) return 'W';
+  if (w.dv < w.dt) return 'V';
+  return 'G';
+}
+
+function getStats(ws) {
+  var g=0,v=0,d=0,dv=0,dt=0;
+  ws.forEach(function(w) {
+    var r = resultaat(w);
+    if(r==='W')g++; else if(r==='V')v++; else d++;
+    dv+=w.dv; dt+=w.dt;
+  });
+  return {gespeeld:ws.length,gewonnen:g,verloren:v,gelijk:d,voor:dv,tegen:dt,saldo:dv-dt,punten:g*3+d};
+}
+
+function getTopscorers(ws) {
+  var map = {};
+  ws.forEach(function(w) {
+    (w.goals||[]).forEach(function(g) {
+      if(!map[g.s]) map[g.s]={goals:0,sc:0,sb:0,assists:0};
+      map[g.s].goals++;
+      if(g.sc) map[g.s].sc++;
+      if(g.sb) map[g.s].sb++;
+      if(g.a) {
+        if(!map[g.a]) map[g.a]={goals:0,sc:0,sb:0,assists:0};
+        map[g.a].assists++;
+      }
+    });
+  });
+  return Object.entries(map).sort(function(a,b){ return b[1].goals-a[1].goals || b[1].assists-a[1].assists; });
+}
+
+function htmlMetrics(s) {
+  var saldoClass = s.saldo > 0 ? 'green' : s.saldo < 0 ? 'red' : '';
+  return '<div class="metric-grid">' +
+    '<div class="metric"><div class="metric-label">Gespeeld</div><div class="metric-value">' + s.gespeeld + '</div></div>' +
+    '<div class="metric"><div class="metric-label">Gewonnen</div><div class="metric-value green">' + s.gewonnen + '</div></div>' +
+    '<div class="metric"><div class="metric-label">Gelijk</div><div class="metric-value amber">' + s.gelijk + '</div></div>' +
+    '<div class="metric"><div class="metric-label">Verloren</div><div class="metric-value red">' + s.verloren + '</div></div>' +
+    '<div class="metric"><div class="metric-label">Doelsaldo</div><div class="metric-value ' + saldoClass + '">' + (s.saldo>0?'+':'') + s.saldo + '</div><div class="metric-sub">' + s.voor + '–' + s.tegen + '</div></div>' +
+    '<div class="metric"><div class="metric-label">Voor</div><div class="metric-value green">' + s.voor + '</div></div>' +
+    '<div class="metric"><div class="metric-label">Tegen</div><div class="metric-value red">' + s.tegen + '</div></div>' +
+    '</div>';
+}
+
+function getPoulewedstrijden(compId) {
+  return Object.values(state.poulewedstrijden || {}).filter(function(w) { return w.competitie === compId; });
+}
+
+function berekenStand(compId) {
+  var stand = {};
+  var ROSMALEN = 'Rosmalen MO12-1';
+  wedstrijdenVoor(compId).forEach(function(w) {
+    if(!stand[ROSMALEN]) stand[ROSMALEN]={naam:ROSMALEN,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:true};
+    if(!stand[w.teg]) stand[w.teg]={naam:w.teg,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:false};
+    stand[ROSMALEN].g++; stand[w.teg].g++;
+    stand[ROSMALEN].dv+=w.dv; stand[ROSMALEN].dt+=w.dt;
+    stand[w.teg].dv+=w.dt; stand[w.teg].dt+=w.dv;
+    if(w.dv>w.dt){stand[ROSMALEN].w++;stand[ROSMALEN].pts+=3;stand[w.teg].v++;}
+    else if(w.dv<w.dt){stand[w.teg].w++;stand[w.teg].pts+=3;stand[ROSMALEN].v++;}
+    else{stand[ROSMALEN].gl++;stand[ROSMALEN].pts+=1;stand[w.teg].gl++;stand[w.teg].pts+=1;}
+  });
+  getPoulewedstrijden(compId).forEach(function(w) {
+    if(!stand[w.t1]) stand[w.t1]={naam:w.t1,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:false};
+    if(!stand[w.t2]) stand[w.t2]={naam:w.t2,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:false};
+    stand[w.t1].g++;stand[w.t2].g++;
+    stand[w.t1].dv+=w.s1;stand[w.t1].dt+=w.s2;
+    stand[w.t2].dv+=w.s2;stand[w.t2].dt+=w.s1;
+    if(w.s1>w.s2){stand[w.t1].w++;stand[w.t1].pts+=3;stand[w.t2].v++;}
+    else if(w.s1<w.s2){stand[w.t2].w++;stand[w.t2].pts+=3;stand[w.t1].v++;}
+    else{stand[w.t1].gl++;stand[w.t1].pts+=1;stand[w.t2].gl++;stand[w.t2].pts+=1;}
+  });
+  return Object.values(stand).sort(function(a,b){return b.pts-a.pts||(b.dv-b.dt)-(a.dv-a.dt)||b.dv-a.dv;});
+}
+
+function htmlRanglijst(compId) {
+  var stand = berekenStand(compId);
+  if(!stand.length) return '<p class="empty">Nog geen wedstrijden.</p>';
+  return '<table class="stand-table"><thead><tr><th>#</th><th>Team</th><th>G</th><th>W</th><th>Gl</th><th>V</th><th>Pts</th><th>Saldo</th><th class="hide-mob">Voor</th><th class="hide-mob">Tegen</th></tr></thead><tbody>' +
+    stand.map(function(t,i) {
+      var posClass = i===0?'p1':i===1?'p2':i===2?'p3':'';
+      var saldo = t.dv-t.dt;
+      return '<tr class="' + (t.rosmalen?'rosmalen-row':'') + '">' +
+        '<td class="stand-pos ' + posClass + '">' + (i+1) + '</td>' +
+        '<td style="font-weight:' + (t.rosmalen?'700':'400') + ';color:' + (t.rosmalen?'var(--olive)':'var(--text)') + '">' + t.naam + '</td>' +
+        '<td>' + t.g + '</td><td>' + t.w + '</td><td>' + t.gl + '</td><td>' + t.v + '</td>' +
+        '<td style="font-family:var(--serif);font-weight:700">' + t.pts + '</td>' +
+        '<td style="color:' + (saldo>=0?'var(--green)':'var(--red)') + '">' + (saldo>=0?'+':'') + saldo + '</td>' +
+        '<td class="hide-mob">' + t.dv + '</td><td class="hide-mob">' + t.dt + '</td>' +
+        '</tr>';
+    }).join('') + '</tbody></table>';
+}
+
+function htmlRanglijstCompact(compId) {
+  var stand = berekenStand(compId);
+  if(!stand.length) return '<p class="empty" style="font-size:12px">Nog geen wedstrijden.</p>';
+  return '<table class="stand-table totaal-ranglijst"><thead><tr><th>#</th><th>Team</th><th class="hide-mob">G</th><th>Pts</th><th>Saldo</th></tr></thead><tbody>' +
+    stand.map(function(t,i) {
+      var posClass = i===0?'p1':i===1?'p2':i===2?'p3':'';
+      var saldo = t.dv-t.dt;
+      return '<tr class="' + (t.rosmalen?'rosmalen-row':'') + '">' +
+        '<td class="stand-pos ' + posClass + '">' + (i+1) + '</td>' +
+        '<td style="font-weight:' + (t.rosmalen?'700':'400') + ';color:' + (t.rosmalen?'var(--olive)':'var(--text)') + ';font-size:12px">' + t.naam + '</td>' +
+        '<td class="hide-mob">' + t.g + '</td>' +
+        '<td style="font-family:var(--serif);font-weight:700">' + t.pts + '</td>' +
+        '<td style="color:' + (saldo>=0?'var(--green)':'var(--red)') + '">' + (saldo>=0?'+':'') + saldo + '</td>' +
+        '</tr>';
+    }).join('') + '</tbody></table>';
+}
+
+function htmlAlleWedstrijden(compId) {
+  var eigen = wedstrijdenVoor(compId);
+  var poule = getPoulewedstrijden(compId);
+  var alles = [];
+  eigen.forEach(function(w){alles.push({datum:w.datum||'',soort:'eigen',data:w});});
+  poule.forEach(function(w){alles.push({datum:w.datum||'',soort:'poule',data:w});});
+  alles.sort(function(a,b){return b.datum.localeCompare(a.datum);});
+  if(!alles.length) return '<p class="empty">Nog geen wedstrijden ingevoerd.</p>';
+  return '<table><thead><tr><th>Datum</th><th>Wedstrijd</th><th>Uitslag</th><th class="hide-mob">R</th><th class="hide-mob">Scorers</th><th></th></tr></thead><tbody>' +
+    alles.map(function(item) {
+      var w = item.data;
+      if(item.soort==='eigen') {
+        var r = resultaat(w);
+        var matchLabel = w.thu==='T'
+          ? '<span style="color:var(--olive);font-weight:600">Rosmalen</span> vs ' + w.teg
+          : w.teg + ' vs <span style="color:var(--olive);font-weight:600">Rosmalen</span>';
+        var uitslag = w.thu==='T' ? (w.dv + '–' + w.dt) : (w.dt + '–' + w.dv);
+        var scorers = (w.goals||[]).map(function(g) {
+          return g.s +
+            (g.sc?'<span class="badge badge-sc" style="margin-left:3px">SC</span>':'') +
+            (g.sb?'<span class="badge badge-sc" style="margin-left:3px;background:#EEE6FB;color:#5B1FA3">SB</span>':'') +
+            (g.a?'<span style="color:var(--text-faint);font-size:11px"> ▸'+g.a+'</span>':'');
+        }).join(', ');
+        return '<tr><td style="white-space:nowrap;font-size:12px">' + (w.datum||'–') + '</td>' +
+          '<td style="font-size:13px">' + matchLabel + '</td>' +
+          '<td><span class="score">' + uitslag + '</span></td>' +
+          '<td class="hide-mob"><span class="badge badge-' + r + '">' + r + '</span></td>' +
+          '<td class="hide-mob" style="font-size:12px;max-width:180px;line-height:1.5">' + (scorers||'–') + '</td>' +
+          '<td style="display:flex;gap:4px">' +
+          '<button class="btn-sm" onclick="openGoalsModal(\'' + w.id + '\')" title="Doelpunten">⚽</button>' +
+          '<button class="btn-danger" onclick="deleteWedstrijd(\'' + w.id + '\')">✕</button>' +
+          '</td></tr>';
+      } else {
+        return '<tr style="color:var(--text-muted)"><td style="white-space:nowrap;font-size:12px">' + (w.datum||'–') + '</td>' +
+          '<td style="font-size:13px">' + w.t1 + ' vs ' + w.t2 + '</td>' +
+          '<td><span class="score" style="font-size:14px">' + w.s1 + '–' + w.s2 + '</span></td>' +
+          '<td class="hide-mob"><span style="font-size:11px;color:var(--text-faint)">poule</span></td>' +
+          '<td class="hide-mob"></td>' +
+          '<td><button class="btn-danger" onclick="deletePouleWedstrijd(\'' + w.id + '\',\'' + w.competitie + '\')">✕</button></td></tr>';
+      }
+    }).join('') + '</tbody></table>';
+}
+
+function htmlTopscorers(topscore) {
+  if(!topscore.length) return '<p class="empty">Geen doelpunten geregistreerd.</p>';
+  return '<table><thead><tr><th>#</th><th>Speelster</th><th>Goals</th><th>SC</th><th>SB</th><th>Assists</th></tr></thead><tbody>' +
+    topscore.map(function(entry,i) {
+      var naam=entry[0],s=entry[1];
+      return '<tr><td class="rank">' + (i+1) + '</td>' +
+        '<td style="font-weight:500">' + naam + '</td>' +
+        '<td><span style="font-family:var(--serif);font-size:15px;font-weight:700">' + s.goals + '</span></td>' +
+        '<td>' + (s.sc?'<span class="badge badge-sc">'+s.sc+'</span>':'–') + '</td>' +
+        '<td>' + (s.sb?'<span class="badge badge-sc" style="background:#EEE6FB;color:#5B1FA3">'+s.sb+'</span>':'–') + '</td>' +
+        '<td>' + (s.assists?'<span class="badge badge-assist">'+s.assists+'</span>':'–') + '</td>' +
+        '</tr>';
+    }).join('') + '</tbody></table>';
+}
+
+function htmlPouleInvoer(compId) {
+  var tegList = (state.tegenstanders[compId] || []).slice().sort();
+  var allTeams = ['Rosmalen MO11-1'].concat(tegList);
+  function teamOpts(sel) {
+    return ['<option value="">– team –'].concat(allTeams.map(function(t){ return '<option value="'+t+'"'+(t===sel?' selected':'')+'>'+t+'</option>'; })).join('');
+  }
+  var today = (function(){ var n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); })();
+  return '<div class="poule-invoer"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);margin-bottom:8px">Uitslag invoeren</div>' +
+    '<div class="poule-row">' +
+    '<input type="date" id="pw_datum_'+compId+'" value="'+today+'">' +
+    '<select id="pw_t1_'+compId+'" style="flex:1;min-width:100px">'+teamOpts('')+'</select>' +
+    '<input type="number" class="score-in" id="pw_s1_'+compId+'" value="0" min="0">' +
+    '<span class="vs-label">–</span>' +
+    '<input type="number" class="score-in" id="pw_s2_'+compId+'" value="0" min="0">' +
+    '<select id="pw_t2_'+compId+'" style="flex:1;min-width:100px">'+teamOpts('')+'</select>' +
+    '<button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="slaPouleOp(\''+compId+'\')">Opslaan</button>' +
+    '</div></div>';
+}
+
+function renderComp(id) {
+  var comp = COMPS.find(function(c){return c.id===id;});
+  var ws = wedstrijdenVoor(id);
+  var stats = getStats(ws);
+  var topscore = getTopscorers(ws);
+  document.getElementById(id).innerHTML =
+    '<div class="comp-header"><div><div class="comp-sub">'+ws.length+' wedstrijd'+(ws.length!==1?'en':'')+'</div><div class="comp-title">'+comp.naam+'</div></div></div>' +
+    (id!=='oefenwedstrijden' ? '<div class="card" style="margin-bottom:14px"><div class="card-header" style="margin-bottom:.75rem"><div class="card-title">Ranglijst</div><button class="btn-sm" onclick="togglePouleInvoer(\''+id+'\')">＋ Poule-uitslag</button></div><div id="poule_invoer_'+id+'" style="display:none;margin-bottom:12px">'+htmlPouleInvoer(id)+'</div>'+htmlRanglijst(id)+'</div>' : '') +
+    htmlMetrics(stats) +
+    '<div class="tab-bar"><button class="tab-btn active" id="tab_w_'+id+'" onclick="switchTab(\''+id+'\',\'w\')">Wedstrijden</button><button class="tab-btn" id="tab_t_'+id+'" onclick="switchTab(\''+id+'\',\'t\')">Topscoorders</button></div>' +
+    '<div class="card" id="pane_w_'+id+'">' + htmlAlleWedstrijden(id) + '</div>' +
+    '<div class="card" id="pane_t_'+id+'" style="display:none">' + htmlTopscorers(topscore) + '</div>';
+}
+
+window.switchTab = function(id, pane) {
+  ['w','t'].forEach(function(p) {
+    document.getElementById('tab_'+p+'_'+id).classList.toggle('active', p===pane);
+    document.getElementById('pane_'+p+'_'+id).style.display = p===pane?'':'none';
+  });
+}
+
+window.togglePouleInvoer = function(compId) {
+  var el = document.getElementById('poule_invoer_'+compId);
+  el.style.display = el.style.display==='none' ? '' : 'none';
+}
+
+window.slaPouleOp = async function(compId) {
+  var t1 = document.getElementById('pw_t1_'+compId).value.trim();
+  var t2 = document.getElementById('pw_t2_'+compId).value.trim();
+  var s1 = parseInt(document.getElementById('pw_s1_'+compId).value)||0;
+  var s2 = parseInt(document.getElementById('pw_s2_'+compId).value)||0;
+  if(!t1||!t2){toast('Vul beide teamnamen in');return;}
+  if(t1===t2){toast('Teams mogen niet hetzelfde zijn');return;}
+  var id = 'pw_'+Date.now();
+  var datum = document.getElementById('pw_datum_'+compId).value||'';
+  var pw = {id:id,competitie:compId,datum:datum,t1:t1,t2:t2,s1:s1,s2:s2};
+  state.poulewedstrijden[id] = pw;
+  await savePouleWedstrijd(pw);
+  toast('Uitslag opgeslagen ✓');
+  renderComp(compId);
+}
+
+window.deletePouleWedstrijd = async function(id, compId) {
+  if(!confirm('Uitslag verwijderen?')) return;
+  delete state.poulewedstrijden[id];
+  await sbClient.from('mo12_poulewedstrijden').delete().eq('id',id);
+  toast('Uitslag verwijderd');
+  renderComp(compId);
+}
+
+function renderTotaal() {
+  var all = allWedstrijden();
+  var stats = getStats(all);
+  var topscore = getTopscorers(all);
+  var rangItems = COMPS.filter(function(c){return c.id!=='oefenwedstrijden';}).map(function(comp) {
+    var stand = berekenStand(comp.id);
+    var ws = wedstrijdenVoor(comp.id);
+    var inhoud = (!stand.length&&!ws.length) ? '<p class="empty" style="font-size:12px">Nog geen wedstrijden.</p>' : htmlRanglijstCompact(comp.id);
+    return '<div class="card" style="min-width:0"><div class="card-header" style="margin-bottom:.75rem"><div class="card-title" style="cursor:pointer;text-decoration:underline;text-underline-offset:3px" onclick="showSection(\''+comp.id+'\')">'+comp.naam+'</div></div>'+inhoud+'</div>';
+  });
+  var ranglijsten = '';
+  for(var i=0;i<rangItems.length;i+=2) {
+    var row = rangItems.slice(i,i+2);
+    ranglijsten += '<div style="display:grid;grid-template-columns:repeat('+row.length+',1fr);gap:12px;margin-bottom:12px">'+row.join('')+'</div>';
+  }
+  document.getElementById('totaal').innerHTML =
+    '<div class="page-title">Totaal overzicht</div>' +
+    htmlMetrics(stats) +
+    ranglijsten +
+    '<div class="card"><div class="card-header"><div class="card-title">Topscoorders — alle competities</div></div>' + htmlTopscorers(topscore) + '</div>';
+}
+
+function renderInvoer() {
+  var compOpts = COMPS.map(function(c){return '<option value="'+c.id+'">'+c.naam+'</option>';}).join('');
+  var today = (function(){ var n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); })();
+  document.getElementById('invoer').innerHTML =
+    '<div class="page-title">Wedstrijd invoeren</div><div class="card">' +
+    '<div class="form-section"><div class="form-section-title">Wedstrijd details</div>' +
+    '<div class="form-grid">' +
+    '<div class="form-group"><label>Competitie</label><select id="f_comp" onchange="updateTegenstanders()">'+compOpts+'</select></div>' +
+    '<div class="form-group"><label>Datum</label><input type="date" id="f_datum" value="'+today+'"></div>' +
+    '<div class="form-group"><label>Thuis / Uit</label><select id="f_thu"><option value="T">Thuis</option><option value="U">Uit</option></select></div>' +
+    '<div class="form-group"><label>Tegenstander</label><select id="f_teg" onchange="updateTegenstander()"><option value="">– selecteer tegenstander –</option></select></div>' +
+    '<div class="form-group"><label>Doelpunten voor</label><input type="number" id="f_dv" min="0" value="0"></div>' +
+    '<div class="form-group"><label>Doelpunten tegen</label><input type="number" id="f_dt" min="0" value="0"></div>' +
+    '</div></div>' +
+    '<div class="form-section"><div class="form-section-title">Doelpunten registreren</div>' +
+    '<div id="goals_container"></div>' +
+    '<button class="btn-sm" onclick="addGoalRow()">+ doelpunt toevoegen</button></div>' +
+    '<button class="btn-primary" onclick="slaOp()">Wedstrijd opslaan</button></div>';
+  updateTegenstanders();
+}
+
+window.addGoalRow = function() {
+  var spOpts = '<option value="">– scorende speelster –</option>' + state.spelers.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+  var asOpts = '<option value="">Assist: geen</option>' + state.spelers.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+  var id = 'g_'+Date.now();
+  var div = document.createElement('div'); div.className='goal-row'; div.id=id;
+  div.innerHTML = '<select class="g_sp">'+spOpts+'</select>' +
+    '<label class="sc-toggle"><input type="checkbox" class="g_sc"> Strafcorner</label>' +
+    '<label class="sc-toggle"><input type="checkbox" class="g_sb"> Strafbal</label>' +
+    '<select class="g_as">'+asOpts+'</select>' +
+    '<button class="btn-danger" onclick="document.getElementById(\''+id+'\').remove()">✕</button>';
+  document.getElementById('goals_container').appendChild(div);
+}
+
+window.slaOp = async function() {
+  var teg = document.getElementById('f_teg').value.trim();
+  if(!teg){toast('Vul een tegenstander in!');return;}
+  var goals = [];
+  document.querySelectorAll('.goal-row').forEach(function(row) {
+    var sp = row.querySelector('.g_sp').value;
+    var sc = row.querySelector('.g_sc').checked;
+    var sb = row.querySelector('.g_sb').checked;
+    var as_ = row.querySelector('.g_as').value;
+    if(sp) goals.push({s:sp,sc:sc,sb:sb,a:as_||null});
+  });
+  var id = 'w_'+Date.now();
+  var w = {id:id,competitie:document.getElementById('f_comp').value,datum:document.getElementById('f_datum').value,thu:document.getElementById('f_thu').value,teg:teg,dv:parseInt(document.getElementById('f_dv').value)||0,dt:parseInt(document.getElementById('f_dt').value)||0,goals:goals};
+  state.wedstrijden[id] = w;
+  await saveWedstrijd(w);
+  toast('Wedstrijd opgeslagen ✓');
+  showSection(w.competitie);
+}
+
+window.deleteWedstrijd = async function(id) {
+  if(!confirm('Wedstrijd verwijderen?')) return;
+  var comp = state.wedstrijden[id] ? state.wedstrijden[id].competitie : null;
+  delete state.wedstrijden[id];
+  await sbClient.from('mo12_wedstrijden').delete().eq('id',id);
+  toast('Wedstrijd verwijderd');
+  if(comp) showSection(comp);
+}
+
+window.updateTegenstanders = function() {
+  var compId = document.getElementById('f_comp') ? document.getElementById('f_comp').value : null;
+  if(!compId) return;
+  var sel = document.getElementById('f_teg');
+  if(!sel) return;
+  var lijst = (state.tegenstanders[compId]||[]).slice().sort();
+  sel.innerHTML = '<option value="">– selecteer tegenstander –</option>' +
+    lijst.map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join('') +
+    '<option value="__nieuw__">＋ Nieuwe tegenstander toevoegen…</option>';
+}
+
+window.updateTegenstander = function() {
+  var sel = document.getElementById('f_teg');
+  if(sel.value==='__nieuw__') {
+    var naam = prompt('Naam nieuwe tegenstander:');
+    if(naam&&naam.trim()) {
+      voegTegenstanderToe(document.getElementById('f_comp').value, naam.trim(), sel);
+    } else { sel.value=''; }
+  }
+}
+
+async function voegTegenstanderToe(compId, naam, sel) {
+  if(!state.tegenstanders[compId]) state.tegenstanders[compId]=[];
+  if(!state.tegenstanders[compId].includes(naam)) {
+    state.tegenstanders[compId].push(naam);
+    await saveConfig();
+    toast(naam+' toegevoegd');
+  }
+  updateTegenstanders();
+  if(sel) sel.value = naam;
+}
+
+function renderSpelers() {
+  document.getElementById('spelers').innerHTML =
+    '<div class="page-title">Speelsters</div><div class="card">' +
+    '<div style="display:flex;gap:8px;margin-bottom:1rem">' +
+    '<input type="text" id="new_sp" placeholder="Naam nieuwe speelster" style="flex:1;font-family:var(--sans);font-size:14px;padding:9px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none">' +
+    '<button class="btn-primary" onclick="addSpeler()">Toevoegen</button></div>' +
+    '<div id="speler_list">' +
+    state.spelers.map(function(s,i) {
+      return '<div class="speler-item"><div style="display:flex;align-items:center;gap:10px"><div class="speler-avatar">'+s.slice(0,2).toUpperCase()+'</div><span style="font-weight:500">'+s+'</span></div><button class="btn-danger" onclick="deleteSpeler('+i+')">✕</button></div>';
+    }).join('') + '</div></div>';
+}
+
+window.addSpeler = async function() {
+  var n = document.getElementById('new_sp').value.trim();
+  if(!n) return;
+  state.spelers.push(n);
+  await saveConfig();
+  toast(n+' toegevoegd');
+  renderSpelers();
+}
+
+window.deleteSpeler = async function(i) {
+  if(!confirm(state.spelers[i]+' verwijderen?')) return;
+  state.spelers.splice(i,1);
+  await saveConfig();
+  renderSpelers();
+}
+
+function htmlTegstandBeheer() {
+  return COMPS.filter(function(c){return c.id!=='oefenwedstrijden';}).map(function(comp) {
+    var lijst = (state.tegenstanders[comp.id]||[]).slice().sort();
+    return '<div style="margin-bottom:1.25rem"><div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:8px">'+comp.naam+'</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:8px">' +
+      '<input type="text" id="new_teg_'+comp.id+'" placeholder="Naam tegenstander" style="flex:1;font-family:var(--sans);font-size:14px;padding:8px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none">' +
+      '<button class="btn-primary" style="font-size:13px;padding:8px 14px" onclick="addTegenstander(\''+comp.id+'\')">Toevoegen</button></div>' +
+      '<div>' + (lijst.length ? lijst.map(function(t) {
+        return '<div class="speler-item">' +
+          '<div style="display:flex;align-items:center;gap:10px"><div class="speler-avatar" style="background:var(--amber-light);color:var(--amber)">'+t.slice(0,2).toUpperCase()+'</div><span style="font-weight:500">'+t+'</span></div>' +
+          '<div style="display:flex;gap:6px"><button class="btn-sm" onclick="hernoem(\''+comp.id+'\',\''+t.replace(/'/g,"\\'")+'\')" >✏️</button><button class="btn-danger" onclick="deleteTegenstander(\''+comp.id+'\',\''+t.replace(/'/g,"\\'")+'\')">✕</button></div>' +
+          '</div>';
+      }).join('') : '<p style="font-size:13px;color:var(--text-faint);padding:6px 0">Nog geen tegenstanders ingevoerd.</p>') +
+      '</div></div>';
+  }).join('');
+}
+
+function renderTegenstanders() {
+  document.getElementById('tegenstanders').innerHTML = '<div class="page-title">Tegenstanders</div><div class="card">' + htmlTegstandBeheer() + '</div>';
+}
+
+window.addTegenstander = async function(compId) {
+  var input = document.getElementById('new_teg_'+compId);
+  var naam = input.value.trim();
+  if(!naam) return;
+  if(!state.tegenstanders[compId]) state.tegenstanders[compId]=[];
+  if(state.tegenstanders[compId].includes(naam)){toast('Al in de lijst');return;}
+  state.tegenstanders[compId].push(naam);
+  await saveConfig();
+  toast(naam+' toegevoegd');
+  renderTegenstanders();
+}
+
+window.deleteTegenstander = async function(compId, naam) {
+  if(!confirm(naam+' verwijderen?')) return;
+  state.tegenstanders[compId] = (state.tegenstanders[compId]||[]).filter(function(t){return t!==naam;});
+  await saveConfig();
+  toast(naam+' verwijderd');
+  renderTegenstanders();
+}
+
+window.hernoem = async function(compId, oudNaam) {
+  var nieuwNaam = prompt('Nieuwe naam voor "'+oudNaam+'":', oudNaam);
+  if(!nieuwNaam||!nieuwNaam.trim()||nieuwNaam.trim()===oudNaam) return;
+  var n = nieuwNaam.trim();
+  var idx = (state.tegenstanders[compId]||[]).indexOf(oudNaam);
+  if(idx!==-1) state.tegenstanders[compId][idx] = n;
+  Object.values(state.wedstrijden).forEach(function(w){ if(w.competitie===compId&&w.teg===oudNaam) w.teg=n; });
+  Object.values(state.poulewedstrijden||{}).forEach(function(w){ if(w.competitie===compId){if(w.t1===oudNaam)w.t1=n;if(w.t2===oudNaam)w.t2=n;} });
+  await saveConfig();
+  var wUpdates = Object.values(state.wedstrijden).filter(function(w){return w.competitie===compId&&w.teg===n;});
+  for(var i=0;i<wUpdates.length;i++) await saveWedstrijd(wUpdates[i]);
+  var pUpdates = Object.values(state.poulewedstrijden||{}).filter(function(w){return w.competitie===compId&&(w.t1===n||w.t2===n);});
+  for(var j=0;j<pUpdates.length;j++) await savePouleWedstrijd(pUpdates[j]);
+  toast('"'+oudNaam+'" hernoemd naar "'+n+'"');
+  renderTegenstanders();
+}
+
+window.openGoalsModal = function(wid) {
+  var w = state.wedstrijden[wid];
+  if(!w) return;
+  function spOpts(sel) {
+    return '<option value="">– speelster –</option>' + state.spelers.map(function(s){return '<option value="'+s+'"'+(s===sel?' selected':'')+'>'+s+'</option>';}).join('');
+  }
+  function asOpts(sel) {
+    return '<option value="">Assist: geen</option>' + state.spelers.map(function(s){return '<option value="'+s+'"'+(s===sel?' selected':'')+'>'+s+'</option>';}).join('');
+  }
+  var goalsHtml = (w.goals||[]).map(function(g,i) {
+    return '<div class="goal-row" id="mg_'+i+'">' +
+      '<select class="g_sp">'+spOpts(g.s)+'</select>' +
+      '<label class="sc-toggle"><input type="checkbox" class="g_sc"'+(g.sc?' checked':'')+'>SC</label>' +
+      '<label class="sc-toggle"><input type="checkbox" class="g_sb"'+(g.sb?' checked':'')+'>SB</label>' +
+      '<select class="g_as">'+asOpts(g.a||'')+'</select>' +
+      '<button class="btn-danger" onclick="this.closest(\'.goal-row\').remove()">✕</button></div>';
+  }).join('');
+  document.getElementById('goals_modal_inner').innerHTML =
+    '<div class="modal-header"><div class="modal-title">'+(w.datum||'')+' — '+w.teg+' ('+w.dv+'–'+w.dt+')</div>' +
+    '<button class="btn-danger" onclick="closeGoalsModal()">✕</button></div>' +
+    '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);margin-bottom:10px">Doelpunten Rosmalen</div>' +
+    '<div id="modal_goals">'+goalsHtml+'</div>' +
+    '<button class="btn-sm" style="margin-bottom:1rem" onclick="addModalGoalRow(\''+wid+'\')">+ doelpunt toevoegen</button><br>' +
+    '<button class="btn-primary" onclick="saveGoalsModal(\''+wid+'\')">Opslaan</button>';
+  document.getElementById('goals_modal').style.display = 'flex';
+}
+
+window.addModalGoalRow = function(wid) {
+  var spOpts = '<option value="">– speelster –</option>' + state.spelers.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+  var asOpts = '<option value="">Assist: geen</option>' + state.spelers.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+  var id = 'mg_'+Date.now();
+  var div = document.createElement('div'); div.className='goal-row'; div.id=id;
+  div.innerHTML = '<select class="g_sp">'+spOpts+'</select>' +
+    '<label class="sc-toggle"><input type="checkbox" class="g_sc">SC</label>' +
+    '<label class="sc-toggle"><input type="checkbox" class="g_sb">SB</label>' +
+    '<select class="g_as">'+asOpts+'</select>' +
+    '<button class="btn-danger" onclick="this.closest(\'.goal-row\').remove()">✕</button>';
+  document.getElementById('modal_goals').appendChild(div);
+}
+
+window.saveGoalsModal = async function(wid) {
+  var goals = [];
+  document.querySelectorAll('#modal_goals .goal-row').forEach(function(row) {
+    var sp = row.querySelector('.g_sp').value;
+    var sc = row.querySelector('.g_sc').checked;
+    var sb = row.querySelector('.g_sb').checked;
+    var as_ = row.querySelector('.g_as').value;
+    if(sp) goals.push({s:sp,sc:sc,sb:sb,a:as_||null});
+  });
+  state.wedstrijden[wid].goals = goals;
+  await saveWedstrijd(state.wedstrijden[wid]);
+  toast('Doelpunten opgeslagen ✓');
+  document.getElementById('goals_modal').style.display = 'none';
+  render(currentSection);
+}
+
+window.closeGoalsModal = function(e) {
+  if(e&&e.target!==document.getElementById('goals_modal')) return;
+  document.getElementById('goals_modal').style.display = 'none';
+}
+
+async function init() {
+  await laadAlleData();
+  hideLoading();
+  render(currentSection);
+}
+
+init();
+</script>
+</body>
+</html>
