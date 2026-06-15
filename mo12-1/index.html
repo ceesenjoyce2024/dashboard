@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -228,6 +227,7 @@ var state = {
   tegenstanders: {}
 };
 var currentSection = 'totaal';
+var isLoggedIn = false;
 
 async function laadAlleData() {
   document.getElementById('statusDot').style.background = '#E8A020';
@@ -450,8 +450,8 @@ function htmlAlleWedstrijden(compId) {
           '<td class="hide-mob"><span class="badge badge-' + r + '">' + r + '</span></td>' +
           '<td class="hide-mob" style="font-size:12px;max-width:180px;line-height:1.5">' + (scorers||'–') + '</td>' +
           '<td style="display:flex;gap:4px">' +
-          '<button class="btn-sm" onclick="openGoalsModal(\'' + w.id + '\')" title="Doelpunten">⚽</button>' +
-          '<button class="btn-danger" onclick="deleteWedstrijd(\'' + w.id + '\')">✕</button>' +
+          (isLoggedIn ? '<button class="btn-sm" onclick="openGoalsModal(\'' + w.id + '\')" title="Doelpunten">⚽</button>' : '') +
+          (isLoggedIn ? '<button class="btn-danger" onclick="deleteWedstrijd(\'' + w.id + '\')">✕</button>' : '') +
           '</td></tr>';
       } else {
         return '<tr style="color:var(--text-muted)"><td style="white-space:nowrap;font-size:12px">' + (w.datum||'–') + '</td>' +
@@ -459,7 +459,7 @@ function htmlAlleWedstrijden(compId) {
           '<td><span class="score" style="font-size:14px">' + w.s1 + '–' + w.s2 + '</span></td>' +
           '<td class="hide-mob"><span style="font-size:11px;color:var(--text-faint)">poule</span></td>' +
           '<td class="hide-mob"></td>' +
-          '<td><button class="btn-danger" onclick="deletePouleWedstrijd(\'' + w.id + '\',\'' + w.competitie + '\')">✕</button></td></tr>';
+          '<td>' + (isLoggedIn ? '<button class="btn-danger" onclick="deletePouleWedstrijd(\'' + w.id + '\',\'' + w.competitie + '\')">✕</button>' : '') + '</td></tr>';
       }
     }).join('') + '</tbody></table>';
 }
@@ -505,7 +505,7 @@ function renderComp(id) {
   var topscore = getTopscorers(ws);
   document.getElementById(id).innerHTML =
     '<div class="comp-header"><div><div class="comp-sub">'+ws.length+' wedstrijd'+(ws.length!==1?'en':'')+'</div><div class="comp-title">'+comp.naam+'</div></div></div>' +
-    (id!=='oefenwedstrijden' ? '<div class="card" style="margin-bottom:14px"><div class="card-header" style="margin-bottom:.75rem"><div class="card-title">Ranglijst</div><button class="btn-sm" onclick="togglePouleInvoer(\''+id+'\')">＋ Poule-uitslag</button></div><div id="poule_invoer_'+id+'" style="display:none;margin-bottom:12px">'+htmlPouleInvoer(id)+'</div>'+htmlRanglijst(id)+'</div>' : '') +
+    (id!=='oefenwedstrijden' ? '<div class="card" style="margin-bottom:14px"><div class="card-header" style="margin-bottom:.75rem"><div class="card-title">Ranglijst</div>' + (isLoggedIn ? '<button class="btn-sm" onclick="togglePouleInvoer(\''+id+'\')">＋ Poule-uitslag</button>' : '') + '</div><div id="poule_invoer_'+id+'" style="display:none;margin-bottom:12px">'+(isLoggedIn?htmlPouleInvoer(id):'')+'</div>'+htmlRanglijst(id)+'</div>' : '') +
     htmlMetrics(stats) +
     '<div class="tab-bar"><button class="tab-btn active" id="tab_w_'+id+'" onclick="switchTab(\''+id+'\',\'w\')">Wedstrijden</button><button class="tab-btn" id="tab_t_'+id+'" onclick="switchTab(\''+id+'\',\'t\')">Topscoorders</button></div>' +
     '<div class="card" id="pane_w_'+id+'">' + htmlAlleWedstrijden(id) + '</div>' +
@@ -672,7 +672,7 @@ function renderSpelers() {
     '<button class="btn-primary" onclick="addSpeler()">Toevoegen</button></div>' +
     '<div id="speler_list">' +
     state.spelers.map(function(s,i) {
-      return '<div class="speler-item"><div style="display:flex;align-items:center;gap:10px"><div class="speler-avatar">'+s.slice(0,2).toUpperCase()+'</div><span style="font-weight:500">'+s+'</span></div><button class="btn-danger" onclick="deleteSpeler('+i+')">✕</button></div>';
+      return '<div class="speler-item"><div style="display:flex;align-items:center;gap:10px"><div class="speler-avatar">'+s.slice(0,2).toUpperCase()+'</div><span style="font-weight:500">'+s+'</span></div>' + (isLoggedIn ? '<button class="btn-danger" onclick="deleteSpeler('+i+')">✕</button>' : '') + '</div>';
     }).join('') + '</div></div>';
 }
 
@@ -702,7 +702,7 @@ function htmlTegstandBeheer() {
       '<div>' + (lijst.length ? lijst.map(function(t) {
         return '<div class="speler-item">' +
           '<div style="display:flex;align-items:center;gap:10px"><div class="speler-avatar" style="background:var(--amber-light);color:var(--amber)">'+t.slice(0,2).toUpperCase()+'</div><span style="font-weight:500">'+t+'</span></div>' +
-          '<div style="display:flex;gap:6px"><button class="btn-sm" onclick="hernoem(\''+comp.id+'\',\''+t.replace(/'/g,"\\'")+'\')" >✏️</button><button class="btn-danger" onclick="deleteTegenstander(\''+comp.id+'\',\''+t.replace(/'/g,"\\'")+'\')">✕</button></div>' +
+          '<div style="display:flex;gap:6px">' + (isLoggedIn ? '<button class="btn-sm" onclick="hernoem(\''+comp.id+'\',\''+t.replace(/'/g,"\\'")+'\')" >✏️</button><button class="btn-danger" onclick="deleteTegenstander(\''+comp.id+'\',\''+t.replace(/'/g,"\\'")+'\')">✕</button>' : '') + '</div>' +
           '</div>';
       }).join('') : '<p style="font-size:13px;color:var(--text-faint);padding:6px 0">Nog geen tegenstanders ingevoerd.</p>') +
       '</div></div>';
@@ -812,8 +812,17 @@ window.closeGoalsModal = function(e) {
 }
 
 async function init() {
+  var { data: { session } } = await sbClient.auth.getSession();
+  isLoggedIn = !!session;
   await laadAlleData();
   hideLoading();
+  // Verberg invoer-nav voor niet-ingelogden
+  var invoerBtn = document.querySelector('.nav-btn.invoer-btn');
+  if (invoerBtn) invoerBtn.style.display = isLoggedIn ? '' : 'none';
+  var spelersBtn = document.querySelectorAll('.nav-btn')[7];
+  var tegBtn = document.querySelectorAll('.nav-btn')[8];
+  if (spelersBtn) spelersBtn.style.display = isLoggedIn ? '' : 'none';
+  if (tegBtn) tegBtn.style.display = isLoggedIn ? '' : 'none';
   render(currentSection);
 }
 
