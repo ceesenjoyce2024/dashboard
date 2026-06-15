@@ -1,1 +1,915 @@
 
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Hartslag & Bloeddruk</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --sand:        #e8e4d9;
+      --sand-light:  #f2efe6;
+      --sand-dark:   #d8d4c6;
+      --olive:       #5c5a2e;
+      --olive-mid:   #7a7838;
+      --olive-light: #c8c89a;
+      --text:        #3d3b1e;
+      --text-muted:  #7a7860;
+      --card-bg:     #f7f4ec;
+      --red:         #b85050;
+      --red-light:   #f5eaea;
+      --blue:        #4a7aaa;
+      --blue-light:  #eaf0f7;
+      --teal:        #4a8a8a;
+      --radius:      12px;
+      --serif:       'Playfair Display', Georgia, serif;
+      --sans:        'Inter', system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--sand);
+      min-height: 100vh;
+      font-family: var(--sans);
+      color: var(--text);
+      -webkit-text-size-adjust: 100%;
+    }
+    input, button, select { font-family: inherit; }
+
+    /* ── Header ── */
+    #header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--olive);
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    #header-inner {
+      max-width: 680px; margin: 0 auto;
+      padding: 14px 16px 0;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: var(--sand-light);
+      padding: 6px 12px; border-radius: 7px;
+      font-size: 13px; cursor: pointer;
+      white-space: nowrap; margin-top: 2px;
+      text-decoration: none; display: inline-block;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.25); }
+    #header h1 {
+      font-family: var(--serif);
+      font-size: 19px; color: var(--sand-light);
+      margin: 0 0 2px; font-weight: 600;
+    }
+    #header p { font-size: 12px; color: rgba(242,239,230,0.65); margin: 0 0 10px; }
+
+    #tab-balk-wrap {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; max-width: 680px; margin: 0 auto;
+    }
+    #tab-balk-wrap::-webkit-scrollbar { display: none; }
+    #tab-balk { display: flex; padding: 0 12px; min-width: max-content; }
+    .tab-knop {
+      padding: 10px 18px; border: none;
+      border-radius: 8px 8px 0 0;
+      background: transparent;
+      color: rgba(242,239,230,0.5);
+      font-size: 14px; font-weight: 500;
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab-knop.actief {
+      background: rgba(242,239,230,0.12);
+      color: var(--sand-light);
+      border-bottom: 2px solid var(--olive-light);
+    }
+
+    /* ── Content ── */
+    #content { max-width: 680px; margin: 0 auto; padding: 20px 14px 80px; }
+
+    .kaart {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      border: 1px solid var(--sand-dark);
+      padding: 22px 20px; margin-bottom: 14px;
+    }
+    .kaart h2 {
+      font-family: var(--serif);
+      font-size: 16px; color: var(--olive);
+      margin: 0 0 18px; font-weight: 600;
+    }
+
+    label.veld-label {
+      display: block; font-size: 11px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px;
+      font-weight: 600;
+    }
+    input[type=date], input[type=number] {
+      width: 100%; padding: 11px 14px; border-radius: 9px;
+      border: 1px solid var(--sand-dark);
+      background: var(--sand-light); color: var(--text);
+      font-size: 15px; outline: none;
+      -webkit-appearance: none; appearance: none; margin-bottom: 14px;
+    }
+    input[type=date]:focus, input[type=number]:focus {
+      border-color: var(--olive-mid);
+    }
+
+    .moment-knoppen { display: flex; gap: 10px; margin-bottom: 14px; }
+    .moment-knop {
+      flex: 1; padding: 11px; border-radius: 9px; cursor: pointer;
+      font-size: 14px; font-weight: 500; transition: all 0.2s;
+      border: 1px solid var(--sand-dark);
+      background: var(--sand-light); color: var(--text-muted);
+    }
+    .moment-knop.actief {
+      border-color: var(--olive-mid);
+      background: #e8ead6; color: var(--olive);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .span-2 { grid-column: 1 / -1; }
+
+    .knop-primair {
+      width: 100%; padding: 12px; border-radius: 9px; border: none;
+      background: var(--olive); color: var(--sand-light);
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+      letter-spacing: 0.03em;
+    }
+    .knop-primair:hover { background: var(--olive-mid); }
+
+    .knop-secundair {
+      padding: 11px 18px; border-radius: 9px;
+      border: 1px solid var(--sand-dark);
+      background: transparent; color: var(--text-muted);
+      font-size: 14px; cursor: pointer;
+    }
+    .knop-gevaar {
+      flex: 1; padding: 11px; border-radius: 9px;
+      border: 1px solid #d4b8b8;
+      background: #fdf0f0; color: var(--red);
+      font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+
+    #succes-melding {
+      text-align: center; color: var(--olive-mid);
+      font-size: 14px; margin-top: 12px; display: none;
+    }
+
+    .dag-rij {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid var(--sand-dark);
+      font-size: 13px;
+    }
+
+    /* ── Week navigatie ── */
+    #week-nav {
+      background: var(--card-bg); border-radius: var(--radius);
+      border: 1px solid var(--sand-dark);
+      padding: 14px 18px; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-pijl {
+      background: var(--sand); border: 1px solid var(--sand-dark);
+      border-radius: 8px; color: var(--olive);
+      cursor: pointer; font-size: 20px;
+      width: 36px; height: 36px; line-height: 1;
+    }
+    .nav-pijl:disabled { color: var(--sand-dark); cursor: default; }
+    #week-label { font-family: var(--serif); font-size: 15px; color: var(--olive); font-weight: 600; }
+    #week-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    #dag-grid {
+      display: grid; grid-template-columns: repeat(7,1fr);
+      gap: 5px; margin-bottom: 14px;
+    }
+    .dag-kaart {
+      background: var(--card-bg); border-radius: 9px;
+      border: 1px solid var(--sand-dark);
+      padding: 6px 3px; text-align: center; min-height: 78px;
+    }
+    .dag-kaart.vandaag { background: #e8ead6; border-color: var(--olive-light); }
+    .dag-kaart.toekomst { opacity: 0.35; }
+    .dag-naam { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .dag-nr   { font-size: 15px; color: var(--olive); font-weight: 700; margin: 2px 0 4px; }
+
+    .gem-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .gem-tegel {
+      background: var(--card-bg); border-radius: 10px;
+      border: 1px solid var(--sand-dark);
+      padding: 12px 8px; text-align: center;
+    }
+    .gem-label  { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .gem-waarde { font-size: 16px; font-weight: 700; }
+
+    .grafiek-kaart {
+      background: var(--card-bg); border-radius: var(--radius);
+      border: 1px solid var(--sand-dark);
+      padding: 18px 14px 12px; margin-bottom: 14px;
+    }
+    .grafiek-kaart h3 {
+      font-size: 13px; color: var(--olive); margin: 0 0 14px;
+      font-weight: 600; letter-spacing: 0.02em;
+    }
+
+    #filter-rij { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-knop {
+      padding: 6px 14px; border-radius: 20px;
+      border: 1px solid var(--sand-dark);
+      background: var(--card-bg); color: var(--text-muted);
+      font-size: 13px; cursor: pointer;
+    }
+    .filter-knop.actief {
+      border-color: var(--olive-mid);
+      background: #e8ead6; color: var(--olive);
+    }
+
+    .meting-rij {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card-bg); border-radius: 10px;
+      border: 1px solid var(--sand-dark);
+      padding: 12px 14px; margin-bottom: 8px;
+    }
+    .meting-rij .datum { flex: 1; font-size: 13px; color: var(--olive); font-weight: 600; }
+    .meting-rij .hs    { font-size: 14px; color: var(--red); font-weight: 700; min-width: 64px; text-align:center; }
+    .meting-rij .bd    { font-size: 14px; color: var(--blue); font-weight: 700; min-width: 64px; text-align:center; }
+    .meting-rij .acties { display: flex; gap: 4px; }
+    .icoon-knop { background: none; border: none; cursor: pointer; font-size: 15px; padding: 4px; }
+
+    #dropzone {
+      border: 2px dashed var(--sand-dark); border-radius: var(--radius);
+      padding: 36px 20px; text-align: center; cursor: pointer; transition: all 0.2s;
+    }
+    #dropzone.over { border-color: var(--olive-mid); background: #e8ead6; }
+
+    .preview-tabel { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .preview-tabel th { text-align:left; padding:5px 8px; color:var(--olive); border-bottom:1px solid var(--sand-dark); }
+    .preview-tabel td { padding:5px 8px; color:var(--text-muted); border-bottom:1px solid var(--sand); }
+
+    .waarschuwing {
+      background: #fdf5e6; border-radius: 9px; padding: 10px 14px;
+      font-size: 12px; color: #8a6a20; margin-bottom: 14px;
+      border: 1px solid #e8d8a0;
+    }
+    .succes-banner {
+      background: #eaf2e8; border: 1px solid #b8d8b0; border-radius: 10px;
+      padding: 14px 18px; font-size: 14px; color: var(--olive);
+    }
+    .fout-banner {
+      background: var(--red-light); border: 1px solid #d4b8b8; border-radius: 10px;
+      padding: 14px 18px; font-size: 14px; color: var(--red);
+    }
+
+    .leeg { text-align:center; color:var(--text-muted); padding:50px 20px; font-size:14px; }
+    .detail-dag-label {
+      font-size: 12px; color: var(--text-muted); margin: 12px 0 4px;
+      text-transform: capitalize; font-weight: 600;
+    }
+    .detail-rij {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card-bg); border-radius: 9px;
+      border: 1px solid var(--sand-dark);
+      padding: 10px 12px; margin-bottom: 6px; font-size: 13px;
+    }
+
+    #fab {
+      position: fixed; right: 20px; bottom: 32px;
+      margin-bottom: env(safe-area-inset-bottom, 0px);
+      width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer;
+      background: var(--olive);
+      box-shadow: 0 4px 16px rgba(92,90,46,0.35);
+      font-size: 24px; color: var(--sand-light); z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.15s;
+    }
+    #fab:active { transform: scale(0.92); }
+
+    @media (max-width: 480px) {
+      #header h1 { font-size: 16px; }
+      #content { padding: 14px 10px 80px; }
+    }
+  </style>
+</head>
+<body>
+
+<button id="fab" onclick="toonTab('invoer');window.scrollTo(0,0);" title="Nieuwe meting">➕</button>
+
+<div id="header">
+  <div id="header-inner">
+    <a class="back-btn" href="/">‹ Dashboard</a>
+    <div>
+      <h1>❤️ Gezondheidslogboek</h1>
+      <p>Hartslag &amp; bloeddruk — ochtend &amp; avond</p>
+    </div>
+  </div>
+  <div id="tab-balk-wrap">
+    <div id="tab-balk">
+      <button class="tab-knop" onclick="toonTab('invoer')"    id="tab-invoer">Invoer</button>
+      <button class="tab-knop actief" onclick="toonTab('week')" id="tab-week">Week</button>
+      <button class="tab-knop" onclick="toonTab('grafiek')"   id="tab-grafiek">Grafieken</button>
+      <button class="tab-knop" onclick="toonTab('overzicht')" id="tab-overzicht">Overzicht</button>
+      <button class="tab-knop" onclick="toonTab('importeer')" id="tab-importeer">Importeer</button>
+    </div>
+  </div>
+</div>
+
+<div id="content">
+  <!-- INVOER -->
+  <div id="tab-invoer-inhoud" style="display:none">
+    <div class="kaart">
+      <h2 id="invoer-titel">Nieuwe meting</h2>
+      <div class="grid-2">
+        <div class="span-2">
+          <label class="veld-label">Datum</label>
+          <input type="date" id="inp-datum"/>
+        </div>
+        <div class="span-2">
+          <label class="veld-label">Moment</label>
+          <div class="moment-knoppen">
+            <button class="moment-knop actief" id="knop-ochtend" onclick="setMoment('ochtend')">🌅 Ochtend</button>
+            <button class="moment-knop"        id="knop-avond"   onclick="setMoment('avond')">🌙 Avond</button>
+          </div>
+        </div>
+        <div>
+          <label class="veld-label">Hartslag (bpm)</label>
+          <input type="number" id="inp-hartslag" placeholder="bv. 72" min="30" max="220" step="1"/>
+        </div>
+        <div></div>
+        <div>
+          <label class="veld-label">Bovendruk (mmHg)</label>
+          <input type="number" id="inp-boven" placeholder="bv. 120" min="60" max="250" step="1"/>
+        </div>
+        <div>
+          <label class="veld-label">Onderdruk (mmHg)</label>
+          <input type="number" id="inp-onder" placeholder="bv. 80" min="30" max="160" step="1"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="knop-primair" onclick="submitMeting()" id="submit-knop">Opslaan</button>
+        <button class="knop-secundair" id="annuleer-knop" onclick="annuleerEdit()" style="display:none">Annuleren</button>
+      </div>
+      <div id="succes-melding">✓ Meting opgeslagen</div>
+    </div>
+    <div id="vandaag-blok"></div>
+  </div>
+
+  <!-- WEEK -->
+  <div id="tab-week-inhoud">
+    <div id="week-nav">
+      <button class="nav-pijl" onclick="weekStap(-1)">‹</button>
+      <div style="text-align:center">
+        <div id="week-label"></div>
+        <div id="week-sub"></div>
+      </div>
+      <button class="nav-pijl" id="pijl-rechts" onclick="weekStap(1)">›</button>
+    </div>
+    <div id="dag-grid"></div>
+    <div class="gem-grid" id="week-gem"></div>
+    <div class="grafiek-kaart" id="week-hs-kaart" style="display:none">
+      <h3>❤️ Hartslag deze week</h3>
+      <canvas id="grafiek-week-hs" height="140"></canvas>
+    </div>
+    <div class="grafiek-kaart" id="week-bd-kaart" style="display:none">
+      <h3>🩺 Bloeddruk deze week</h3>
+      <canvas id="grafiek-week-bd" height="160"></canvas>
+    </div>
+    <div id="week-details"></div>
+    <div id="week-leeg" class="leeg" style="display:none">
+      Geen metingen voor deze week.<br>
+      <span style="font-size:12px">Navigeer of voer metingen in.</span>
+    </div>
+  </div>
+
+  <!-- GRAFIEKEN -->
+  <div id="tab-grafiek-inhoud" style="display:none">
+    <div id="filter-rij">
+      <button class="filter-knop"        onclick="setFilter('1m')"    id="f-1m">1 mnd</button>
+      <button class="filter-knop actief" onclick="setFilter('3m')"    id="f-3m">3 mnd</button>
+      <button class="filter-knop"        onclick="setFilter('6m')"    id="f-6m">6 mnd</button>
+      <button class="filter-knop"        onclick="setFilter('1j')"    id="f-1j">1 jaar</button>
+      <button class="filter-knop"        onclick="setFilter('2j')"    id="f-2j">2 jaar</button>
+      <button class="filter-knop"        onclick="setFilter('alles')" id="f-alles">Alles</button>
+    </div>
+    <div id="grafiek-leeg" class="leeg" style="display:none">Voer minimaal 2 metingen in om een grafiek te tonen.</div>
+    <div class="grafiek-kaart" id="grafiek-hs-kaart">
+      <h3>❤️ Hartslag (bpm)</h3>
+      <canvas id="grafiek-hs" height="180"></canvas>
+    </div>
+    <div class="grafiek-kaart" id="grafiek-bd-kaart">
+      <h3>🩺 Bloeddruk (mmHg)</h3>
+      <canvas id="grafiek-bd" height="200"></canvas>
+    </div>
+    <div class="gem-grid" id="lang-gem"></div>
+  </div>
+
+  <!-- OVERZICHT -->
+  <div id="tab-overzicht-inhoud" style="display:none">
+    <div id="overzicht-lijst"></div>
+    <div id="overzicht-leeg" class="leeg" style="display:none">Nog geen metingen ingevoerd.</div>
+  </div>
+
+  <!-- IMPORTEER -->
+  <div id="tab-importeer-inhoud" style="display:none">
+    <div class="kaart">
+      <h2>Excel importeren</h2>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 18px;line-height:1.6">
+        Verwacht kolommen: <strong style="color:var(--olive)">Datum</strong>,
+        <strong style="color:var(--olive)">Tijdstip</strong>,
+        <strong style="color:var(--olive)">Hartslag</strong>,
+        <strong style="color:var(--olive)">Bovendruk</strong>,
+        <strong style="color:var(--olive)">Onderdruk</strong>.
+      </p>
+      <div id="dropzone"
+        ondragover="event.preventDefault();this.classList.add('over')"
+        ondragleave="this.classList.remove('over')"
+        ondrop="event.preventDefault();this.classList.remove('over');verwerkBestand(event.dataTransfer.files[0])"
+        onclick="document.getElementById('bestand-input').click()">
+        <div style="font-size:34px;margin-bottom:8px">📂</div>
+        <div style="font-size:15px;color:var(--olive);font-weight:600">Sleep je Excel-bestand hierheen</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:4px">of klik om te kiezen (.xlsx, .xls, .csv)</div>
+      </div>
+      <input type="file" id="bestand-input" accept=".xlsx,.xls,.csv" style="display:none"
+        onchange="verwerkBestand(this.files[0])"/>
+    </div>
+    <div id="import-preview" style="display:none">
+      <div class="kaart">
+        <h2 id="preview-titel">Voorbeeld</h2>
+        <div style="overflow-x:auto;margin-bottom:16px">
+          <table class="preview-tabel">
+            <thead><tr><th>Datum</th><th>Moment</th><th>Hartslag</th><th>Boven</th><th>Onder</th></tr></thead>
+            <tbody id="preview-tbody"></tbody>
+          </table>
+        </div>
+        <div id="preview-overgeslagen"></div>
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          <button class="knop-primair" style="flex:1" onclick="bevestigImport('samenvoeg')">➕ Samenvoegen</button>
+          <button class="knop-gevaar"                 onclick="bevestigImport('vervang')">🔄 Vervangen</button>
+        </div>
+        <button class="knop-secundair" style="width:100%" onclick="annuleerImport()">Annuleren</button>
+      </div>
+    </div>
+    <div id="import-resultaat"></div>
+    <div class="kaart" style="margin-top:8px">
+      <div style="font-size:13px;color:var(--text-muted);font-weight:600;margin-bottom:10px">Verwacht formaat</div>
+      <table class="preview-tabel">
+        <thead><tr><th>Datum</th><th>Tijdstip</th><th>Hartslag (bpm)</th><th>Bovendruk</th><th>Onderdruk</th></tr></thead>
+        <tbody>
+          <tr><td>2025-01-10</td><td>ochtend</td><td>68</td><td>118</td><td>76</td></tr>
+          <tr><td>2025-01-10</td><td>avond</td>  <td>72</td><td>122</td><td>80</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+var sbClient = window.supabase.createClient(
+  'https://hvpooifxqhovskwgzpbr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g'
+);
+var TABEL = 'hartslag_bloeddruk';
+
+window._metingen = [];
+var huidigTab    = 'week';
+var huidigMoment = 'ochtend';
+var editId       = null;
+var weekOffset   = 0;
+var huidigFilter = '3m';
+var importData   = null;
+var grafiekHs = null, grafiekBd = null;
+var weekGrafiekHs = null, weekGrafiekBd = null;
+
+var MONTHS_NL  = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+var DAGEN_NL   = ['zo','ma','di','wo','do','vr','za'];
+var DAGEN_LANG = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+
+// Grafiek kleuren passend bij ActivBird stijl
+var CLR_HS    = '#b85050';
+var CLR_BOVEN = '#4a7aaa';
+var CLR_ONDER = '#4a8a8a';
+var CLR_GRID  = '#d8d4c6';
+var CLR_TICK  = '#7a7860';
+var TT = { backgroundColor:'#f7f4ec', borderColor:'#d8d4c6', borderWidth:1, titleColor:'#5c5a2e', bodyColor:'#3d3b1e' };
+
+document.getElementById('inp-datum').value    = new Date().toISOString().split('T')[0];
+document.getElementById('inp-hartslag').value = '60';
+document.getElementById('inp-boven').value    = '110';
+document.getElementById('inp-onder').value    = '70';
+
+async function laadMetingen() {
+  try {
+    var res = await sbClient.from(TABEL).select('*').order('datum').order('moment');
+    if (res.error) throw res.error;
+    window._metingen = res.data.map(function(r) {
+      return { id:r.id, datum:r.datum, moment:r.moment, hartslag:r.hartslag, boven:r.boven, onder:r.onder };
+    });
+    herlaadUI();
+  } catch(e) { console.error('Laden mislukt:', e); }
+}
+
+window.slaMetingOp = async function(meting) {
+  var res = await sbClient.from(TABEL).upsert(
+    { id:meting.id, datum:meting.datum, moment:meting.moment, hartslag:meting.hartslag, boven:meting.boven, onder:meting.onder },
+    { onConflict:'id' }
+  );
+  if (res.error) { console.error(res.error); return false; }
+  await laadMetingen(); return true;
+};
+
+window.verwijderMeting = async function(id) {
+  var res = await sbClient.from(TABEL).delete().eq('id', id);
+  if (res.error) { console.error(res.error); return; }
+  await laadMetingen();
+};
+
+window.slaAlleMetingenOp = async function(metingen) {
+  var rows = metingen.map(function(m) {
+    return { id:m.id, datum:m.datum, moment:m.moment, hartslag:m.hartslag, boven:m.boven, onder:m.onder };
+  });
+  var res = await sbClient.from(TABEL).upsert(rows, { onConflict:'id' });
+  if (res.error) { console.error(res.error); return false; }
+  await laadMetingen(); return true;
+};
+
+window.verwijderAlleMetingen = async function() {
+  var res = await sbClient.from(TABEL).delete().neq('id','');
+  if (res.error) console.error(res.error);
+  await laadMetingen();
+};
+
+function herlaadUI() {
+  if (huidigTab==='invoer')    tekenInvoer();
+  if (huidigTab==='week')      tekenWeek();
+  if (huidigTab==='grafiek')   tekenGrafieken();
+  if (huidigTab==='overzicht') tekenOverzicht();
+}
+
+function toonTab(naam) {
+  ['invoer','week','grafiek','overzicht','importeer'].forEach(function(t) {
+    document.getElementById('tab-'+t+'-inhoud').style.display = t===naam ? '' : 'none';
+    document.getElementById('tab-'+t).classList.toggle('actief', t===naam);
+  });
+  document.getElementById('fab').style.display = naam==='invoer' ? 'none' : 'flex';
+  huidigTab = naam;
+  herlaadUI();
+}
+
+function setMoment(m) {
+  huidigMoment = m;
+  document.getElementById('knop-ochtend').classList.toggle('actief', m==='ochtend');
+  document.getElementById('knop-avond').classList.toggle('actief',   m==='avond');
+}
+
+async function submitMeting() {
+  var datum    = document.getElementById('inp-datum').value;
+  var hartslag = parseInt(document.getElementById('inp-hartslag').value);
+  var boven    = parseInt(document.getElementById('inp-boven').value);
+  var onder    = parseInt(document.getElementById('inp-onder').value);
+  if (!datum||!hartslag||!boven||!onder) return;
+  var meting = { id:editId||String(Date.now()), datum:datum, moment:huidigMoment, hartslag:hartslag, boven:boven, onder:onder };
+  var ok = await window.slaMetingOp(meting);
+  if (!ok) return;
+  editId = null;
+  document.getElementById('invoer-titel').textContent    = 'Nieuwe meting';
+  document.getElementById('annuleer-knop').style.display = 'none';
+  document.getElementById('submit-knop').textContent     = 'Opslaan';
+  document.getElementById('inp-hartslag').value = '60';
+  document.getElementById('inp-boven').value    = '110';
+  document.getElementById('inp-onder').value    = '70';
+  var sm = document.getElementById('succes-melding');
+  sm.style.display='block';
+  setTimeout(function(){sm.style.display='none';},2000);
+}
+
+function bewerken(id) {
+  var m = window._metingen.find(function(x){return String(x.id)===String(id);});
+  if (!m) return;
+  document.getElementById('inp-datum').value    = m.datum;
+  document.getElementById('inp-hartslag').value = m.hartslag;
+  document.getElementById('inp-boven').value    = m.boven;
+  document.getElementById('inp-onder').value    = m.onder;
+  setMoment(m.moment);
+  editId = m.id;
+  document.getElementById('invoer-titel').textContent    = 'Meting bewerken';
+  document.getElementById('annuleer-knop').style.display = '';
+  document.getElementById('submit-knop').textContent     = 'Bijwerken';
+  toonTab('invoer');
+  document.getElementById('fab').style.display = 'none';
+  window.scrollTo(0,0);
+}
+
+function annuleerEdit() {
+  editId = null;
+  document.getElementById('invoer-titel').textContent    = 'Nieuwe meting';
+  document.getElementById('annuleer-knop').style.display = 'none';
+  document.getElementById('submit-knop').textContent     = 'Opslaan';
+}
+
+async function verwijderen(id) {
+  if (!confirm('Meting verwijderen?')) return;
+  await window.verwijderMeting(id);
+}
+
+function tekenInvoer() {
+  var _nd=new Date();
+  var vandaag=_nd.getFullYear()+'-'+String(_nd.getMonth()+1).padStart(2,'0')+'-'+String(_nd.getDate()).padStart(2,'0');
+  var vd=window._metingen.filter(function(m){return m.datum===vandaag;});
+  var blok=document.getElementById('vandaag-blok');
+  if (!vd.length){blok.innerHTML='';return;}
+  blok.innerHTML='<div class="kaart"><div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;font-weight:600">Vandaag geregistreerd</div>'+
+    vd.map(function(m){return '<div class="dag-rij">'+
+      '<span style="color:var(--olive)">'+(m.moment==='ochtend'?'🌅':'🌙')+' '+m.moment+'</span>'+
+      '<span style="color:var(--red)">♥ '+m.hartslag+' bpm</span>'+
+      '<span style="color:var(--blue)">⬆ '+m.boven+'/'+m.onder+'</span>'+
+      '<button class="icoon-knop" onclick="bewerken(\''+m.id+'\')">✏️</button>'+
+      '</div>';}).join('')+'</div>';
+}
+
+function getMaandag(offset) {
+  var nu=new Date();
+  var lokaal=new Date(nu.getFullYear(),nu.getMonth(),nu.getDate());
+  var dag=lokaal.getDay();
+  var diffNaarMa=dag===0?-6:1-dag;
+  var ma=new Date(lokaal);
+  ma.setDate(lokaal.getDate()+diffNaarMa+offset*7);
+  return ma;
+}
+
+function weekStap(d){weekOffset=Math.min(weekOffset+d,0);tekenWeek();}
+
+function tekenWeek() {
+  var ma=getMaandag(weekOffset);
+  var days=[];
+  for(var i=0;i<7;i++){var d=new Date(ma);d.setDate(ma.getDate()+i);days.push(d);}
+  var strs=days.map(function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');});
+  var _nu=new Date();
+  var vand=_nu.getFullYear()+'-'+String(_nu.getMonth()+1).padStart(2,'0')+'-'+String(_nu.getDate()).padStart(2,'0');
+  var zo=days[6];
+  var opt={day:'numeric',month:'short'};
+  document.getElementById('week-label').textContent=ma.toLocaleDateString('nl-NL',opt)+' – '+zo.toLocaleDateString('nl-NL',opt)+' '+zo.getFullYear();
+  document.getElementById('week-sub').textContent=weekOffset===0?'▲ huidige week':weekOffset===-1?'vorige week':Math.abs(weekOffset)+' weken geleden';
+  document.getElementById('pijl-rechts').disabled=weekOffset===0;
+
+  document.getElementById('dag-grid').innerHTML=days.map(function(d){
+    var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    var dM=window._metingen.filter(function(m){return m.datum===ds;});
+    var och=dM.find(function(m){return m.moment==='ochtend';});
+    var av =dM.find(function(m){return m.moment==='avond';});
+    var kl=ds===vand?'dag-kaart vandaag':ds>vand?'dag-kaart toekomst':'dag-kaart';
+    return '<div class="'+kl+'">'+
+      '<div class="dag-naam">'+DAGEN_NL[d.getDay()]+'</div>'+
+      '<div class="dag-nr">'+d.getDate()+'</div>'+
+      (och?'<div style="font-size:9px;color:var(--red)">♥'+och.hartslag+'</div><div style="font-size:9px;color:var(--blue)">'+och.boven+'/'+och.onder+'</div>':'')+
+      (av ?'<div style="font-size:9px;color:var(--red)">♥'+av.hartslag +'</div><div style="font-size:9px;color:var(--blue)">'+av.boven +'/'+av.onder +'</div>':'')+
+      '</div>';
+  }).join('');
+
+  var weekM=window._metingen.filter(function(m){return strs.indexOf(m.datum)>=0;});
+  if(!weekM.length){
+    document.getElementById('week-gem').innerHTML='';
+    document.getElementById('week-hs-kaart').style.display='none';
+    document.getElementById('week-bd-kaart').style.display='none';
+    document.getElementById('week-details').innerHTML='';
+    document.getElementById('week-leeg').style.display='';
+    return;
+  }
+  document.getElementById('week-leeg').style.display='none';
+
+  function avg(arr){return Math.round(arr.reduce(function(a,b){return a+b;},0)/arr.length);}
+  document.getElementById('week-gem').innerHTML=[
+    ['Gem. hartslag', avg(weekM.map(function(m){return m.hartslag;}))+' bpm',  'var(--red)'],
+    ['Gem. bovendruk',avg(weekM.map(function(m){return m.boven;}))+' mmHg','var(--blue)'],
+    ['Gem. onderdruk',avg(weekM.map(function(m){return m.onder;}))+' mmHg','var(--teal)'],
+  ].map(function(x){return '<div class="gem-tegel"><div class="gem-label">'+x[0]+'</div><div class="gem-waarde" style="color:'+x[2]+'">'+x[1]+'</div></div>';}).join('');
+
+  var dagData=days.map(function(d){
+    var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    var dM=window._metingen.filter(function(m){return m.datum===ds;});
+    return{dag:DAGEN_NL[d.getDay()],
+      hs:   dM.length?avg(dM.map(function(m){return m.hartslag;})):null,
+      boven:dM.length?avg(dM.map(function(m){return m.boven;})):null,
+      onder:dM.length?avg(dM.map(function(m){return m.onder;})):null};
+  });
+
+  if(dagData.filter(function(d){return d.hs!==null;}).length>=2){
+    document.getElementById('week-hs-kaart').style.display='';
+    document.getElementById('week-bd-kaart').style.display='';
+    tekenWeekGrafieken(dagData);
+  } else {
+    document.getElementById('week-hs-kaart').style.display='none';
+    document.getElementById('week-bd-kaart').style.display='none';
+  }
+
+  document.getElementById('week-details').innerHTML=
+    '<div style="font-size:13px;color:var(--text-muted);font-weight:600;margin:14px 0 8px">Alle metingen deze week</div>'+
+    days.map(function(d){
+      var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      var dM=window._metingen.filter(function(m){return m.datum===ds;});
+      if(!dM.length) return '';
+      return '<div class="detail-dag-label">'+DAGEN_LANG[d.getDay()]+' '+d.getDate()+' '+MONTHS_NL[d.getMonth()]+'</div>'+
+        dM.map(function(m){return '<div class="detail-rij">'+
+          '<span style="color:var(--olive);min-width:90px">'+(m.moment==='ochtend'?'🌅 Ochtend':'🌙 Avond')+'</span>'+
+          '<span style="color:var(--red)">♥ '+m.hartslag+' bpm</span>'+
+          '<span style="color:var(--blue)">⬆ '+m.boven+'</span>'+
+          '<span style="color:var(--teal)">⬇ '+m.onder+'</span>'+
+          '<div style="margin-left:auto;display:flex;gap:4px">'+
+          '<button class="icoon-knop" onclick="bewerken(\''+m.id+'\')">✏️</button>'+
+          '<button class="icoon-knop" onclick="verwijderen(\''+m.id+'\')">🗑️</button>'+
+          '</div></div>';}).join('');
+    }).join('');
+}
+
+function tekenWeekGrafieken(dagData) {
+  function sc(min,max){return{x:{grid:{color:CLR_GRID},ticks:{color:CLR_TICK}},y:{min:min,max:max,grid:{color:CLR_GRID},ticks:{color:CLR_TICK}}};}
+  var labels=dagData.map(function(d){return d.dag;});
+  if(weekGrafiekHs) weekGrafiekHs.destroy();
+  weekGrafiekHs=new Chart(document.getElementById('grafiek-week-hs'),{
+    type:'line',data:{labels:labels,datasets:[{label:'Hartslag',data:dagData.map(function(d){return d.hs;}),
+      borderColor:CLR_HS,borderWidth:1.5,backgroundColor:'rgba(184,80,80,0.08)',
+      tension:0.3,pointRadius:4,pointBackgroundColor:CLR_HS,spanGaps:false}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:TT},scales:sc(50,120)}
+  });
+  if(weekGrafiekBd) weekGrafiekBd.destroy();
+  weekGrafiekBd=new Chart(document.getElementById('grafiek-week-bd'),{
+    type:'line',data:{labels:labels,datasets:[
+      {label:'Bovendruk',data:dagData.map(function(d){return d.boven;}),borderWidth:1.5,borderColor:CLR_BOVEN,
+        backgroundColor:'rgba(74,122,170,0.08)',tension:0.3,pointRadius:4,pointBackgroundColor:CLR_BOVEN,spanGaps:false},
+      {label:'Onderdruk',data:dagData.map(function(d){return d.onder;}),borderWidth:1.5,borderColor:CLR_ONDER,
+        backgroundColor:'rgba(74,138,138,0.08)',borderDash:[5,3],tension:0.3,pointRadius:4,pointBackgroundColor:CLR_ONDER,spanGaps:false}
+    ]},
+    options:{responsive:true,plugins:{legend:{display:true,labels:{color:CLR_TICK,font:{size:12}}},tooltip:TT},scales:sc(50,150)}
+  });
+}
+
+function setFilter(f) {
+  huidigFilter=f;
+  ['1m','3m','6m','1j','2j','alles'].forEach(function(k){document.getElementById('f-'+k).classList.toggle('actief',k===f);});
+  tekenGrafieken();
+}
+
+function getGefilterd() {
+  var nu=new Date(),van=new Date();
+  if      (huidigFilter==='1m')  van.setMonth(nu.getMonth()-1);
+  else if (huidigFilter==='3m')  van.setMonth(nu.getMonth()-3);
+  else if (huidigFilter==='6m')  van.setMonth(nu.getMonth()-6);
+  else if (huidigFilter==='1j')  van.setFullYear(nu.getFullYear()-1);
+  else if (huidigFilter==='2j')  van.setFullYear(nu.getFullYear()-2);
+  else van=new Date('2000-01-01');
+  return window._metingen.filter(function(m){return new Date(m.datum+'T12:00:00')>=van;});
+}
+
+function tekenGrafieken() {
+  var data=getGefilterd();
+  var leeg=document.getElementById('grafiek-leeg');
+  var hsK=document.getElementById('grafiek-hs-kaart');
+  var bdK=document.getElementById('grafiek-bd-kaart');
+  var gem=document.getElementById('lang-gem');
+  if(data.length<2){leeg.style.display='';hsK.style.display='none';bdK.style.display='none';gem.innerHTML='';return;}
+  leeg.style.display='none';hsK.style.display='';bdK.style.display='';
+  var labels=data.map(function(m){var d=new Date(m.datum+'T12:00:00');return d.getDate()+' '+MONTHS_NL[d.getMonth()]+' '+(m.moment==='ochtend'?'🌅':'🌙');});
+  function sc(min,max){return{x:{grid:{color:CLR_GRID},ticks:{color:CLR_TICK,maxTicksLimit:8}},y:{min:min,max:max,grid:{color:CLR_GRID},ticks:{color:CLR_TICK}}};}
+  if(grafiekHs) grafiekHs.destroy();
+  grafiekHs=new Chart(document.getElementById('grafiek-hs'),{
+    type:'line',data:{labels:labels,datasets:[{label:'Hartslag',data:data.map(function(m){return m.hartslag;}),
+      borderColor:CLR_HS,backgroundColor:'rgba(184,80,80,0.06)',tension:0.3,pointRadius:2.5,pointBackgroundColor:CLR_HS}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:TT},scales:sc(50,120)}
+  });
+  if(grafiekBd) grafiekBd.destroy();
+  grafiekBd=new Chart(document.getElementById('grafiek-bd'),{
+    type:'line',data:{labels:labels,datasets:[
+      {label:'Bovendruk',data:data.map(function(m){return m.boven;}),borderWidth:1.5,borderColor:CLR_BOVEN,
+        backgroundColor:'rgba(74,122,170,0.06)',tension:0.3,pointRadius:2.5,pointBackgroundColor:CLR_BOVEN},
+      {label:'Onderdruk',data:data.map(function(m){return m.onder;}),borderWidth:1.5,borderColor:CLR_ONDER,
+        backgroundColor:'rgba(74,138,138,0.06)',borderDash:[5,3],tension:0.3,pointRadius:2.5,pointBackgroundColor:CLR_ONDER}
+    ]},
+    options:{responsive:true,plugins:{legend:{display:true,labels:{color:CLR_TICK,font:{size:12}}},tooltip:TT},scales:sc(50,150)}
+  });
+  function avg(arr){return Math.round(arr.reduce(function(a,b){return a+b;},0)/arr.length);}
+  gem.innerHTML=[
+    ['Gem. hartslag', avg(data.map(function(m){return m.hartslag;}))+' bpm',  'var(--red)'],
+    ['Gem. bovendruk',avg(data.map(function(m){return m.boven;}))+' mmHg','var(--blue)'],
+    ['Gem. onderdruk',avg(data.map(function(m){return m.onder;}))+' mmHg','var(--teal)'],
+  ].map(function(x){return '<div class="gem-tegel"><div class="gem-label">'+x[0]+'</div><div class="gem-waarde" style="color:'+x[2]+'">'+x[1]+'</div></div>';}).join('');
+}
+
+function tekenOverzicht() {
+  var lijst=document.getElementById('overzicht-lijst');
+  var leeg=document.getElementById('overzicht-leeg');
+  if(!window._metingen.length){lijst.innerHTML='';leeg.style.display='';return;}
+  leeg.style.display='none';
+  var rev=[].concat(window._metingen).reverse();
+  lijst.innerHTML=rev.map(function(m){return '<div class="meting-rij">'+
+    '<div class="datum">'+(m.moment==='ochtend'?'🌅':'🌙')+' '+m.datum+' · '+m.moment+'</div>'+
+    '<div class="hs">'+m.hartslag+' <span style="font-size:11px;font-weight:400">bpm</span></div>'+
+    '<div class="bd">'+m.boven+'<span style="color:var(--teal)">/'+m.onder+'</span></div>'+
+    '<div class="acties">'+
+    '<button class="icoon-knop" onclick="bewerken(\''+m.id+'\')">✏️</button>'+
+    '<button class="icoon-knop" onclick="verwijderen(\''+m.id+'\')">🗑️</button>'+
+    '</div></div>';}).join('');
+}
+
+// ── Excel import ──
+function parseDatum(val) {
+  if(!val) return null;
+  if(typeof val==='number'){var d=XLSX.SSF.parse_date_code(val);if(d)return d.y+'-'+String(d.m).padStart(2,'0')+'-'+String(d.d).padStart(2,'0');}
+  var s=String(val);
+  var m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if(m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if(m) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  return null;
+}
+function parseMoment(val) {
+  if(!val) return null;
+  var s=String(val).toLowerCase().trim();
+  if(s.indexOf('och')>=0||s==='am'||s==='o') return 'ochtend';
+  if(s.indexOf('av') >=0||s==='pm'||s==='a') return 'avond';
+  var t=s.match(/^(\d{1,2})[:\.]?/);
+  if(t) return parseInt(t[1])<14?'ochtend':'avond';
+  return null;
+}
+function parseNum(val){var n=Number(String(val).replace(',','.'));return isNaN(n)?null:n;}
+
+function verwerkBestand(file) {
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try {
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:false});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(rows.length<2){toonImportFout('Bestand lijkt leeg.');return;}
+      var hi=0;
+      for(var i=0;i<Math.min(5,rows.length);i++)
+        if(rows[i].some(function(c){return String(c).toLowerCase().indexOf('datum')>=0;})){hi=i;break;}
+      var hdrs=rows[hi].map(function(h){return String(h).toLowerCase().trim();});
+      function col(){for(var ki=0;ki<arguments.length;ki++){var idx=hdrs.findIndex(function(h){return h.indexOf(arguments[ki])>=0;});if(idx>=0)return idx;}return -1;}
+      var iD=col('datum','date'),iM=col('tijdstip','moment','tijd'),
+          iH=col('hart','bpm'),iB=col('boven','systol','sys'),iO=col('onder','diastol','dia');
+      var imported=[],skipped=[];
+      rows.slice(hi+1).filter(function(r){return r.some(function(c){return c!=='';});}).forEach(function(row,i){
+        var datum=iD>=0?parseDatum(row[iD]):null,moment=iM>=0?parseMoment(row[iM]):null,
+            hs=iH>=0?parseNum(row[iH]):null,boven=iB>=0?parseNum(row[iB]):null,onder=iO>=0?parseNum(row[iO]):null;
+        if(!datum) {skipped.push('Rij '+(hi+i+2)+': datum onleesbaar');return;}
+        if(!moment){skipped.push('Rij '+(hi+i+2)+': moment onbekend');return;}
+        if(!hs)    {skipped.push('Rij '+(hi+i+2)+': hartslag ongeldig');return;}
+        if(!boven) {skipped.push('Rij '+(hi+i+2)+': bovendruk ongeldig');return;}
+        if(!onder) {skipped.push('Rij '+(hi+i+2)+': onderdruk ongeldig');return;}
+        imported.push({id:String(Date.now()+i),datum:datum,moment:moment,hartslag:hs,boven:boven,onder:onder});
+      });
+      importData={imported:imported,skipped:skipped};
+      toonPreview();
+    } catch(err){toonImportFout('Fout bij lezen: '+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function toonPreview() {
+  var imp=importData.imported,skip=importData.skipped;
+  document.getElementById('preview-titel').textContent='Voorbeeld — '+imp.length+' rijen gelezen';
+  document.getElementById('preview-tbody').innerHTML=
+    imp.slice(0,8).map(function(m){return '<tr><td>'+m.datum+'</td><td>'+(m.moment==='ochtend'?'🌅 ochtend':'🌙 avond')+'</td><td>'+m.hartslag+' bpm</td><td>'+m.boven+'</td><td>'+m.onder+'</td></tr>';}).join('')+
+    (imp.length>8?'<tr><td colspan="5" style="color:var(--text-muted);font-size:11px">… en nog '+(imp.length-8)+' rijen</td></tr>':'');
+  document.getElementById('preview-overgeslagen').innerHTML=skip.length?
+    '<div class="waarschuwing">⚠️ '+skip.length+' rij(en) overgeslagen:<br>'+skip.slice(0,5).join('<br>')+'</div>':'';
+  document.getElementById('import-resultaat').innerHTML='';
+  document.getElementById('import-preview').style.display='';
+}
+
+async function bevestigImport(mode) {
+  if(!importData) return;
+  var imp=importData.imported,nieuw;
+  if(mode==='vervang'){await window.verwijderAlleMetingen();nieuw=imp;}
+  else{var bestaand=new Set(window._metingen.map(function(m){return m.datum+'_'+m.moment;}));nieuw=imp.filter(function(m){return !bestaand.has(m.datum+'_'+m.moment);});}
+  var ok=await window.slaAlleMetingenOp(nieuw);
+  if(!ok) return;
+  document.getElementById('import-preview').style.display='none';
+  document.getElementById('import-resultaat').innerHTML='<div class="succes-banner">✅ '+imp.length+' meting(en) geïmporteerd'+(importData.skipped.length?', '+importData.skipped.length+' overgeslagen':'')+' </div>';
+  importData=null;
+  document.getElementById('bestand-input').value='';
+}
+
+function annuleerImport(){document.getElementById('import-preview').style.display='none';importData=null;document.getElementById('bestand-input').value='';}
+function toonImportFout(msg){document.getElementById('import-resultaat').innerHTML='<div class="fout-banner">❌ '+msg+'</div>';}
+
+laadMetingen();
+tekenWeek();
+setInterval(laadMetingen,30000);
+</script>
+</body>
+</html>
