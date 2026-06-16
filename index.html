@@ -107,6 +107,10 @@
   .rol-ouder{background:#faeeda;color:#854F0B;}
   .btn-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:4px 8px;}
   .btn-del:hover{color:var(--red);}
+  .beheer-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--card-bg);border:1px solid var(--sand-dark);border-radius:var(--radius);font-family:var(--serif);font-size:15px;font-weight:600;color:var(--olive);cursor:pointer;transition:background 0.2s;}
+  .beheer-toggle:hover{background:#edeade;}
+  .beheer-toggle .chevron{font-size:18px;color:var(--olive-light);transition:transform 0.2s;}
+  .beheer-toggle.open .chevron{transform:rotate(90deg);}
 
   @media(max-width:480px){
     .auth-card{padding:32px 24px;}
@@ -151,7 +155,11 @@
       <a class="app-card" href="./mo12-1/"><div class="app-icon">🏑</div><div class="app-name">MO12-1</div><div class="app-desc">Statistieken & standen</div><span class="app-badge badge-public">Publiek leesbaar</span></a>
     </div>
     <div class="section-label"><span>Beheer</span></div>
-    <div class="beheer-card">
+    <button class="beheer-toggle" id="beheer-toggle" onclick="toggleBeheer()">
+      <span>👥 Gebruikersbeheer</span>
+      <span class="chevron">›</span>
+    </button>
+    <div class="beheer-card" id="beheer-panel" style="display:none;margin-top:10px;">
       <h3>Gebruikersbeheer</h3>
       <div class="beheer-row">
         <div class="field"><label>E-mailadres</label><input type="email" id="b-email" placeholder="naam@email.nl"></div>
@@ -433,6 +441,16 @@ async function bevestigOTP(email) {
   }
 
   // Klaar — auth state change handelt de rest af
+}
+
+// ── Beheer toggle ──
+function toggleBeheer() {
+  const panel = document.getElementById('beheer-panel');
+  const btn   = document.getElementById('beheer-toggle');
+  const open  = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  btn.classList.toggle('open', open);
+  if (open) laadGebruikers();
 }
 
 // ── Beheer: gebruikers laden ──
