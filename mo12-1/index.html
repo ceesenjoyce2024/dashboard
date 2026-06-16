@@ -23,8 +23,6 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:var(--sans);background:var(--sand);color:var(--text);min-height:100vh;font-size:15px;}
-
-  /* Header */
   .header{background:var(--olive);padding:0 1.5rem;position:sticky;top:0;z-index:100;}
   .header-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:12px;height:54px;}
   .back-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:var(--sand-light);padding:5px 11px;border-radius:7px;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0;}
@@ -34,40 +32,28 @@
   .header-title h1{font-family:var(--serif);font-size:17px;font-weight:600;line-height:1.1;}
   .header-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(242,239,230,0.7);}
   .status-dot{width:7px;height:7px;border-radius:50%;background:var(--olive-light);}
-
-  /* Nav */
   .nav-wrap{background:var(--card-bg);border-bottom:1px solid var(--sand-dark);overflow-x:auto;}
   .nav{max-width:960px;margin:0 auto;display:flex;padding:0 1rem;}
   .nav-btn{font-family:var(--sans);font-size:13px;font-weight:500;padding:13px 15px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s;}
   .nav-btn.active{color:var(--olive);border-bottom-color:var(--olive-mid);}
   .nav-btn:hover:not(.active){color:var(--text);}
   .nav-btn.invoer-btn{margin-left:auto;color:var(--olive-mid);display:flex;align-items:center;gap:5px;}
-
-  /* Main */
   .main{max-width:960px;margin:0 auto;padding:1.5rem 1rem 4rem;}
   .section{display:none;}.section.active{display:block;}
-
-  /* Metrics */
   .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-bottom:1.5rem;}
   .metric{background:var(--card-bg);border-radius:var(--radius-sm);border:1px solid var(--sand-dark);padding:14px 12px;}
   .metric-label{font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
   .metric-value{font-family:var(--serif);font-size:26px;font-weight:700;color:var(--text);}
   .metric-value.green{color:var(--green);}.metric-value.red{color:var(--red);}.metric-value.amber{color:var(--amber);}
   .metric-sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
-
-  /* Cards */
   .card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--sand-dark);padding:1.25rem;margin-bottom:14px;}
   .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
   .card-title{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--text-muted);letter-spacing:.03em;}
-
-  /* Tables */
   table{width:100%;border-collapse:collapse;font-size:13px;}
   th{text-align:left;font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:1px solid var(--sand-dark);}
   td{padding:9px 10px;border-bottom:1px solid var(--sand-dark);vertical-align:middle;}
   tr:last-child td{border-bottom:none;}tr:hover td{background:var(--sand-light);}
   .score{font-family:var(--serif);font-size:16px;font-weight:700;}
-
-  /* Badges */
   .badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;letter-spacing:.03em;}
   .badge-W{background:var(--green-light);color:var(--green-dark);}
   .badge-G{background:var(--amber-light);color:var(--amber);}
@@ -75,18 +61,12 @@
   .badge-sc{background:var(--green-light);color:var(--green-dark);font-size:10px;}
   .badge-assist{background:var(--blue-light);color:#0F4A8B;font-size:10px;}
   .rank{font-family:var(--serif);font-size:13px;font-weight:700;color:var(--text-faint);}
-
-  /* Tabs */
   .tab-bar{display:flex;gap:4px;margin-bottom:1rem;}
   .tab-btn{font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px;border:1px solid var(--sand-dark);background:var(--sand-light);color:var(--text-muted);cursor:pointer;transition:all .15s;font-family:var(--sans);}
   .tab-btn.active{background:var(--olive);border-color:var(--olive);color:var(--sand-light);}
-
-  /* Comp header */
   .comp-header{display:flex;align-items:flex-end;gap:12px;margin-bottom:1.25rem;}
   .comp-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--olive);}
   .comp-sub{font-size:13px;color:var(--text-muted);margin-bottom:3px;}
-
-  /* Forms */
   .form-section{margin-bottom:1.5rem;}
   .form-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--sand-dark);}
   .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;}
@@ -94,27 +74,19 @@
   .form-group label{font-size:12px;font-weight:500;color:var(--text-muted);}
   .form-group input,.form-group select{font-family:var(--sans);font-size:14px;padding:9px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none;transition:border-color .15s;}
   .form-group input:focus,.form-group select:focus{border-color:var(--olive-mid);}
-
-  /* Buttons */
   .btn-primary{font-family:var(--sans);font-weight:500;background:var(--olive);color:var(--sand-light);border:none;padding:11px 24px;border-radius:var(--radius-sm);font-size:15px;cursor:pointer;transition:background .15s;}
   .btn-primary:hover{background:var(--olive-mid);}
   .btn-sm{font-family:var(--sans);font-size:12px;padding:6px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text-muted);cursor:pointer;}
   .btn-sm:hover{border-color:var(--olive-light);color:var(--olive);}
   .btn-danger{font-size:12px;padding:5px 10px;border:1px solid #dfc0b8;border-radius:var(--radius-sm);background:var(--red-light);color:var(--red);cursor:pointer;}
-
-  /* Goal rows */
   .goal-row{background:var(--sand-light);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--sand-dark);}
   .goal-row select{font-size:13px;padding:6px 10px;border:1px solid var(--sand-dark);border-radius:6px;background:var(--card-bg);color:var(--text);font-family:var(--sans);}
   .sc-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;}
   .sc-toggle input{width:15px;height:15px;accent-color:var(--olive);}
-
-  /* Stand */
   .stand-table td.rosmalen{background:rgba(92,90,46,0.05);font-weight:600;}
   .stand-table tr.rosmalen-row td{background:rgba(92,90,46,0.05);}
   .stand-pos{font-family:var(--serif);font-weight:700;font-size:14px;color:var(--text-faint);}
   .stand-pos.p1{color:#C8960A;}.stand-pos.p2{color:#888;}.stand-pos.p3{color:#A0522D;}
-
-  /* Poule */
   .poule-invoer{background:var(--sand-light);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;border:1px solid var(--sand-dark);}
   .poule-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;}
   .poule-row input,.poule-row select{font-family:var(--sans);font-size:13px;padding:6px 10px;border:1px solid var(--sand-dark);border-radius:6px;background:var(--card-bg);color:var(--text);}
@@ -122,31 +94,20 @@
   .vs-label{font-family:var(--serif);font-weight:700;font-size:13px;color:var(--text-faint);}
   .totaal-ranglijst{font-size:11px;}
   .totaal-ranglijst td,.totaal-ranglijst th{padding:5px 4px;}
-
-  /* Spelers */
   .empty{text-align:center;padding:2rem 0;color:var(--text-faint);font-size:13px;}
   .speler-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--sand-dark);}
   .speler-item:last-child{border-bottom:none;}
   .speler-avatar{width:32px;height:32px;border-radius:50%;background:#e8ead6;color:var(--olive);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
-
-  /* Loading */
   .loading{position:fixed;inset:0;background:var(--sand);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:999;}
   .spinner{width:36px;height:36px;border:3px solid var(--sand-dark);border-top-color:var(--olive);border-radius:50%;animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
-
-  /* Toast */
   .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--olive);color:var(--sand-light);padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;z-index:200;animation:fadeInUp .2s ease;box-shadow:0 4px 20px rgba(0,0,0,0.15);}
   @keyframes fadeInUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-
-  /* Page title */
   .page-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--olive);margin-bottom:1.25rem;}
-
-  /* Modal */
   .modal-overlay{position:fixed;inset:0;background:rgba(60,58,30,0.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem;}
   .modal{background:var(--card-bg);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2);border:1px solid var(--sand-dark);}
   .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
   .modal-title{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--olive);}
-
   @media(max-width:600px){
     .metric-grid{grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1rem;}
     .metric{padding:8px;}.metric-label{font-size:10px;}.metric-value{font-size:18px;}
@@ -227,7 +188,8 @@ var state = {
   tegenstanders: {}
 };
 var currentSection = 'totaal';
-var isLoggedIn = false;
+var isLoggedIn = false;  // ingelogd ja/nee
+var kanInvoeren = false; // alleen admin + ouder
 
 async function laadAlleData() {
   document.getElementById('statusDot').style.background = '#E8A020';
@@ -450,8 +412,8 @@ function htmlAlleWedstrijden(compId) {
           '<td class="hide-mob"><span class="badge badge-' + r + '">' + r + '</span></td>' +
           '<td class="hide-mob" style="font-size:12px;max-width:180px;line-height:1.5">' + (scorers||'–') + '</td>' +
           '<td style="display:flex;gap:4px">' +
-          (isLoggedIn ? '<button class="btn-sm" onclick="openGoalsModal(\'' + w.id + '\')" title="Doelpunten">⚽</button>' : '') +
-          (isLoggedIn ? '<button class="btn-danger" onclick="deleteWedstrijd(\'' + w.id + '\')">✕</button>' : '') +
+          (kanInvoeren ? '<button class="btn-sm" onclick="openGoalsModal(\'' + w.id + '\')" title="Doelpunten">⚽</button>' : '') +
+          (kanInvoeren ? '<button class="btn-danger" onclick="deleteWedstrijd(\'' + w.id + '\')">✕</button>' : '') +
           '</td></tr>';
       } else {
         return '<tr style="color:var(--text-muted)"><td style="white-space:nowrap;font-size:12px">' + (w.datum||'–') + '</td>' +
@@ -459,7 +421,7 @@ function htmlAlleWedstrijden(compId) {
           '<td><span class="score" style="font-size:14px">' + w.s1 + '–' + w.s2 + '</span></td>' +
           '<td class="hide-mob"><span style="font-size:11px;color:var(--text-faint)">poule</span></td>' +
           '<td class="hide-mob"></td>' +
-          '<td>' + (isLoggedIn ? '<button class="btn-danger" onclick="deletePouleWedstrijd(\'' + w.id + '\',\'' + w.competitie + '\')">✕</button>' : '') + '</td></tr>';
+          '<td>' + (kanInvoeren ? '<button class="btn-danger" onclick="deletePouleWedstrijd(\'' + w.id + '\',\'' + w.competitie + '\')">✕</button>' : '') + '</td></tr>';
       }
     }).join('') + '</tbody></table>';
 }
@@ -505,7 +467,7 @@ function renderComp(id) {
   var topscore = getTopscorers(ws);
   document.getElementById(id).innerHTML =
     '<div class="comp-header"><div><div class="comp-sub">'+ws.length+' wedstrijd'+(ws.length!==1?'en':'')+'</div><div class="comp-title">'+comp.naam+'</div></div></div>' +
-    (id!=='oefenwedstrijden' ? '<div class="card" style="margin-bottom:14px"><div class="card-header" style="margin-bottom:.75rem"><div class="card-title">Ranglijst</div>' + (isLoggedIn ? '<button class="btn-sm" onclick="togglePouleInvoer(\''+id+'\')">＋ Poule-uitslag</button>' : '') + '</div><div id="poule_invoer_'+id+'" style="display:none;margin-bottom:12px">'+(isLoggedIn?htmlPouleInvoer(id):'')+'</div>'+htmlRanglijst(id)+'</div>' : '') +
+    (id!=='oefenwedstrijden' ? '<div class="card" style="margin-bottom:14px"><div class="card-header" style="margin-bottom:.75rem"><div class="card-title">Ranglijst</div>' + (kanInvoeren ? '<button class="btn-sm" onclick="togglePouleInvoer(\''+id+'\')">＋ Poule-uitslag</button>' : '') + '</div><div id="poule_invoer_'+id+'" style="display:none;margin-bottom:12px">'+(kanInvoeren?htmlPouleInvoer(id):'')+'</div>'+htmlRanglijst(id)+'</div>' : '') +
     htmlMetrics(stats) +
     '<div class="tab-bar"><button class="tab-btn active" id="tab_w_'+id+'" onclick="switchTab(\''+id+'\',\'w\')">Wedstrijden</button><button class="tab-btn" id="tab_t_'+id+'" onclick="switchTab(\''+id+'\',\'t\')">Topscoorders</button></div>' +
     '<div class="card" id="pane_w_'+id+'">' + htmlAlleWedstrijden(id) + '</div>' +
@@ -667,12 +629,10 @@ async function voegTegenstanderToe(compId, naam, sel) {
 function renderSpelers() {
   document.getElementById('spelers').innerHTML =
     '<div class="page-title">Speelsters</div><div class="card">' +
-    '<div style="display:flex;gap:8px;margin-bottom:1rem">' +
-    '<input type="text" id="new_sp" placeholder="Naam nieuwe speelster" style="flex:1;font-family:var(--sans);font-size:14px;padding:9px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none">' +
-    '<button class="btn-primary" onclick="addSpeler()">Toevoegen</button></div>' +
+    (kanInvoeren ? '<div style="display:flex;gap:8px;margin-bottom:1rem"><input type="text" id="new_sp" placeholder="Naam nieuwe speelster" style="flex:1;font-family:var(--sans);font-size:14px;padding:9px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none"><button class="btn-primary" onclick="addSpeler()">Toevoegen</button></div>' : '') +
     '<div id="speler_list">' +
     state.spelers.map(function(s,i) {
-      return '<div class="speler-item"><div style="display:flex;align-items:center;gap:10px"><div class="speler-avatar">'+s.slice(0,2).toUpperCase()+'</div><span style="font-weight:500">'+s+'</span></div>' + (isLoggedIn ? '<button class="btn-danger" onclick="deleteSpeler('+i+')">✕</button>' : '') + '</div>';
+      return '<div class="speler-item"><div style="display:flex;align-items:center;gap:10px"><div class="speler-avatar">'+s.slice(0,2).toUpperCase()+'</div><span style="font-weight:500">'+s+'</span></div>' + (kanInvoeren ? '<button class="btn-danger" onclick="deleteSpeler('+i+')">✕</button>' : '') + '</div>';
     }).join('') + '</div></div>';
 }
 
@@ -696,13 +656,11 @@ function htmlTegstandBeheer() {
   return COMPS.filter(function(c){return c.id!=='oefenwedstrijden';}).map(function(comp) {
     var lijst = (state.tegenstanders[comp.id]||[]).slice().sort();
     return '<div style="margin-bottom:1.25rem"><div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:8px">'+comp.naam+'</div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:8px">' +
-      '<input type="text" id="new_teg_'+comp.id+'" placeholder="Naam tegenstander" style="flex:1;font-family:var(--sans);font-size:14px;padding:8px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none">' +
-      '<button class="btn-primary" style="font-size:13px;padding:8px 14px" onclick="addTegenstander(\''+comp.id+'\')">Toevoegen</button></div>' +
+      (kanInvoeren ? '<div style="display:flex;gap:8px;margin-bottom:8px"><input type="text" id="new_teg_'+comp.id+'" placeholder="Naam tegenstander" style="flex:1;font-family:var(--sans);font-size:14px;padding:8px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none"><button class="btn-primary" style="font-size:13px;padding:8px 14px" onclick="addTegenstander(\''+comp.id+'\')">Toevoegen</button></div>' : '') +
       '<div>' + (lijst.length ? lijst.map(function(t) {
         return '<div class="speler-item">' +
           '<div style="display:flex;align-items:center;gap:10px"><div class="speler-avatar" style="background:var(--amber-light);color:var(--amber)">'+t.slice(0,2).toUpperCase()+'</div><span style="font-weight:500">'+t+'</span></div>' +
-          '<div style="display:flex;gap:6px">' + (isLoggedIn ? '<button class="btn-sm" onclick="hernoem(\''+comp.id+'\',\''+t.replace(/'/g,"\\'")+'\')" >✏️</button><button class="btn-danger" onclick="deleteTegenstander(\''+comp.id+'\',\''+t.replace(/'/g,"\\'")+'\')">✕</button>' : '') + '</div>' +
+          '<div style="display:flex;gap:6px">' + (kanInvoeren ? '<button class="btn-sm" onclick="hernoem(\''+comp.id+'\',\''+t.replace(/'/g,"\\'")+'\')" >✏️</button><button class="btn-danger" onclick="deleteTegenstander(\''+comp.id+'\',\''+t.replace(/'/g,"\\'")+'\')">✕</button>' : '') + '</div>' +
           '</div>';
       }).join('') : '<p style="font-size:13px;color:var(--text-faint);padding:6px 0">Nog geen tegenstanders ingevoerd.</p>') +
       '</div></div>';
@@ -812,17 +770,30 @@ window.closeGoalsModal = function(e) {
 }
 
 async function init() {
-  var { data: { session } } = await sbClient.auth.getSession();
+  var sessionRes = await sbClient.auth.getSession();
+  var session = sessionRes.data.session;
   isLoggedIn = !!session;
+  kanInvoeren = false;
+
+  if (session) {
+    // Haal rol op uit whitelist
+    var rolRes = await sbClient.from('email_whitelist').select('rol').eq('email', session.user.email).single();
+    var rol = rolRes.data ? rolRes.data.rol : null;
+    // admin en ouder mogen invoeren, eikenlaan alleen lezen
+    kanInvoeren = (rol === 'admin' || rol === 'ouder');
+  }
+
   await laadAlleData();
   hideLoading();
-  // Verberg invoer-nav voor niet-ingelogden
+
+  // Verberg invoer-knoppen op basis van kanInvoeren
   var invoerBtn = document.querySelector('.nav-btn.invoer-btn');
-  if (invoerBtn) invoerBtn.style.display = isLoggedIn ? '' : 'none';
+  if (invoerBtn) invoerBtn.style.display = kanInvoeren ? '' : 'none';
   var spelersBtn = document.querySelectorAll('.nav-btn')[7];
   var tegBtn = document.querySelectorAll('.nav-btn')[8];
-  if (spelersBtn) spelersBtn.style.display = isLoggedIn ? '' : 'none';
-  if (tegBtn) tegBtn.style.display = isLoggedIn ? '' : 'none';
+  if (spelersBtn) spelersBtn.style.display = kanInvoeren ? '' : 'none';
+  if (tegBtn) tegBtn.style.display = kanInvoeren ? '' : 'none';
+
   render(currentSection);
 }
 
