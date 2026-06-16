@@ -283,6 +283,8 @@ async function init() {
   }
 
   sb.auth.onAuthStateChange((_e, session) => {
+    // Negeer auth changes als we wachtwoord aan het instellen zijn
+    if (document.getElementById('r-ww1') || document.getElementById('ww-error')) return;
     const p = new URLSearchParams(window.location.search);
     if (session && p.get('stelww') === '1') {
       toonScherm('login');
@@ -422,7 +424,9 @@ async function slaWachtwoordOp() {
     btn.disabled=false; btn.textContent='Wachtwoord opslaan';
     return;
   }
-  // Wachtwoord ingesteld — auth state change handelt redirect af
+  // Wachtwoord ingesteld — nu pas naar dashboard
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) toonDashboard(session.user);
 }
 
 // ── Beheer toggle ──
