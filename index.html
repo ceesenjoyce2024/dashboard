@@ -2,362 +2,210 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Eikenlaan Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --sand:       #e8e4d9;
-    --sand-light: #f2efe6;
-    --sand-dark:  #d8d4c6;
-    --olive:      #5c5a2e;
-    --olive-mid:  #7a7838;
-    --olive-light:#c8c89a;
-    --text:       #3d3b1e;
-    --text-muted: #7a7860;
-    --card-bg:    #f7f4ec;
-    --radius:     12px;
-    --serif:      'Playfair Display', Georgia, serif;
-    --sans:       'Inter', system-ui, sans-serif;
+    --sand:#e8e4d9;--sand-light:#f2efe6;--sand-dark:#d8d4c6;
+    --olive:#5c5a2e;--olive-mid:#7a7838;--olive-light:#c8c89a;
+    --text:#3d3b1e;--text-muted:#7a7860;--card-bg:#f7f4ec;
+    --red:#8a2828;--red-light:#fdf0f0;
+    --green:#2e6e32;--green-light:#eaf2e8;
+    --radius:12px;--radius-sm:8px;
+    --serif:'Playfair Display',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: var(--sans);
-    background: var(--sand);
-    color: var(--text);
-    min-height: 100vh;
-  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);background:var(--sand);color:var(--text);min-height:100vh;}
 
-  /* ── Login ── */
-  #login-screen {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background: var(--sand);
-  }
-  .login-card {
-    background: var(--card-bg);
-    border: 1px solid var(--sand-dark);
-    border-radius: var(--radius);
-    padding: 44px 40px;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 4px 32px rgba(60,58,30,0.08);
-    text-align: center;
-  }
-  .login-logo {
-    font-family: var(--serif);
-    font-size: 13px;
-    letter-spacing: 0.18em;
-    color: var(--olive-mid);
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .login-card h2 {
-    font-family: var(--serif);
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--olive);
-    margin-bottom: 8px;
-    letter-spacing: -0.3px;
-  }
-  .login-card > p {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-bottom: 32px;
-    line-height: 1.6;
-  }
-  .divider {
-    width: 40px; height: 1px;
-    background: var(--olive-light);
-    margin: 0 auto 28px;
-  }
+  /* ── Schermen ── */
+  .screen{display:none;}
+  .screen.active{display:block;}
+  #login-screen{min-height:100vh;display:none;align-items:center;justify-content:center;padding:24px;}
+  #login-screen.active{display:flex;}
 
-  .field { text-align: left; margin-bottom: 14px; }
-  .field label {
-    display: block; font-size: 11px; font-weight: 600;
-    color: var(--text-muted); margin-bottom: 6px;
-    text-transform: uppercase; letter-spacing: 0.08em;
+  /* ── Login / Registreer kaart ── */
+  .auth-card{
+    background:var(--card-bg);border:1px solid var(--sand-dark);
+    border-radius:var(--radius);padding:44px 40px;
+    width:100%;max-width:420px;
+    box-shadow:0 4px 32px rgba(60,58,30,0.08);
+    text-align:center;
   }
-  .field input {
-    width: 100%; padding: 11px 14px;
-    border: 1px solid var(--sand-dark);
-    border-radius: 8px;
-    font-size: 14px; font-family: var(--sans);
-    background: var(--sand-light);
-    color: var(--text);
-    outline: none; transition: border-color 0.2s;
-  }
-  .field input:focus { border-color: var(--olive-mid); background: white; }
+  .auth-logo{font-family:var(--serif);font-size:13px;letter-spacing:0.18em;color:var(--olive-mid);text-transform:uppercase;margin-bottom:6px;}
+  .auth-card h2{font-family:var(--serif);font-size:26px;font-weight:600;color:var(--olive);margin-bottom:8px;}
+  .auth-divider{width:40px;height:1px;background:var(--olive-light);margin:0 auto 20px;}
+  .auth-card p{font-size:13px;color:var(--text-muted);margin-bottom:24px;line-height:1.6;}
 
-  .login-btn {
-    width: 100%; padding: 12px;
-    background: var(--olive); color: var(--sand-light);
-    border: none; border-radius: 8px;
-    font-size: 13px; font-weight: 600;
-    letter-spacing: 0.06em; text-transform: uppercase;
-    cursor: pointer; transition: background 0.2s;
-    font-family: var(--sans); margin-top: 6px;
-  }
-  .login-btn:hover { background: var(--olive-mid); }
-  .login-btn:disabled { opacity: 0.55; cursor: default; }
+  .field{text-align:left;margin-bottom:14px;}
+  .field label{display:block;font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.08em;}
+  .field input{width:100%;padding:11px 14px;border:1px solid var(--sand-dark);border-radius:9px;font-size:14px;font-family:var(--sans);background:var(--sand-light);color:var(--text);outline:none;transition:border-color 0.2s;}
+  .field input:focus{border-color:var(--olive-mid);background:white;}
 
-  .login-error {
-    margin-top: 14px; font-size: 13px; color: #8b3a2a;
-    background: #f5ece9; border: 1px solid #dfc0b8;
-    border-radius: 8px; padding: 10px 14px;
-    display: none; text-align: left;
-  }
+  .btn-primary{width:100%;padding:12px;background:var(--olive);color:var(--sand-light);border:none;border-radius:9px;font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;font-family:var(--sans);margin-top:4px;}
+  .btn-primary:hover{background:var(--olive-mid);}
+  .btn-primary:disabled{opacity:0.55;cursor:default;}
+  .btn-link{background:none;border:none;color:var(--olive-mid);font-size:13px;cursor:pointer;text-decoration:underline;font-family:var(--sans);margin-top:14px;display:block;width:100%;text-align:center;}
+
+  .auth-error{margin-top:12px;font-size:13px;color:var(--red);background:var(--red-light);border:1px solid #dfc0b8;border-radius:8px;padding:10px 14px;text-align:left;display:none;}
+  .auth-success{margin-top:12px;font-size:13px;color:var(--green);background:var(--green-light);border:1px solid #b8d8b0;border-radius:8px;padding:10px 14px;text-align:left;display:none;}
+
+  .otp-inputs{display:flex;gap:8px;justify-content:center;margin:16px 0;}
+  .otp-inputs input{width:44px;height:52px;text-align:center;font-size:22px;font-weight:600;font-family:var(--serif);border:1.5px solid var(--sand-dark);border-radius:9px;background:var(--sand-light);color:var(--olive);outline:none;transition:border-color 0.2s;}
+  .otp-inputs input:focus{border-color:var(--olive-mid);background:white;}
 
   /* ── Header ── */
-  .header {
-    background: var(--olive);
-    color: var(--sand-light);
-    padding: 16px 28px;
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  }
-  .header-left { display: flex; align-items: center; gap: 14px; }
-  .header-wordmark {
-    font-family: var(--serif);
-    font-size: 18px; font-weight: 600;
-    letter-spacing: 0.02em;
-    color: var(--sand-light);
-  }
-  .header-sub {
-    font-size: 11px; opacity: 0.65;
-    letter-spacing: 0.06em; text-transform: uppercase;
-    margin-top: 2px;
-  }
-  .header-divider {
-    width: 1px; height: 32px;
-    background: rgba(242,239,230,0.2);
-  }
-  .logout-btn {
-    background: transparent;
-    border: 1px solid rgba(242,239,230,0.3);
-    color: var(--sand-light);
-    padding: 7px 14px; border-radius: 7px;
-    font-size: 12px; font-weight: 500; letter-spacing: 0.04em;
-    cursor: pointer; transition: background 0.2s; white-space: nowrap;
-    font-family: var(--sans);
-  }
-  .logout-btn:hover { background: rgba(242,239,230,0.12); }
+  .header{background:var(--olive);color:var(--sand-light);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .header-left{display:flex;align-items:center;gap:14px;}
+  .header-wordmark{font-family:var(--serif);font-size:18px;font-weight:600;color:var(--sand-light);}
+  .header-sub{font-size:11px;opacity:0.65;letter-spacing:0.06em;text-transform:uppercase;margin-top:2px;}
+  .header-divider{width:1px;height:32px;background:rgba(242,239,230,0.2);}
+  .header-user{font-size:12px;opacity:0.65;}
+  .logout-btn{background:transparent;border:1px solid rgba(242,239,230,0.3);color:var(--sand-light);padding:7px 14px;border-radius:7px;font-size:12px;font-weight:500;letter-spacing:0.04em;cursor:pointer;font-family:var(--sans);}
+  .logout-btn:hover{background:rgba(242,239,230,0.12);}
 
   /* ── Dashboard body ── */
-  #dashboard-screen, #ouder-screen { display: none; }
+  .welcome-bar{background:var(--sand-light);border-bottom:1px solid var(--sand-dark);padding:11px 28px;font-size:13px;color:var(--text-muted);}
+  .welcome-bar strong{color:var(--olive);font-weight:600;}
+  .main{padding:32px 28px;max-width:880px;margin:0 auto;}
 
-  .welcome-bar {
-    background: var(--sand-light);
-    border-bottom: 1px solid var(--sand-dark);
-    padding: 11px 28px;
-    font-size: 13px; color: var(--text-muted);
-    letter-spacing: 0.02em;
-  }
-  .welcome-bar strong { color: var(--olive); font-weight: 600; }
+  .section-label{display:flex;align-items:center;gap:12px;margin-bottom:16px;margin-top:36px;}
+  .section-label:first-child{margin-top:0;}
+  .section-label span{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);white-space:nowrap;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--sand-dark);}
 
-  .main {
-    padding: 32px 28px;
-    max-width: 880px;
-    margin: 0 auto;
-  }
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;}
 
-  .section-label {
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 16px; margin-top: 36px;
-  }
-  .section-label:first-child { margin-top: 0; }
-  .section-label span {
-    font-size: 10px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.12em;
-    color: var(--text-muted);
-    white-space: nowrap;
-  }
-  .section-label::after {
-    content: '';
-    flex: 1; height: 1px;
-    background: var(--sand-dark);
-  }
+  .app-card{background:var(--card-bg);border:1px solid var(--sand-dark);border-radius:var(--radius);padding:22px 18px;text-decoration:none;color:var(--text);display:flex;flex-direction:column;gap:9px;transition:transform 0.15s,box-shadow 0.15s,border-color 0.2s;}
+  .app-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(60,58,30,0.1);border-color:var(--olive-light);}
+  .app-icon{width:42px;height:42px;border-radius:10px;background:var(--sand);display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid var(--sand-dark);}
+  .app-name{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--olive);}
+  .app-desc{font-size:12px;color:var(--text-muted);line-height:1.5;}
+  .app-badge{display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;margin-top:2px;align-self:flex-start;letter-spacing:0.05em;text-transform:uppercase;}
+  .badge-public{background:#e8ead6;color:var(--olive);border:1px solid var(--olive-light);}
+  .badge-private{background:var(--sand);color:var(--text-muted);border:1px solid var(--sand-dark);}
 
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap: 12px;
-  }
+  .public-note{background:var(--sand-light);border:1px solid var(--sand-dark);border-radius:9px;padding:12px 16px;font-size:12px;color:var(--text-muted);margin-bottom:14px;display:flex;align-items:center;gap:10px;line-height:1.5;}
 
-  .app-card {
-    background: var(--card-bg);
-    border: 1px solid var(--sand-dark);
-    border-radius: var(--radius);
-    padding: 22px 18px;
-    text-decoration: none; color: var(--text);
-    display: flex; flex-direction: column; gap: 9px;
-    transition: transform 0.15s, box-shadow 0.15s, border-color 0.2s;
-  }
-  .app-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(60,58,30,0.1);
-    border-color: var(--olive-light);
-  }
+  /* ── Beheer tab ── */
+  .beheer-card{background:var(--card-bg);border:1px solid var(--sand-dark);border-radius:var(--radius);padding:24px;margin-bottom:14px;}
+  .beheer-card h3{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--olive);margin-bottom:16px;}
+  .beheer-row{display:flex;gap:10px;margin-bottom:12px;align-items:flex-end;flex-wrap:wrap;}
+  .beheer-row .field{flex:1;min-width:160px;margin-bottom:0;}
+  .beheer-row select{width:100%;padding:11px 14px;border:1px solid var(--sand-dark);border-radius:9px;font-size:14px;font-family:var(--sans);background:var(--sand-light);color:var(--text);outline:none;}
+  .btn-add{padding:11px 20px;background:var(--olive);color:var(--sand-light);border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);white-space:nowrap;}
+  .btn-add:hover{background:var(--olive-mid);}
+  .user-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--sand-dark);font-size:13px;}
+  .user-row:last-child{border-bottom:none;}
+  .user-email{flex:1;color:var(--text);}
+  .user-rol{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:0.05em;}
+  .rol-admin{background:#e8ead6;color:var(--olive);}
+  .rol-eikenlaan{background:#eff6ff;color:#185FA5;}
+  .rol-ouder{background:#faeeda;color:#854F0B;}
+  .btn-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:4px 8px;}
+  .btn-del:hover{color:var(--red);}
 
-  .app-icon {
-    width: 42px; height: 42px; border-radius: 10px;
-    background: var(--sand);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    border: 1px solid var(--sand-dark);
-  }
-
-  .app-name {
-    font-family: var(--serif);
-    font-size: 16px; font-weight: 600;
-    color: var(--olive); line-height: 1.2;
-  }
-  .app-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
-
-  .app-badge {
-    display: inline-block; font-size: 10px; font-weight: 600;
-    padding: 3px 8px; border-radius: 20px; margin-top: 2px;
-    align-self: flex-start; letter-spacing: 0.05em; text-transform: uppercase;
-  }
-  .badge-public  { background: #e8ead6; color: var(--olive); border: 1px solid var(--olive-light); }
-  .badge-private { background: var(--sand); color: var(--text-muted); border: 1px solid var(--sand-dark); }
-
-  .public-note {
-    background: var(--sand-light);
-    border: 1px solid var(--sand-dark);
-    border-radius: 9px; padding: 12px 16px;
-    font-size: 12px; color: var(--text-muted);
-    margin-bottom: 14px;
-    display: flex; align-items: center; gap: 10px; line-height: 1.5;
-  }
-  .public-note span { font-size: 16px; flex-shrink: 0; }
-
-  @media (max-width: 480px) {
-    .header-wordmark { font-size: 16px; }
-    .main { padding: 20px 16px; }
-    .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-    .app-card { padding: 15px 12px; }
-    .login-card { padding: 32px 24px; }
-    .header { padding: 14px 16px; }
+  @media(max-width:480px){
+    .auth-card{padding:32px 24px;}
+    .header{padding:14px 16px;}
+    .main{padding:20px 16px;}
+    .grid{grid-template-columns:1fr 1fr;gap:10px;}
+    .app-card{padding:15px 12px;}
   }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">Eikenlaan</div>
-    <h2>Dashboard</h2>
-    <div class="divider"></div>
-    <p>Log in met je e-mailadres en wachtwoord.</p>
-    <div class="field">
-      <label>E-mailadres</label>
-      <input type="email" id="email-input" placeholder="jouw@email.nl" autocomplete="email">
-    </div>
-    <div class="field">
-      <label>Wachtwoord</label>
-      <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="login-btn" id="login-btn" onclick="doLogin()">Inloggen</button>
-    <div class="login-error" id="login-error"></div>
+<!-- LOGIN SCHERM -->
+<div id="login-screen" class="active">
+  <div class="auth-card" id="auth-card">
+    <!-- wordt gevuld door JS -->
   </div>
 </div>
 
-<!-- VOLLEDIG DASHBOARD -->
-<div id="dashboard-screen">
+<!-- DASHBOARD SCHERMEN -->
+<div id="dashboard-admin" class="screen">
   <div class="header">
     <div class="header-left">
-      <div>
-        <div class="header-wordmark">Eikenlaan</div>
-        <div class="header-sub">Dashboard</div>
-      </div>
+      <div><div class="header-wordmark">Eikenlaan</div><div class="header-sub">Dashboard</div></div>
       <div class="header-divider"></div>
-      <div style="font-size:12px;opacity:0.65;" id="user-email-display"></div>
+      <div class="header-user" id="admin-email"></div>
     </div>
     <button class="logout-btn" onclick="logout()">Uitloggen</button>
   </div>
-  <div class="welcome-bar">Welkom terug, <strong id="user-name-display"></strong></div>
-
+  <div class="welcome-bar">Welkom terug, <strong id="admin-name"></strong></div>
   <div class="main">
     <div class="section-label"><span>Persoonlijk</span></div>
     <div class="grid">
-      <a class="app-card" href="./hartslag/">
-        <div class="app-icon">❤️</div>
-        <div class="app-name">Hartslag</div>
-        <div class="app-desc">Bloeddruk & hartslag bijhouden</div>
-        <span class="app-badge badge-private">Privé</span>
-      </a>
-      <a class="app-card" href="./dagboek/">
-        <div class="app-icon">📔</div>
-        <div class="app-name">Dagboek</div>
-        <div class="app-desc">Dagelijkse status bijhouden</div>
-        <span class="app-badge badge-private">Privé</span>
-      </a>
-      <a class="app-card" href="./spelletjes/">
-        <div class="app-icon">🎲</div>
-        <div class="app-name">Spelletjes</div>
-        <div class="app-desc">Champions League bordspellen</div>
-        <span class="app-badge badge-private">Privé</span>
-      </a>
+      <a class="app-card" href="./hartslag/"><div class="app-icon">❤️</div><div class="app-name">Hartslag</div><div class="app-desc">Bloeddruk & hartslag bijhouden</div><span class="app-badge badge-private">Privé</span></a>
+      <a class="app-card" href="./dagboek/"><div class="app-icon">📔</div><div class="app-name">Dagboek</div><div class="app-desc">Dagelijkse status bijhouden</div><span class="app-badge badge-private">Privé</span></a>
+      <a class="app-card" href="./spelletjes/"><div class="app-icon">🎲</div><div class="app-name">Spelletjes</div><div class="app-desc">Champions League bordspellen</div><span class="app-badge badge-private">Privé</span></a>
     </div>
-
     <div class="section-label"><span>Hockey — MHC Rosmalen</span></div>
-    <div class="public-note">
-      <span>👥</span>
-      <span>De hockey-apps zijn ook openbaar te bekijken zonder inloggen — ideaal om te delen met andere ouders.</span>
-    </div>
+    <div class="public-note"><span>👥</span><span>De hockey-apps zijn ook openbaar te bekijken zonder inloggen.</span></div>
     <div class="grid">
-      <a class="app-card" href="./mo11-1/">
-        <div class="app-icon">🏑</div>
-        <div class="app-name">MO11-1</div>
-        <div class="app-desc">Statistieken & standen</div>
-        <span class="app-badge badge-public">Publiek leesbaar</span>
-      </a>
-      <a class="app-card" href="./mo12-1/">
-        <div class="app-icon">🏑</div>
-        <div class="app-name">MO12-1</div>
-        <div class="app-desc">Statistieken & standen</div>
-        <span class="app-badge badge-public">Publiek leesbaar</span>
-      </a>
+      <a class="app-card" href="./mo11-1/"><div class="app-icon">🏑</div><div class="app-name">MO11-1</div><div class="app-desc">Statistieken & standen</div><span class="app-badge badge-public">Publiek leesbaar</span></a>
+      <a class="app-card" href="./mo12-1/"><div class="app-icon">🏑</div><div class="app-name">MO12-1</div><div class="app-desc">Statistieken & standen</div><span class="app-badge badge-public">Publiek leesbaar</span></a>
+    </div>
+    <div class="section-label"><span>Beheer</span></div>
+    <div class="beheer-card">
+      <h3>Gebruikersbeheer</h3>
+      <div class="beheer-row">
+        <div class="field"><label>E-mailadres</label><input type="email" id="b-email" placeholder="naam@email.nl"></div>
+        <div class="field" style="max-width:160px"><label>Rol</label>
+          <select id="b-rol">
+            <option value="ouder">Ouder</option>
+            <option value="eikenlaan">Eikenlaan</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button class="btn-add" onclick="voegGebruikerToe()">Toevoegen</button>
+      </div>
+      <div id="b-error" class="auth-error"></div>
+      <div id="b-success" class="auth-success"></div>
+      <div id="gebruikers-lijst"></div>
     </div>
   </div>
 </div>
 
-<!-- OUDER DASHBOARD -->
-<div id="ouder-screen">
+<div id="dashboard-eikenlaan" class="screen">
   <div class="header">
     <div class="header-left">
-      <div>
-        <div class="header-wordmark">MHC Rosmalen</div>
-        <div class="header-sub">Hockey statistieken</div>
-      </div>
+      <div><div class="header-wordmark">Eikenlaan</div><div class="header-sub">Dashboard</div></div>
       <div class="header-divider"></div>
-      <div style="font-size:12px;opacity:0.65;" id="ouder-email-display"></div>
+      <div class="header-user" id="eikenlaan-email"></div>
     </div>
     <button class="logout-btn" onclick="logout()">Uitloggen</button>
   </div>
-  <div class="welcome-bar">Welkom, <strong id="ouder-name-display"></strong></div>
+  <div class="welcome-bar">Welkom terug, <strong id="eikenlaan-name"></strong></div>
+  <div class="main">
+    <div class="section-label"><span>Persoonlijk</span></div>
+    <div class="grid">
+      <a class="app-card" href="./hartslag/"><div class="app-icon">❤️</div><div class="app-name">Hartslag</div><div class="app-desc">Bloeddruk & hartslag bijhouden</div><span class="app-badge badge-private">Privé</span></a>
+      <a class="app-card" href="./dagboek/"><div class="app-icon">📔</div><div class="app-name">Dagboek</div><div class="app-desc">Dagelijkse status bijhouden</div><span class="app-badge badge-private">Privé</span></a>
+      <a class="app-card" href="./spelletjes/"><div class="app-icon">🎲</div><div class="app-name">Spelletjes</div><div class="app-desc">Champions League bordspellen</div><span class="app-badge badge-private">Privé</span></a>
+    </div>
+  </div>
+</div>
 
+<div id="dashboard-ouder" class="screen">
+  <div class="header">
+    <div class="header-left">
+      <div><div class="header-wordmark">MHC Rosmalen</div><div class="header-sub">Hockey statistieken</div></div>
+      <div class="header-divider"></div>
+      <div class="header-user" id="ouder-email"></div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Uitloggen</button>
+  </div>
+  <div class="welcome-bar">Welkom, <strong id="ouder-name"></strong></div>
   <div class="main">
     <div class="section-label"><span>Hockey statistieken</span></div>
     <div class="grid">
-      <a class="app-card" href="./mo11-1/">
-        <div class="app-icon">🏑</div>
-        <div class="app-name">MO11-1</div>
-        <div class="app-desc">Statistieken bekijken & invullen</div>
-        <span class="app-badge badge-public">Toegankelijk</span>
-      </a>
-      <a class="app-card" href="./mo12-1/">
-        <div class="app-icon">🏑</div>
-        <div class="app-name">MO12-1</div>
-        <div class="app-desc">Statistieken bekijken & invullen</div>
-        <span class="app-badge badge-public">Toegankelijk</span>
-      </a>
+      <a class="app-card" href="./mo11-1/"><div class="app-icon">🏑</div><div class="app-name">MO11-1</div><div class="app-desc">Statistieken bekijken & invullen</div><span class="app-badge badge-public">Toegankelijk</span></a>
+      <a class="app-card" href="./mo12-1/"><div class="app-icon">🏑</div><div class="app-name">MO12-1</div><div class="app-desc">Statistieken bekijken & invullen</div><span class="app-badge badge-public">Toegankelijk</span></a>
     </div>
   </div>
 </div>
@@ -365,78 +213,267 @@
 <script>
 const SUPABASE_URL = 'https://hvpooifxqhovskwgzpbr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g';
-const ADMIN_EMAIL = 'cees@eikenlaan.com';
-
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-async function init() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) showCorrectDashboard(session.user);
-  sb.auth.onAuthStateChange((_e, session) => {
-    if (session) showCorrectDashboard(session.user);
-    else showLogin();
-  });
+// ── Scherm wisselen ──
+function toonScherm(id) {
+  document.getElementById('login-screen').classList.remove('active');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  if (id === 'login') {
+    document.getElementById('login-screen').classList.add('active');
+  } else {
+    document.getElementById(id).classList.add('active');
+  }
 }
 
-function showCorrectDashboard(user) {
-  user.email === ADMIN_EMAIL ? showAdminDashboard(user) : showOuderDashboard(user);
-}
-
-function showAdminDashboard(user) {
-  hide('login-screen'); hide('ouder-screen');
-  show('dashboard-screen');
-  document.getElementById('user-email-display').textContent = user.email;
-  document.getElementById('user-name-display').textContent = formatName(user.email);
-}
-
-function showOuderDashboard(user) {
-  hide('login-screen'); hide('dashboard-screen');
-  show('ouder-screen');
-  document.getElementById('ouder-email-display').textContent = user.email;
-  document.getElementById('ouder-name-display').textContent = formatName(user.email);
-}
-
-function showLogin() {
-  hide('dashboard-screen'); hide('ouder-screen');
-  document.getElementById('login-screen').style.display = 'flex';
-}
-
-function show(id) { document.getElementById(id).style.display = 'block'; }
-function hide(id) { document.getElementById(id).style.display = 'none'; }
-function formatName(email) {
+function formatNaam(email) {
   const n = email.split('@')[0];
   return n.charAt(0).toUpperCase() + n.slice(1);
 }
 
-async function doLogin() {
-  const email    = document.getElementById('email-input').value.trim();
-  const password = document.getElementById('password-input').value;
-  const btn      = document.getElementById('login-btn');
-  const err      = document.getElementById('login-error');
+// ── Dashboard tonen op basis van rol ──
+async function toonDashboard(user) {
+  const email = user.email;
+  const { data } = await sb.from('email_whitelist').select('rol').eq('email', email).single();
+  const rol = data ? data.rol : 'ouder';
 
-  if (!email || !password) {
-    err.textContent = 'Vul je e-mailadres en wachtwoord in.';
-    err.style.display = 'block'; return;
-  }
-  btn.disabled = true; btn.textContent = 'Inloggen…';
-  err.style.display = 'none';
-
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) {
-    err.textContent = 'Inloggen mislukt — controleer je e-mailadres en wachtwoord.';
-    err.style.display = 'block';
-    btn.disabled = false; btn.textContent = 'Inloggen';
+  if (rol === 'admin') {
+    document.getElementById('admin-email').textContent = email;
+    document.getElementById('admin-name').textContent = formatNaam(email);
+    toonScherm('dashboard-admin');
+    laadGebruikers();
+  } else if (rol === 'eikenlaan') {
+    document.getElementById('eikenlaan-email').textContent = email;
+    document.getElementById('eikenlaan-name').textContent = formatNaam(email);
+    toonScherm('dashboard-eikenlaan');
+  } else {
+    document.getElementById('ouder-email').textContent = email;
+    document.getElementById('ouder-name').textContent = formatNaam(email);
+    toonScherm('dashboard-ouder');
   }
 }
 
-async function logout() { await sb.auth.signOut(); }
+// ── Auth state ──
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    toonDashboard(session.user);
+  } else {
+    toonLoginScherm();
+  }
+  sb.auth.onAuthStateChange((_e, session) => {
+    if (session) toonDashboard(session.user);
+    else toonLoginScherm();
+  });
+}
 
-['email-input','password-input'].forEach(id =>
-  document.getElementById(id).addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-  })
-);
+async function logout() {
+  await sb.auth.signOut();
+  toonLoginScherm();
+}
+
+// ── Login scherm ──
+function toonLoginScherm() {
+  toonScherm('login');
+  renderLogin();
+}
+
+function renderLogin() {
+  document.getElementById('auth-card').innerHTML = `
+    <div class="auth-logo">Eikenlaan</div>
+    <h2>Inloggen</h2>
+    <div class="auth-divider"></div>
+    <div class="field"><label>E-mailadres</label><input type="email" id="l-email" placeholder="jouw@email.nl" autocomplete="email"></div>
+    <div class="field"><label>Wachtwoord</label><input type="password" id="l-ww" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-primary" onclick="doLogin()">Inloggen</button>
+    <div class="auth-error" id="l-error"></div>
+    <button class="btn-link" onclick="renderRegistreer()">Nog geen account? Registreren</button>
+  `;
+  document.getElementById('l-email').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('l-ww').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const ww    = document.getElementById('l-ww').value;
+  const err   = document.getElementById('l-error');
+  const btn   = document.querySelector('#auth-card .btn-primary');
+  if (!email || !ww) { toonErr(err, 'Vul je e-mailadres en wachtwoord in.'); return; }
+  btn.disabled = true; btn.textContent = 'Inloggen…';
+  const { error } = await sb.auth.signInWithPassword({ email, password: ww });
+  if (error) { toonErr(err, 'Inloggen mislukt — controleer je gegevens.'); btn.disabled=false; btn.textContent='Inloggen'; }
+}
+
+// ── Registreer: stap 1 — email ──
+function renderRegistreer() {
+  document.getElementById('auth-card').innerHTML = `
+    <div class="auth-logo">Eikenlaan</div>
+    <h2>Registreren</h2>
+    <div class="auth-divider"></div>
+    <p>Voer je e-mailadres in. Je ontvangt een 6-cijferige code om je account te activeren.</p>
+    <div class="field"><label>E-mailadres</label><input type="email" id="r-email" placeholder="jouw@email.nl" autocomplete="email"></div>
+    <button class="btn-primary" onclick="stuurOTP()">Code versturen</button>
+    <div class="auth-error" id="r-error"></div>
+    <button class="btn-link" onclick="renderLogin()">Terug naar inloggen</button>
+  `;
+  document.getElementById('r-email').addEventListener('keydown', e => { if(e.key==='Enter') stuurOTP(); });
+}
+
+async function stuurOTP() {
+  const email = document.getElementById('r-email').value.trim();
+  const err   = document.getElementById('r-error');
+  const btn   = document.querySelector('#auth-card .btn-primary');
+  if (!email) { toonErr(err, 'Voer een e-mailadres in.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Controleren…';
+
+  // Check of email in whitelist staat
+  const { data: wl } = await sb.from('email_whitelist').select('rol').eq('email', email).single();
+  if (!wl) {
+    toonErr(err, 'Dit e-mailadres is niet bekend. Neem contact op met de beheerder.');
+    btn.disabled=false; btn.textContent='Code versturen';
+    return;
+  }
+
+  // Check of gebruiker al bestaat
+  const { data: { user: bestaand } } = await sb.auth.getUser();
+  // Stuur OTP via Supabase magic link / OTP
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: true, emailRedirectTo: window.location.href }
+  });
+
+  if (error) {
+    toonErr(err, 'Fout bij versturen: ' + error.message);
+    btn.disabled=false; btn.textContent='Code versturen';
+    return;
+  }
+
+  renderOTP(email);
+}
+
+// ── Registreer: stap 2 — OTP + wachtwoord ──
+function renderOTP(email) {
+  document.getElementById('auth-card').innerHTML = `
+    <div class="auth-logo">Eikenlaan</div>
+    <h2>Code invoeren</h2>
+    <div class="auth-divider"></div>
+    <p>We hebben een 6-cijferige code gestuurd naar <strong style="color:var(--olive)">${email}</strong>. Voer de code in en kies een wachtwoord.</p>
+    <div class="otp-inputs" id="otp-inputs">
+      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
+      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
+      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
+      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
+      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
+      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
+    </div>
+    <div class="field"><label>Wachtwoord</label><input type="password" id="r-ww1" placeholder="Minimaal 8 tekens" autocomplete="new-password"></div>
+    <div class="field"><label>Wachtwoord bevestigen</label><input type="password" id="r-ww2" placeholder="Herhaal wachtwoord" autocomplete="new-password"></div>
+    <button class="btn-primary" onclick="bevestigOTP('${email}')">Account aanmaken</button>
+    <div class="auth-error" id="r-error"></div>
+    <button class="btn-link" onclick="renderRegistreer()">Terug</button>
+  `;
+  setupOTPInputs();
+}
+
+function setupOTPInputs() {
+  const inputs = document.querySelectorAll('.otp-inputs input');
+  inputs.forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      if (inp.value && i < inputs.length-1) inputs[i+1].focus();
+    });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !inp.value && i > 0) inputs[i-1].focus();
+    });
+    inp.addEventListener('paste', e => {
+      const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'');
+      inputs.forEach((inp2, j) => { inp2.value = paste[j] || ''; });
+      inputs[Math.min(paste.length, inputs.length-1)].focus();
+      e.preventDefault();
+    });
+  });
+  inputs[0].focus();
+}
+
+function getOTPCode() {
+  return Array.from(document.querySelectorAll('.otp-inputs input')).map(i => i.value).join('');
+}
+
+async function bevestigOTP(email) {
+  const code = getOTPCode();
+  const ww1  = document.getElementById('r-ww1').value;
+  const ww2  = document.getElementById('r-ww2').value;
+  const err  = document.getElementById('r-error');
+  const btn  = document.querySelector('#auth-card .btn-primary');
+
+  if (code.length !== 6) { toonErr(err, 'Voer de volledige 6-cijferige code in.'); return; }
+  if (ww1.length < 8)    { toonErr(err, 'Wachtwoord moet minimaal 8 tekens bevatten.'); return; }
+  if (ww1 !== ww2)       { toonErr(err, 'Wachtwoorden komen niet overeen.'); return; }
+
+  btn.disabled=true; btn.textContent='Verifiëren…';
+
+  // Verifieer OTP
+  const { data, error: otpErr } = await sb.auth.verifyOtp({
+    email, token: code, type: 'email'
+  });
+
+  if (otpErr) {
+    toonErr(err, 'Ongeldige of verlopen code. Probeer opnieuw.');
+    btn.disabled=false; btn.textContent='Account aanmaken';
+    return;
+  }
+
+  // Stel wachtwoord in
+  const { error: wwErr } = await sb.auth.updateUser({ password: ww1 });
+  if (wwErr) {
+    toonErr(err, 'Fout bij instellen wachtwoord: ' + wwErr.message);
+    btn.disabled=false; btn.textContent='Account aanmaken';
+    return;
+  }
+
+  // Klaar — auth state change handelt de rest af
+}
+
+// ── Beheer: gebruikers laden ──
+async function laadGebruikers() {
+  const { data } = await sb.from('email_whitelist').select('*').order('email');
+  if (!data) return;
+  document.getElementById('gebruikers-lijst').innerHTML = data.map(u => `
+    <div class="user-row">
+      <span class="user-email">${u.email}</span>
+      <span class="user-rol rol-${u.rol}">${u.rol}</span>
+      ${u.email !== 'cees@eikenlaan.com' ? `<button class="btn-del" onclick="verwijderGebruiker('${u.email}')">✕</button>` : ''}
+    </div>
+  `).join('');
+}
+
+async function voegGebruikerToe() {
+  const email = document.getElementById('b-email').value.trim();
+  const rol   = document.getElementById('b-rol').value;
+  const err   = document.getElementById('b-error');
+  const suc   = document.getElementById('b-success');
+  err.style.display='none'; suc.style.display='none';
+  if (!email) { toonErr(err, 'Voer een e-mailadres in.'); return; }
+  const { error } = await sb.from('email_whitelist').upsert({ email, rol }, { onConflict:'email' });
+  if (error) { toonErr(err, 'Fout: ' + error.message); return; }
+  suc.textContent = email + ' toegevoegd als ' + rol + '.';
+  suc.style.display = 'block';
+  document.getElementById('b-email').value = '';
+  laadGebruikers();
+}
+
+async function verwijderGebruiker(email) {
+  if (!confirm(email + ' verwijderen?')) return;
+  await sb.from('email_whitelist').delete().eq('email', email);
+  laadGebruikers();
+}
+
+// ── Helpers ──
+function toonErr(el, msg) {
+  el.textContent = msg;
+  el.style.display = 'block';
+}
 
 init();
 </script>
