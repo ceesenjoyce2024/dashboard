@@ -107,6 +107,8 @@
   .rol-ouder{background:#faeeda;color:#854F0B;}
   .btn-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:4px 8px;}
   .btn-del:hover{color:var(--red);}
+  .rol-select{font-family:var(--sans);font-size:12px;padding:4px 8px;border:1px solid var(--sand-dark);border-radius:7px;background:var(--sand-light);color:var(--text);cursor:pointer;outline:none;}
+  .rol-select:focus{border-color:var(--olive-mid);}
   .beheer-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--card-bg);border:1px solid var(--sand-dark);border-radius:var(--radius);font-family:var(--serif);font-size:15px;font-weight:600;color:var(--olive);cursor:pointer;transition:background 0.2s;}
   .beheer-toggle:hover{background:#edeade;}
   .beheer-toggle .chevron{font-size:18px;color:var(--olive-light);transition:transform 0.2s;}
@@ -460,8 +462,14 @@ async function laadGebruikers() {
   document.getElementById('gebruikers-lijst').innerHTML = data.map(u => `
     <div class="user-row">
       <span class="user-email">${u.email}</span>
-      <span class="user-rol rol-${u.rol}">${u.rol}</span>
-      ${u.email !== 'cees@eikenlaan.com' ? `<button class="btn-del" onclick="verwijderGebruiker('${u.email}')">✕</button>` : ''}
+      ${u.email !== 'cees@eikenlaan.com' ? `
+        <select class="rol-select" onchange="wijzigRol('${u.email}', this.value)">
+          <option value="ouder" ${u.rol==='ouder'?'selected':''}>Ouder</option>
+          <option value="eikenlaan" ${u.rol==='eikenlaan'?'selected':''}>Eikenlaan</option>
+          <option value="admin" ${u.rol==='admin'?'selected':''}>Admin</option>
+        </select>
+        <button class="btn-del" onclick="verwijderGebruiker('${u.email}')">✕</button>
+      ` : `<span class="user-rol rol-admin">admin</span>`}
     </div>
   `).join('');
 }
@@ -479,6 +487,17 @@ async function voegGebruikerToe() {
   suc.style.display = 'block';
   document.getElementById('b-email').value = '';
   laadGebruikers();
+}
+
+async function wijzigRol(email, rol) {
+  const err = document.getElementById('b-error');
+  const suc = document.getElementById('b-success');
+  err.style.display='none'; suc.style.display='none';
+  const { error } = await sb.from('email_whitelist').update({ rol }).eq('email', email);
+  if (error) { toonErr(err, 'Fout bij wijzigen: ' + error.message); laadGebruikers(); return; }
+  suc.textContent = email + ' gewijzigd naar ' + rol + '.';
+  suc.style.display = 'block';
+  setTimeout(() => { suc.style.display='none'; }, 3000);
 }
 
 async function verwijderGebruiker(email) {
