@@ -267,14 +267,32 @@ async function toonDashboard(user) {
 // ── Auth state ──
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
+  const params = new URLSearchParams(window.location.search);
+  const stelWW = params.get('stelww') === '1';
+
+  if (session && stelWW) {
+    // Gebruiker komt terug via magic link — wachtwoord instellen
+    toonScherm('login');
+    renderStelWachtwoordIn();
+    // Verwijder ?stelww=1 uit URL
+    window.history.replaceState({}, '', window.location.pathname);
+  } else if (session) {
     toonDashboard(session.user);
   } else {
     toonLoginScherm();
   }
+
   sb.auth.onAuthStateChange((_e, session) => {
-    if (session) toonDashboard(session.user);
-    else toonLoginScherm();
+    const p = new URLSearchParams(window.location.search);
+    if (session && p.get('stelww') === '1') {
+      toonScherm('login');
+      renderStelWachtwoordIn();
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (session) {
+      toonDashboard(session.user);
+    } else {
+      toonLoginScherm();
+    }
   });
 }
 
@@ -315,22 +333,22 @@ async function doLogin() {
   if (error) { toonErr(err, 'Inloggen mislukt — controleer je gegevens.'); btn.disabled=false; btn.textContent='Inloggen'; }
 }
 
-// ── Registreer: stap 1 — email ──
+// ── Registreer: email invoer + magic link ──
 function renderRegistreer() {
   document.getElementById('auth-card').innerHTML = `
     <div class="auth-logo">Eikenlaan</div>
     <h2>Registreren</h2>
     <div class="auth-divider"></div>
-    <p>Voer je e-mailadres in. Je ontvangt een 6-cijferige code om je account te activeren.</p>
+    <p>Voer je e-mailadres in. Je ontvangt een link om je account te activeren en een wachtwoord in te stellen.</p>
     <div class="field"><label>E-mailadres</label><input type="email" id="r-email" placeholder="jouw@email.nl" autocomplete="email"></div>
-    <button class="btn-primary" onclick="stuurOTP()">Code versturen</button>
+    <button class="btn-primary" onclick="stuurMagicLink()">Verstuur activatielink</button>
     <div class="auth-error" id="r-error"></div>
     <button class="btn-link" onclick="renderLogin()">Terug naar inloggen</button>
   `;
-  document.getElementById('r-email').addEventListener('keydown', e => { if(e.key==='Enter') stuurOTP(); });
+  document.getElementById('r-email').addEventListener('keydown', e => { if(e.key==='Enter') stuurMagicLink(); });
 }
 
-async function stuurOTP() {
+async function stuurMagicLink() {
   const email = document.getElementById('r-email').value.trim();
   const err   = document.getElementById('r-error');
   const btn   = document.querySelector('#auth-card .btn-primary');
@@ -342,107 +360,69 @@ async function stuurOTP() {
   const { data: wl } = await sb.from('email_whitelist').select('rol').eq('email', email).single();
   if (!wl) {
     toonErr(err, 'Dit e-mailadres is niet bekend. Neem contact op met de beheerder.');
-    btn.disabled=false; btn.textContent='Code versturen';
+    btn.disabled=false; btn.textContent='Verstuur activatielink';
     return;
   }
 
-  // Check of gebruiker al bestaat
-  const { data: { user: bestaand } } = await sb.auth.getUser();
-  // Stuur OTP via Supabase magic link / OTP
+  // Stuur magic link — redirect naar /stel-wachtwoord-in pagina
+  const redirectUrl = window.location.origin + '/?stelww=1';
   const { error } = await sb.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: true, emailRedirectTo: window.location.href }
+    options: { shouldCreateUser: true, emailRedirectTo: redirectUrl }
   });
 
   if (error) {
     toonErr(err, 'Fout bij versturen: ' + error.message);
-    btn.disabled=false; btn.textContent='Code versturen';
+    btn.disabled=false; btn.textContent='Verstuur activatielink';
     return;
   }
 
-  renderOTP(email);
-}
-
-// ── Registreer: stap 2 — OTP + wachtwoord ──
-function renderOTP(email) {
+  // Toon bevestiging
   document.getElementById('auth-card').innerHTML = `
     <div class="auth-logo">Eikenlaan</div>
-    <h2>Code invoeren</h2>
+    <h2>Controleer je email</h2>
     <div class="auth-divider"></div>
-    <p>We hebben een 6-cijferige code gestuurd naar <strong style="color:var(--olive)">${email}</strong>. Voer de code in en kies een wachtwoord.</p>
-    <div class="otp-inputs" id="otp-inputs">
-      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
-      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
-      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
-      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
-      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
-      <input type="tel" maxlength="1" pattern="[0-9]" inputmode="numeric">
+    <p style="margin-bottom:16px">We hebben een activatielink gestuurd naar<br><strong style="color:var(--olive)">${email}</strong></p>
+    <p>Klik op de link in de email om je account te activeren en een wachtwoord in te stellen.</p>
+    <div style="margin-top:20px;padding:14px;background:var(--sand-light);border-radius:9px;border:1px solid var(--sand-dark);font-size:12px;color:var(--text-muted);line-height:1.6">
+      Geen email ontvangen? Controleer je spammap of
+      <button class="btn-link" style="display:inline;margin:0;font-size:12px" onclick="renderRegistreer()">probeer opnieuw</button>.
     </div>
+  `;
+}
+
+// ── Wachtwoord instellen na magic link ──
+function renderStelWachtwoordIn() {
+  document.getElementById('auth-card').innerHTML = `
+    <div class="auth-logo">Eikenlaan</div>
+    <h2>Wachtwoord instellen</h2>
+    <div class="auth-divider"></div>
+    <p>Kies een wachtwoord voor je account.</p>
     <div class="field"><label>Wachtwoord</label><input type="password" id="r-ww1" placeholder="Minimaal 8 tekens" autocomplete="new-password"></div>
     <div class="field"><label>Wachtwoord bevestigen</label><input type="password" id="r-ww2" placeholder="Herhaal wachtwoord" autocomplete="new-password"></div>
-    <button class="btn-primary" onclick="bevestigOTP('${email}')">Account aanmaken</button>
-    <div class="auth-error" id="r-error"></div>
-    <button class="btn-link" onclick="renderRegistreer()">Terug</button>
+    <button class="btn-primary" onclick="slaWachtwoordOp()">Wachtwoord opslaan</button>
+    <div class="auth-error" id="ww-error"></div>
   `;
-  setupOTPInputs();
 }
 
-function setupOTPInputs() {
-  const inputs = document.querySelectorAll('.otp-inputs input');
-  inputs.forEach((inp, i) => {
-    inp.addEventListener('input', () => {
-      if (inp.value && i < inputs.length-1) inputs[i+1].focus();
-    });
-    inp.addEventListener('keydown', e => {
-      if (e.key === 'Backspace' && !inp.value && i > 0) inputs[i-1].focus();
-    });
-    inp.addEventListener('paste', e => {
-      const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'');
-      inputs.forEach((inp2, j) => { inp2.value = paste[j] || ''; });
-      inputs[Math.min(paste.length, inputs.length-1)].focus();
-      e.preventDefault();
-    });
-  });
-  inputs[0].focus();
-}
+async function slaWachtwoordOp() {
+  const ww1 = document.getElementById('r-ww1').value;
+  const ww2 = document.getElementById('r-ww2').value;
+  const err = document.getElementById('ww-error');
+  const btn = document.querySelector('#auth-card .btn-primary');
 
-function getOTPCode() {
-  return Array.from(document.querySelectorAll('.otp-inputs input')).map(i => i.value).join('');
-}
+  if (ww1.length < 8) { toonErr(err, 'Wachtwoord moet minimaal 8 tekens bevatten.'); return; }
+  if (ww1 !== ww2)    { toonErr(err, 'Wachtwoorden komen niet overeen.'); return; }
 
-async function bevestigOTP(email) {
-  const code = getOTPCode();
-  const ww1  = document.getElementById('r-ww1').value;
-  const ww2  = document.getElementById('r-ww2').value;
-  const err  = document.getElementById('r-error');
-  const btn  = document.querySelector('#auth-card .btn-primary');
+  btn.disabled=true; btn.textContent='Opslaan…';
 
-  if (code.length !== 6) { toonErr(err, 'Voer de volledige 6-cijferige code in.'); return; }
-  if (ww1.length < 8)    { toonErr(err, 'Wachtwoord moet minimaal 8 tekens bevatten.'); return; }
-  if (ww1 !== ww2)       { toonErr(err, 'Wachtwoorden komen niet overeen.'); return; }
-
-  btn.disabled=true; btn.textContent='Verifiëren…';
-
-  // Verifieer OTP
-  const { data, error: otpErr } = await sb.auth.verifyOtp({
-    email, token: code, type: 'email'
-  });
-
-  if (otpErr) {
-    toonErr(err, 'Ongeldige of verlopen code. Probeer opnieuw.');
-    btn.disabled=false; btn.textContent='Account aanmaken';
+  const { error } = await sb.auth.updateUser({ password: ww1 });
+  if (error) {
+    toonErr(err, 'Fout: ' + error.message);
+    btn.disabled=false; btn.textContent='Wachtwoord opslaan';
     return;
   }
-
-  // Stel wachtwoord in
-  const { error: wwErr } = await sb.auth.updateUser({ password: ww1 });
-  if (wwErr) {
-    toonErr(err, 'Fout bij instellen wachtwoord: ' + wwErr.message);
-    btn.disabled=false; btn.textContent='Account aanmaken';
-    return;
-  }
-
-  // Klaar — auth state change handelt de rest af
+  // Wachtwoord ingesteld — auth state change handelt redirect af
 }
 
 // ── Beheer toggle ──
