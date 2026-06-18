@@ -1,0 +1,332 @@
+/* ===========================================================================
+   Eikenlaan — gedeelde stijl (warm editorial, premium)
+   Eén bron voor alle apps. Semantische tokens zodat light/dark schoon werkt.
+   Bestaande class-namen en gedrag blijven ongewijzigd.
+   =========================================================================== */
+
+/* ── Tokens: light (default) ─────────────────────────────────────────────── */
+:root {
+  /* merk-palet (warm, aarde) */
+  --sand:        #e8e4d9;
+  --sand-light:  #f2efe6;
+  --sand-dark:   #d8d4c6;
+  --olive:       #5c5a2e;
+  --olive-mid:   #7a7838;
+  --olive-light: #c8c89a;
+
+  /* semantische oppervlakken & tekst */
+  --bg:           #ece9df;
+  --surface:      #f7f4ec;
+  --surface-2:    #f2efe6;
+  --surface-3:    #e8e4d9;
+  --card-bg:      var(--surface);   /* legacy-alias (sub-apps) */
+  --border:       #d8d4c6;
+  --border-soft:  rgba(60,58,30,0.08);
+
+  --text:         #3d3b1e;
+  --text-muted:   #7a7860;
+  --heading:      #5c5a2e;
+
+  /* accent (knoppen / actieve elementen) */
+  --accent:          #5c5a2e;
+  --accent-hover:    #7a7838;
+  --accent-contrast: #f4f1e7;
+  --accent-soft:     #c8c89a;
+
+  /* header (eigen tokens zodat dark mode niet botst met heading-kleur) */
+  --header-bg:       #5c5a2e;
+  --header-text:     #f2efe6;
+  --header-dim:      rgba(242,239,230,0.66);
+  --header-border:   rgba(242,239,230,0.22);
+
+  /* status */
+  --red:        #8a2828;
+  --red-light:  #fdf0f0;
+  --red-border: #dfc0b8;
+  --green:      #2e6e32;
+  --green-light:#eaf2e8;
+  --green-border:#b8d8b0;
+  --blue:       #185fa5;
+  --blue-light: #eff6ff;
+  --amber:      #854f0b;
+  --amber-light:#faeeda;
+  --teal:       #4a8a8a;
+
+  /* rol-badges */
+  --rol-admin-bg:    #e8ead6;
+  --rol-eikenlaan-bg:#eff6ff;
+  --rol-ouder-bg:    #faeeda;
+
+  /* vorm */
+  --radius:     14px;
+  --radius-sm:  9px;
+  --radius-pill:999px;
+
+  /* spacing-ritme (8px) */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+
+  /* typografie */
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans:  'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* elevatie (gelaagd: rust → hover) */
+  --shadow-1: 0 1px 2px rgba(60,58,30,0.05), 0 2px 8px rgba(60,58,30,0.05);
+  --shadow-2: 0 6px 16px rgba(60,58,30,0.10), 0 14px 36px rgba(60,58,30,0.09);
+  --ring:     0 0 0 3px rgba(122,120,56,0.24);
+}
+
+/* ── Tokens: dark ────────────────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  --sand:        #2a2820;
+  --sand-light:  #322f26;
+  --sand-dark:   #423f32;
+  --olive:       #d6d5a6;
+  --olive-mid:   #c0bf83;
+  --olive-light: #6f6e40;
+
+  --bg:          #1d1b15;
+  --surface:     #2a2820;
+  --surface-2:   #322f26;
+  --surface-3:   #38352b;
+  --card-bg:     var(--surface);
+  --border:      #423f32;
+  --border-soft: rgba(0,0,0,0.28);
+
+  --text:        #ece8da;
+  --text-muted:  #aaa692;
+  --heading:     #d6d5a6;
+
+  --accent:          #8a883f;
+  --accent-hover:    #a3a14d;
+  --accent-contrast: #1d1b15;
+  --accent-soft:     #6f6e40;
+
+  --header-bg:       #232118;
+  --header-text:     #ece8da;
+  --header-dim:      rgba(236,232,218,0.6);
+  --header-border:   rgba(236,232,218,0.14);
+
+  --red:        #e29a93;
+  --red-light:  #3a2420;
+  --red-border: #5a342e;
+  --green:      #9fd0a3;
+  --green-light:#22301f;
+  --green-border:#37512f;
+  --blue:       #9cc1e6;
+  --blue-light: #1e2a38;
+  --amber:      #e7b675;
+  --amber-light:#352a1b;
+  --teal:       #7fb3a6;
+
+  --rol-admin-bg:    #34331f;
+  --rol-eikenlaan-bg:#1e2a38;
+  --rol-ouder-bg:    #352a1b;
+
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.4),  0 2px 10px rgba(0,0,0,0.35);
+  --shadow-2: 0 8px 20px rgba(0,0,0,0.5), 0 18px 44px rgba(0,0,0,0.45);
+  --ring:     0 0 0 3px rgba(168,166,90,0.3);
+}
+
+/* Automatische dark mode wanneer geen expliciete keuze is gemaakt */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sand: #2a2820; --sand-light: #322f26; --sand-dark: #423f32;
+    --olive: #d6d5a6; --olive-mid: #c0bf83; --olive-light: #6f6e40;
+    --bg: #1d1b15; --surface: #2a2820; --surface-2: #322f26; --surface-3: #38352b; --card-bg: var(--surface);
+    --border: #423f32; --border-soft: rgba(0,0,0,0.28);
+    --text: #ece8da; --text-muted: #aaa692; --heading: #d6d5a6;
+    --accent: #8a883f; --accent-hover: #a3a14d; --accent-contrast: #1d1b15; --accent-soft: #6f6e40;
+    --header-bg: #232118; --header-text: #ece8da; --header-dim: rgba(236,232,218,0.6); --header-border: rgba(236,232,218,0.14);
+    --red: #e29a93; --red-light: #3a2420; --red-border: #5a342e;
+    --green: #9fd0a3; --green-light: #22301f; --green-border: #37512f;
+    --blue: #9cc1e6; --blue-light: #1e2a38; --amber: #e7b675; --amber-light: #352a1b; --teal: #7fb3a6;
+    --rol-admin-bg: #34331f; --rol-eikenlaan-bg: #1e2a38; --rol-ouder-bg: #352a1b;
+    --shadow-1: 0 1px 2px rgba(0,0,0,0.4), 0 2px 10px rgba(0,0,0,0.35);
+    --shadow-2: 0 8px 20px rgba(0,0,0,0.5), 0 18px 44px rgba(0,0,0,0.45);
+    --ring: 0 0 0 3px rgba(168,166,90,0.3);
+  }
+}
+
+/* ── Basis ───────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+a { color: var(--accent-hover); }
+:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--radius-sm); }
+
+/* ── Schermen ────────────────────────────────────────────────────────────── */
+.screen { display: none; }
+.screen.active { display: block; }
+#login-screen { min-height: 100vh; display: none; align-items: center; justify-content: center; padding: var(--sp-5); }
+#login-screen.active { display: flex; }
+
+/* ── Login / registreer kaart ────────────────────────────────────────────── */
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-2);
+  text-align: center;
+}
+.auth-logo { font-family: var(--serif); font-size: 13px; letter-spacing: 0.2em; color: var(--olive-mid); text-transform: uppercase; margin-bottom: 6px; }
+.auth-card h2 { font-family: var(--serif); font-size: 27px; font-weight: 600; color: var(--heading); margin-bottom: 8px; letter-spacing: -0.01em; }
+.auth-divider { width: 40px; height: 1px; background: var(--olive-light); margin: 0 auto 22px; }
+.auth-card p { font-size: 13px; color: var(--text-muted); margin-bottom: var(--sp-5); line-height: 1.65; }
+
+/* ── Formuliervelden ─────────────────────────────────────────────────────── */
+.field { text-align: left; margin-bottom: var(--sp-4); }
+.field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
+.field input {
+  width: 100%; padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; font-family: var(--sans);
+  background: var(--surface-2); color: var(--text);
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.field input:focus { border-color: var(--olive-mid); background: var(--surface); box-shadow: var(--ring); }
+.field input::placeholder { color: var(--text-muted); opacity: 0.7; }
+
+/* ── Knoppen ─────────────────────────────────────────────────────────────── */
+.btn-primary {
+  width: 100%; padding: 13px;
+  background: var(--accent); color: var(--accent-contrast);
+  border: none; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer; font-family: var(--sans); margin-top: var(--sp-1);
+  transition: background 0.2s, transform 0.12s, box-shadow 0.2s;
+}
+.btn-primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-1); }
+.btn-primary:active { transform: translateY(1px); }
+.btn-primary:disabled { opacity: 0.55; cursor: default; box-shadow: none; }
+.btn-link { background: none; border: none; color: var(--olive-mid); font-size: 13px; cursor: pointer; text-decoration: underline; font-family: var(--sans); margin-top: var(--sp-3); display: block; width: 100%; text-align: center; }
+.btn-link:hover { color: var(--accent-hover); }
+
+/* ── Meldingen ───────────────────────────────────────────────────────────── */
+.auth-error   { margin-top: var(--sp-3); font-size: 13px; color: var(--red);   background: var(--red-light);   border: 1px solid var(--red-border);   border-radius: var(--radius-sm); padding: 10px 14px; text-align: left; display: none; }
+.auth-success { margin-top: var(--sp-3); font-size: 13px; color: var(--green); background: var(--green-light); border: 1px solid var(--green-border); border-radius: var(--radius-sm); padding: 10px 14px; text-align: left; display: none; }
+
+/* ── OTP ─────────────────────────────────────────────────────────────────── */
+.otp-inputs { display: flex; gap: var(--sp-2); justify-content: center; margin: var(--sp-4) 0; }
+.otp-inputs input {
+  width: 44px; height: 52px; text-align: center; font-size: 22px; font-weight: 600;
+  font-family: var(--serif); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--heading); outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.otp-inputs input:focus { border-color: var(--olive-mid); background: var(--surface); box-shadow: var(--ring); }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.header { background: var(--header-bg); color: var(--header-text); padding: var(--sp-4) 28px; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.header-left { display: flex; align-items: center; gap: var(--sp-4); }
+.header-wordmark { font-family: var(--serif); font-size: 19px; font-weight: 600; color: var(--header-text); letter-spacing: 0.01em; }
+.header-sub { font-size: 11px; color: var(--header-dim); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+.header-divider { width: 1px; height: 32px; background: var(--header-border); }
+.header-user { font-size: 12px; color: var(--header-dim); }
+.logout-btn { background: transparent; border: 1px solid var(--header-border); color: var(--header-text); padding: 8px 15px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; cursor: pointer; font-family: var(--sans); transition: background 0.2s, border-color 0.2s; }
+.logout-btn:hover { background: rgba(242,239,230,0.14); border-color: var(--header-text); }
+
+/* ── Dashboard body ──────────────────────────────────────────────────────── */
+.welcome-bar { background: var(--surface-2); border-bottom: 1px solid var(--border); padding: 13px 28px; font-size: 13px; color: var(--text-muted); }
+.welcome-bar strong { color: var(--heading); font-weight: 600; }
+.main { padding: var(--sp-6) 28px var(--sp-7); max-width: 900px; margin: 0 auto; }
+
+.section-label { display: flex; align-items: center; gap: var(--sp-3); margin-top: var(--sp-7); margin-bottom: var(--sp-4); }
+.section-label:first-child { margin-top: 0; }
+.section-label span { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); white-space: nowrap; }
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-4); }
+
+.app-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px 20px; text-decoration: none; color: var(--text);
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: var(--shadow-1);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.2s ease;
+}
+.app-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); border-color: var(--olive-light); }
+.app-icon { width: 46px; height: 46px; border-radius: 12px; background: var(--surface-3); display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1px solid var(--border); }
+.app-name { font-family: var(--serif); font-size: 17px; font-weight: 600; color: var(--heading); }
+.app-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+.app-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill); margin-top: 2px; align-self: flex-start; letter-spacing: 0.05em; text-transform: uppercase; }
+.badge-public  { background: var(--rol-admin-bg); color: var(--olive); border: 1px solid var(--olive-light); }
+.badge-private { background: var(--surface-3); color: var(--text-muted); border: 1px solid var(--border); }
+
+.public-note { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 13px 16px; font-size: 12px; color: var(--text-muted); margin-bottom: var(--sp-4); display: flex; align-items: center; gap: 10px; line-height: 1.5; }
+
+/* ── Beheer ──────────────────────────────────────────────────────────────── */
+.beheer-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-5); margin-bottom: var(--sp-4); box-shadow: var(--shadow-1); }
+.beheer-card h3 { font-family: var(--serif); font-size: 16px; font-weight: 600; color: var(--heading); margin-bottom: var(--sp-4); }
+.beheer-row { display: flex; gap: 10px; margin-bottom: var(--sp-3); align-items: flex-end; flex-wrap: wrap; }
+.beheer-row .field { flex: 1; min-width: 160px; margin-bottom: 0; }
+.beheer-row select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: var(--sans); background: var(--surface-2); color: var(--text); outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+.beheer-row select:focus { border-color: var(--olive-mid); box-shadow: var(--ring); }
+.btn-add { padding: 12px 20px; background: var(--accent); color: var(--accent-contrast); border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--sans); white-space: nowrap; transition: background 0.2s, transform 0.12s; }
+.btn-add:hover { background: var(--accent-hover); }
+.btn-add:active { transform: translateY(1px); }
+.user-row { display: flex; align-items: center; gap: var(--sp-3); padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.user-row:last-child { border-bottom: none; }
+.user-email { flex: 1; color: var(--text); }
+.user-rol { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.05em; }
+.rol-admin     { background: var(--rol-admin-bg);     color: var(--olive); }
+.rol-eikenlaan { background: var(--rol-eikenlaan-bg); color: var(--blue); }
+.rol-ouder     { background: var(--rol-ouder-bg);     color: var(--amber); }
+.btn-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 4px 8px; transition: color 0.2s; }
+.btn-del:hover { color: var(--red); }
+.rol-select { font-family: var(--sans); font-size: 12px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-2); color: var(--text); cursor: pointer; outline: none; }
+.rol-select:focus { border-color: var(--olive-mid); box-shadow: var(--ring); }
+.beheer-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--heading); cursor: pointer; box-shadow: var(--shadow-1); transition: background 0.2s, box-shadow 0.2s; }
+.beheer-toggle:hover { box-shadow: var(--shadow-2); }
+.beheer-toggle .chevron { font-size: 18px; color: var(--olive-light); transition: transform 0.2s; }
+.beheer-toggle.open .chevron { transform: rotate(90deg); }
+
+/* ── Generieke tabel (hockey-stats e.d., opt-in via .eik-table) ──────────── */
+.eik-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.eik-table th { text-align: left; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.eik-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+.eik-table tr:last-child td { border-bottom: none; }
+
+/* ── Zwevende dark-mode toggle (geïnjecteerd door theme.js) ──────────────── */
+.theme-toggle {
+  position: fixed; left: 18px; bottom: 18px; z-index: 9998;
+  width: 44px; height: 44px; border-radius: var(--radius-pill);
+  background: var(--surface); color: var(--heading);
+  border: 1px solid var(--border); box-shadow: var(--shadow-2);
+  font-size: 19px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+}
+.theme-toggle:hover { transform: translateY(-2px); }
+.theme-toggle:active { transform: translateY(0); }
+@media print { .theme-toggle { display: none; } }
+
+/* ── App-specifieke dark-fix: winnaar-rij in de spel-pagina's houdt een
+   lichte highlight-achtergrond, dus tekst daar expliciet donker houden. ──── */
+:root[data-theme="dark"] .stand-item.rank-1 .stand-name,
+:root[data-theme="dark"] .stand-item.rank-1 .stand-rank { color: #3d3b1e; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .stand-item.rank-1 .stand-name,
+  :root:not([data-theme="light"]) .stand-item.rank-1 .stand-rank { color: #3d3b1e; }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .auth-card { padding: 34px 24px; }
+  .header { padding: 14px 16px; }
+  .main { padding: var(--sp-5) 16px var(--sp-6); }
+  .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .app-card { padding: 16px 13px; }
+  .theme-toggle { left: 12px; bottom: 12px; }
+}
