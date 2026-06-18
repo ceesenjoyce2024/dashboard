@@ -6,12 +6,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Regenwormen Champions League</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../theme.css">
+<script src="../theme.js"></script>
 <style>
   :root {
     --sand: #e8e4d9; --sand-light: #f2efe6; --sand-dark: #d8d4c6;
     --olive: #5c5a2e; --olive-mid: #7a7838; --olive-light: #c8c89a;
     --text: #3d3b1e; --text-muted: #7a7860; --card-bg: #f7f4ec;
-    --accent: #27500A; --accent-mid: #3B6D11; --accent-light: #EAF3DE;
+    --game-accent: #27500A; --game-accent-mid: #3B6D11; --game-accent-light: #EAF3DE;
     --gold: #8a6a10; --red-light: #fdf0f0; --red: #8a2828;
     --radius: 10px; --radius-lg: 14px;
     --serif: 'Playfair Display', Georgia, serif;
@@ -19,17 +21,17 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--sans); background: var(--sand); color: var(--text); min-height: 100vh; }
-  header { background: var(--accent); color: var(--sand-light); padding: 1rem 1.5rem; display: flex; align-items: center; gap: 12px; }
+  header { background: var(--game-accent); color: var(--header-text); padding: 1rem 1.5rem; display: flex; align-items: center; gap: 12px; }
   header h1 { font-family: var(--serif); font-size: 18px; font-weight: 600; }
   .back-btn { color: rgba(242,239,230,0.8); text-decoration: none; font-size: 20px; line-height: 1; flex-shrink: 0; }
-  .back-btn:hover { color: var(--sand-light); }
+  .back-btn:hover { color: var(--header-text); }
   .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--olive-light); margin-left: auto; flex-shrink: 0; }
   .tabs-bar { background: var(--card-bg); border-bottom: 1px solid var(--sand-dark); display: flex; overflow-x: auto; padding: 0 0.75rem; align-items: center; }
   .tabs-bar::-webkit-scrollbar { display: none; }
   .tab { padding: 12px 14px; font-size: 13px; font-weight: 500; color: var(--text-muted); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; flex-shrink: 0; font-family: var(--sans); transition: all 0.15s; }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent-mid); }
+  .tab.active { color: var(--game-accent); border-bottom-color: var(--game-accent-mid); }
   .tab-add { padding: 8px 10px; font-size: 18px; color: var(--text-muted); border: none; background: none; cursor: pointer; flex-shrink: 0; line-height: 1; margin-left: 2px; }
-  .tab-add:hover { color: var(--accent-mid); }
+  .tab-add:hover { color: var(--game-accent-mid); }
   main { max-width: 700px; margin: 0 auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
   .card { background: var(--card-bg); border-radius: var(--radius-lg); border: 1px solid var(--sand-dark); overflow: hidden; }
   .card-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--sand-dark); display: flex; align-items: center; justify-content: space-between; }
@@ -37,12 +39,12 @@
   .card-body { padding: 16px; }
   .stand-grid { display: flex; flex-direction: column; gap: 10px; }
   .stand-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--sand-light); border-radius: var(--radius); border: 1px solid var(--sand-dark); }
-  .stand-item.rank-1 { background: var(--accent-light); border-color: #b8d890; }
+  .stand-item.rank-1 { background: var(--game-accent-light); border-color: #b8d890; }
   .stand-rank { font-size: 18px; width: 28px; text-align: center; flex-shrink: 0; }
   .stand-name { font-size: 15px; font-weight: 500; flex: 1; }
   .stand-stats { display: flex; gap: 14px; }
   .stand-stat { text-align: center; }
-  .stand-stat-val { font-size: 18px; font-weight: 600; color: var(--accent-mid); display: block; }
+  .stand-stat-val { font-size: 18px; font-weight: 600; color: var(--game-accent-mid); display: block; }
   .stand-item.rank-1 .stand-stat-val { color: var(--gold); }
   .stand-stat-lbl { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
   .form-grid { display: flex; flex-direction: column; gap: 12px; }
@@ -55,7 +57,7 @@
   .score-row .pname { font-size: 14px; font-weight: 500; flex: 1; }
   .score-row input { width: 80px; padding: 6px 10px; border: 1px solid var(--sand-dark); border-radius: 8px; font-size: 16px; text-align: center; background: var(--card-bg); color: var(--text); outline: none; }
   .hint { font-size: 12px; color: var(--text-muted); }
-  .btn-save { width: 100%; padding: 11px; border-radius: var(--radius); border: none; background: var(--accent); color: var(--sand-light); font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--sans); }
+  .btn-save { width: 100%; padding: 11px; border-radius: var(--radius); border: none; background: var(--game-accent); color: var(--header-text); font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--sans); }
   .btn-save:hover { opacity: 0.88; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th { padding: 8px 10px; text-align: left; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--sand-dark); white-space: nowrap; }
@@ -64,7 +66,7 @@
   tr:hover td { background: var(--sand-light); }
   .date-cell { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
   .score-cell { text-align: center; font-weight: 500; }
-  .score-cell.winner { color: var(--accent-mid); font-weight: 700; }
+  .score-cell.winner { color: var(--game-accent-mid); font-weight: 700; }
   .score-cell.winner::after { content: ' ✓'; font-size: 11px; }
   .del-btn { padding: 3px 8px; border-radius: 6px; border: 1px solid var(--sand-dark); background: none; color: var(--text-muted); cursor: pointer; font-size: 11px; }
   .del-btn:hover { background: var(--red-light); color: var(--red); }
@@ -89,8 +91,8 @@
   .add-player-row button { padding: 7px 14px; border-radius: var(--radius); border: 1px solid var(--sand-dark); background: var(--sand-light); color: var(--text); cursor: pointer; font-size: 14px; font-weight: 500; font-family: var(--sans); }
   .modal-actions { display: flex; gap: 8px; margin-top: 1rem; }
   .btn-cancel { flex: 1; padding: 10px; border-radius: var(--radius); border: 1px solid var(--sand-dark); background: var(--sand-light); color: var(--text); cursor: pointer; font-size: 14px; font-weight: 500; font-family: var(--sans); }
-  .btn-create { flex: 1; padding: 10px; border-radius: var(--radius); border: none; background: var(--accent); color: var(--sand-light); cursor: pointer; font-size: 14px; font-weight: 600; font-family: var(--sans); }
-  #toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--olive); color: var(--sand-light); padding: 9px 20px; border-radius: 999px; font-size: 13px; font-weight: 500; transition: transform 0.25s; z-index: 999; pointer-events: none; }
+  .btn-create { flex: 1; padding: 10px; border-radius: var(--radius); border: none; background: var(--game-accent); color: var(--header-text); cursor: pointer; font-size: 14px; font-weight: 600; font-family: var(--sans); }
+  #toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--header-bg); color: var(--header-text); padding: 9px 20px; border-radius: 999px; font-size: 13px; font-weight: 500; transition: transform 0.25s; z-index: 999; pointer-events: none; }
   #toast.show { transform: translateX(-50%) translateY(0); }
 </style>
 </head>

@@ -6,6 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Champions League — Spelkeuze</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../theme.css">
+<script src="../theme.js"></script>
 <style>
   :root {
     --sand: #e8e4d9; --sand-light: #f2efe6; --sand-dark: #d8d4c6;
@@ -19,13 +21,13 @@
   body { font-family: var(--sans); background: var(--sand); color: var(--text); min-height: 100vh; }
 
   header {
-    background: var(--olive); color: var(--sand-light);
+    background: var(--header-bg); color: var(--header-text);
     padding: 16px 24px;
     display: flex; align-items: center; gap: 12px;
   }
   .back-btn {
     background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
-    color: var(--sand-light); padding: 6px 12px; border-radius: 7px;
+    color: var(--header-text); padding: 6px 12px; border-radius: 7px;
     font-size: 13px; text-decoration: none; white-space: nowrap;
   }
   .back-btn:hover { background: rgba(255,255,255,0.25); }
@@ -43,7 +45,7 @@
     cursor: pointer; text-decoration: none; color: var(--text);
     transition: border-color 0.15s, background 0.15s;
   }
-  .game-card:hover { border-color: var(--olive-light); background: #edeade; }
+  .game-card:hover { border-color: var(--olive-light); background: var(--surface-2); }
   .game-icon { font-size: 28px; width: 44px; text-align: center; flex-shrink: 0; }
   .tile-wrap { width: 44px; height: 44px; flex-shrink: 0; }
   .tile-img-crop { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; display: block; }
@@ -55,7 +57,7 @@
 </head>
 <body>
 <header>
-  <a href="/" class="back-btn">‹ Dashboard</a>
+  <a href="../index.html" class="back-btn">‹ Dashboard</a>
   <span class="trophy">🏆</span>
   <h1>Champions League</h1>
 </header>
