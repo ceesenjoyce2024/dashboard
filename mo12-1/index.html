@@ -778,9 +778,13 @@ window.openGoalsModal = function(wid) {
       '<select class="g_as">'+asOpts(g.a||'')+'</select>' +
       '<button class="btn-danger" onclick="this.closest(\'.goal-row\').remove()">✕</button></div>';
   }).join('');
+  var datumDisplay = (w.datum||'').split('-').reverse().join('-');
+  var wedstrijdTitel = w.thu==='T' ? 'Rosmalen MO12-1 - ' + w.teg : w.teg + ' - Rosmalen MO12-1';
   document.getElementById('goals_modal_inner').innerHTML =
-    '<div class="modal-header"><div class="modal-title">'+(w.datum||'')+' — '+w.teg+' ('+w.dv+'–'+w.dt+')</div>' +
-    '<button class="btn-danger" onclick="closeGoalsModal()">✕</button></div>' +
+    '<div class="modal-header"><div>' +
+    '<div style="font-size:12px;color:var(--text-faint);margin-bottom:3px">' + datumDisplay + '</div>' +
+    '<div class="modal-title">' + wedstrijdTitel + '</div>' +
+    '</div><button class="btn-danger" onclick="closeGoalsModal()">✕</button></div>' +
     '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);margin-bottom:10px">Doelpunten Rosmalen MO12-1</div>' +
     '<div id="modal_goals">'+goalsHtml+'</div>' +
     '<button class="btn-sm" style="margin-bottom:1rem" onclick="addModalGoalRow(\''+wid+'\')">+ doelpunt toevoegen</button><br>' +
