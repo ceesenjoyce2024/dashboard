@@ -274,6 +274,12 @@ function render(id) {
 function allWedstrijden() { return Object.values(state.wedstrijden); }
 function wedstrijdenVoor(compId) { return Object.values(state.wedstrijden).filter(function(w) { return w.competitie === compId; }); }
 
+// Alleen wedstrijden waarvan de datum vandaag of eerder is (voor statistieken)
+function vandaag() { return new Date().toISOString().slice(0,10); }
+function gespeeldWedstrijden() { var d = vandaag(); return Object.values(state.wedstrijden).filter(function(w) { return !w.datum || w.datum <= d; }); }
+function gespeeldVoor(compId) { var d = vandaag(); return Object.values(state.wedstrijden).filter(function(w) { return w.competitie === compId && (!w.datum || w.datum <= d); }); }
+function gespeeldPoule(compId) { var d = vandaag(); return Object.values(state.poulewedstrijden||{}).filter(function(w) { return w.competitie === compId && (!w.datum || w.datum <= d); }); }
+
 function resultaat(w) {
   if (w.dv > w.dt) return 'W';
   if (w.dv < w.dt) return 'V';
@@ -327,7 +333,7 @@ function getPoulewedstrijden(compId) {
 function berekenStand(compId) {
   var stand = {};
   var ROSMALEN = 'Rosmalen MO12-1';
-  wedstrijdenVoor(compId).forEach(function(w) {
+  gespeeldVoor(compId).forEach(function(w) {
     if(!stand[ROSMALEN]) stand[ROSMALEN]={naam:ROSMALEN,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:true};
     if(!stand[w.teg]) stand[w.teg]={naam:w.teg,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:false};
     stand[ROSMALEN].g++; stand[w.teg].g++;
@@ -337,7 +343,7 @@ function berekenStand(compId) {
     else if(w.dv<w.dt){stand[w.teg].w++;stand[w.teg].pts+=3;stand[ROSMALEN].v++;}
     else{stand[ROSMALEN].gl++;stand[ROSMALEN].pts+=1;stand[w.teg].gl++;stand[w.teg].pts+=1;}
   });
-  getPoulewedstrijden(compId).forEach(function(w) {
+  gespeeldPoule(compId).forEach(function(w) {
     if(!stand[w.t1]) stand[w.t1]={naam:w.t1,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:false};
     if(!stand[w.t2]) stand[w.t2]={naam:w.t2,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:false};
     stand[w.t1].g++;stand[w.t2].g++;
@@ -465,8 +471,9 @@ function htmlPouleInvoer(compId) {
 function renderComp(id) {
   var comp = COMPS.find(function(c){return c.id===id;});
   var ws = wedstrijdenVoor(id);
-  var stats = getStats(ws);
-  var topscore = getTopscorers(ws);
+  var gespeeld = gespeeldVoor(id);
+  var stats = getStats(gespeeld);
+  var topscore = getTopscorers(gespeeld);
   document.getElementById(id).innerHTML =
     '<div class="comp-header"><div><div class="comp-sub">'+ws.length+' wedstrijd'+(ws.length!==1?'en':'')+'</div><div class="comp-title">'+comp.naam+'</div></div></div>' +
     (id!=='oefenwedstrijden' ? '<div class="card" style="margin-bottom:14px"><div class="card-header" style="margin-bottom:.75rem"><div class="card-title">Ranglijst</div>' + (kanInvoeren ? '<button class="btn-sm" onclick="togglePouleInvoer(\''+id+'\')">＋ Poule-uitslag</button>' : '') + '</div><div id="poule_invoer_'+id+'" style="display:none;margin-bottom:12px">'+(kanInvoeren?htmlPouleInvoer(id):'')+'</div>'+htmlRanglijst(id)+'</div>' : '') +
@@ -513,7 +520,7 @@ window.deletePouleWedstrijd = async function(id, compId) {
 }
 
 function renderTotaal() {
-  var all = allWedstrijden();
+  var all = gespeeldWedstrijden();
   var stats = getStats(all);
   var topscore = getTopscorers(all);
   var rangItems = COMPS.filter(function(c){return c.id!=='oefenwedstrijden';}).map(function(comp) {
