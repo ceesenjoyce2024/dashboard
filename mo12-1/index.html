@@ -109,7 +109,16 @@
   .modal-overlay{position:fixed;inset:0;background:rgba(60,58,30,0.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem;}
   .modal{background:var(--card-bg);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2);border:1px solid var(--sand-dark);}
   .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+  .next-match{background:var(--olive);color:var(--sand-light);border-radius:var(--radius);padding:1.1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;transition:background .15s;}
+  .next-match:hover{background:var(--olive-mid);}
+  .next-match-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;opacity:.7;margin-bottom:4px;}
+  .next-match-title{font-family:var(--serif);font-size:17px;font-weight:700;}
+  .next-match-date{font-size:13px;opacity:.8;margin-top:2px;}
+  .next-match-arrow{font-size:22px;opacity:.6;flex-shrink:0;}
   .modal-title{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--olive);}
+  .edit-modal-form .form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+  .edit-modal-form .form-group label{font-size:12px;font-weight:500;color:var(--text-muted);}
+  .edit-modal-form .form-group input,.edit-modal-form .form-group select{font-family:var(--sans);font-size:14px;padding:9px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none;}
   @media(max-width:600px){
     .metric-grid{grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1rem;}
     .metric{padding:8px;}.metric-label{font-size:10px;}.metric-value{font-size:18px;}
@@ -164,6 +173,9 @@
   <div class="section" id="tegenstanders"></div>
 </main>
 
+<div id="edit_modal" style="display:none" class="modal-overlay" onclick="closeEditModal(event)">
+  <div class="modal" id="edit_modal_inner"></div>
+</div>
 <div id="goals_modal" style="display:none" class="modal-overlay" onclick="closeGoalsModal(event)">
   <div class="modal" id="goals_modal_inner"></div>
 </div>
@@ -421,6 +433,7 @@ function htmlAlleWedstrijden(compId) {
           '<td class="hide-mob" style="font-size:12px;max-width:180px;line-height:1.5">' + (scorers||'–') + '</td>' +
           '<td style="display:flex;gap:4px">' +
           (kanInvoeren ? '<button class="btn-sm" onclick="openGoalsModal(\'' + w.id + '\')" title="Doelpunten">⚽</button>' : '') +
+          (kanInvoeren ? '<button class="btn-sm" onclick="openEditModal(\'' + w.id + '\')" title="Bewerken">✏️</button>' : '') +
           (kanInvoeren ? '<button class="btn-danger" onclick="deleteWedstrijd(\'' + w.id + '\')">✕</button>' : '') +
           '</td></tr>';
       } else {
@@ -519,6 +532,35 @@ window.deletePouleWedstrijd = async function(id, compId) {
   renderComp(compId);
 }
 
+function volgendeWedstrijd() {
+  var d = vandaag();
+  var toekomst = Object.values(state.wedstrijden).filter(function(w){ return w.datum && w.datum >= d; });
+  if(!toekomst.length) return null;
+  toekomst.sort(function(a,b){ return a.datum.localeCompare(b.datum); });
+  return toekomst[0];
+}
+
+function htmlVolgendeWedstrijd() {
+  var w = volgendeWedstrijd();
+  if(!w) return '';
+  var comp = COMPS.find(function(c){ return c.id===w.competitie; });
+  var compNaam = comp ? comp.naam : '';
+  var thuisUit = w.thu==='T' ? 'Thuis' : 'Uit';
+  var datumFormatted = w.datum ? (function(){
+    var parts = w.datum.split('-');
+    return parts[2]+'-'+parts[1]+'-'+parts[0];
+  })() : '–';
+  var isVandaag = w.datum === d;
+  var label = isVandaag ? '⚽ Wedstrijd vandaag!' : 'Volgende wedstrijd';
+  var onclick = kanInvoeren ? 'openGoalsModal(''+w.id+'')' : '';
+  return '<div class="next-match"' + (kanInvoeren ? ' onclick="'+onclick+'"' : '') + '>' +
+    '<div><div class="next-match-label">'+label+' — '+compNaam+'</div>' +
+    '<div class="next-match-title">'+( w.thu==='T' ? 'Rosmalen vs '+w.teg : w.teg+' vs Rosmalen')+'</div>' +
+    '<div class="next-match-date">'+datumFormatted+' &nbsp;·&nbsp; '+thuisUit+'</div></div>' +
+    '<div class="next-match-arrow">›</div>' +
+    '</div>';
+}
+
 function renderTotaal() {
   var all = gespeeldWedstrijden();
   var stats = getStats(all);
@@ -534,7 +576,9 @@ function renderTotaal() {
     var row = rangItems.slice(i,i+2);
     ranglijsten += '<div style="display:grid;grid-template-columns:repeat('+row.length+',1fr);gap:12px;margin-bottom:12px">'+row.join('')+'</div>';
   }
+  var d = vandaag();
   document.getElementById('totaal').innerHTML =
+    htmlVolgendeWedstrijd() +
     '<div class="page-title">Totaal overzicht</div>' +
     htmlMetrics(stats) +
     ranglijsten +
@@ -771,6 +815,46 @@ window.saveGoalsModal = async function(wid) {
   toast('Doelpunten opgeslagen ✓');
   document.getElementById('goals_modal').style.display = 'none';
   render(currentSection);
+}
+
+// ── Edit wedstrijd modal ──
+window.openEditModal = function(wid) {
+  var w = state.wedstrijden[wid];
+  if(!w) return;
+  var comp = COMPS.find(function(c){ return c.id===w.competitie; });
+  var tegOpts = (state.tegenstanders[w.competitie]||[]).slice().sort().map(function(t){
+    return '<option value="'+t+'"'+(t===w.teg?' selected':'')+'>'+t+'</option>';
+  }).join('');
+  document.getElementById('edit_modal_inner').innerHTML =
+    '<div class="modal-header"><div class="modal-title">Wedstrijd bewerken</div><button class="btn-danger" onclick="closeEditModal()">✕</button></div>' +
+    '<div class="edit-modal-form">' +
+    '<div class="form-group"><label>Datum</label><input type="date" id="em_datum" value="'+(w.datum||'')+'"></div>' +
+    '<div class="form-group"><label>Thuis / Uit</label><select id="em_thu"><option value="T"'+(w.thu==='T'?' selected':'')+'>Thuis</option><option value="U"'+(w.thu==='U'?' selected':'')+'>Uit</option></select></div>' +
+    '<div class="form-group"><label>Tegenstander</label><select id="em_teg"><option value="">– selecteer –</option>'+tegOpts+'</select></div>' +
+    '<div class="form-group"><label>Doelpunten voor</label><input type="number" id="em_dv" min="0" value="'+w.dv+'"></div>' +
+    '<div class="form-group"><label>Doelpunten tegen</label><input type="number" id="em_dt" min="0" value="'+w.dt+'"></div>' +
+    '</div>' +
+    '<button class="btn-primary" onclick="saveEditModal(''+wid+'')">Opslaan</button>';
+  document.getElementById('edit_modal').style.display = 'flex';
+}
+
+window.saveEditModal = async function(wid) {
+  var w = state.wedstrijden[wid];
+  if(!w) return;
+  w.datum = document.getElementById('em_datum').value;
+  w.thu   = document.getElementById('em_thu').value;
+  w.teg   = document.getElementById('em_teg').value || w.teg;
+  w.dv    = parseInt(document.getElementById('em_dv').value)||0;
+  w.dt    = parseInt(document.getElementById('em_dt').value)||0;
+  await saveWedstrijd(w);
+  toast('Wedstrijd bijgewerkt ✓');
+  document.getElementById('edit_modal').style.display = 'none';
+  render(currentSection);
+}
+
+window.closeEditModal = function(e) {
+  if(e && e.target !== document.getElementById('edit_modal')) return;
+  document.getElementById('edit_modal').style.display = 'none';
 }
 
 window.closeGoalsModal = function(e) {
