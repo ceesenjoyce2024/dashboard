@@ -411,7 +411,7 @@ function htmlAlleWedstrijden(compId) {
   poule.forEach(function(w){alles.push({datum:w.datum||'',soort:'poule',data:w});});
   alles.sort(function(a,b){return b.datum.localeCompare(a.datum);});
   if(!alles.length) return '<p class="empty">Nog geen wedstrijden ingevoerd.</p>';
-  return '<table><thead><tr><th>Datum</th><th>Wedstrijd</th><th>Uitslag</th><th class="hide-mob">R</th><th class="hide-mob">Scorers</th><th></th></tr></thead><tbody>' +
+  return '<table><thead><tr><th>Datum</th><th>Wedstrijd</th><th>Uitslag</th><th class="hide-mob">Scorers</th><th></th></tr></thead><tbody>' +
     alles.map(function(item) {
       var w = item.data;
       if(item.soort==='eigen') {
@@ -430,7 +430,7 @@ function htmlAlleWedstrijden(compId) {
         return '<tr><td style="white-space:nowrap;font-size:12px">' + (w.datum||'–') + tijdStr + '</td>' +
           '<td style="font-size:13px">' + matchLabel + '</td>' +
           '<td><span class="score">' + uitslag + '</span></td>' +
-          '<td class="hide-mob"><span class="badge badge-' + r + '">' + r + '</span></td>' +
+          
           '<td class="hide-mob" style="font-size:12px;max-width:180px;line-height:1.5">' + (scorers||'–') + '</td>' +
           '<td style="display:flex;gap:4px">' +
           (kanInvoeren ? '<button class="btn-sm" onclick="openGoalsModal(\'' + w.id + '\')" title="Doelpunten">⚽</button>' : '') +
