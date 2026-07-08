@@ -595,7 +595,7 @@ function renderInvoer() {
     '<div class="form-group"><label>Competitie</label><select id="f_comp" onchange="updateTegenstanders()">'+compOpts+'</select></div>' +
     '<div class="form-group"><label>Datum</label><input type="date" id="f_datum" value="'+today+'"></div>' +
     '<div class="form-group"><label>Thuis / Uit</label><select id="f_thu"><option value="T">Thuis</option><option value="U">Uit</option></select></div>' +
-    '<div class="form-group"><label>Tegenstander</label><select id="f_teg" onchange="updateTegenstander()"><option value="">– selecteer tegenstander –</option></select></div>' +
+    '<div class="form-group"><label>Tegenstander</label><div style="display:flex;gap:6px;align-items:center"><select id="f_teg" style="flex:1" onchange="updateTegenstander()"><option value="">– selecteer tegenstander –</option></select><button class="btn-sm" onclick="invoerHernoem()" title="Naam wijzigen">✏️</button><button class="btn-sm" onclick="invoerVerwijder()" title="Verwijderen">🗑️</button></div></div>' +
     '<div class="form-group"><label>Doelpunten voor</label><input type="number" id="f_dv" min="0" value="0"></div>' +
     '<div class="form-group"><label>Doelpunten tegen</label><input type="number" id="f_dt" min="0" value="0"></div>' +
     '</div></div>' +
@@ -666,6 +666,36 @@ window.updateTegenstander = function() {
       voegTegenstanderToe(document.getElementById('f_comp').value, naam.trim(), sel);
     } else { sel.value=''; }
   }
+}
+
+window.invoerHernoem = async function() {
+  var sel = document.getElementById('f_teg');
+  var compId = document.getElementById('f_comp').value;
+  var huidig = sel.value;
+  if(!huidig || huidig==='__nieuw__') { toast('Selecteer eerst een tegenstander'); return; }
+  var nieuw = prompt('Nieuwe naam voor "'+huidig+'":', huidig);
+  if(!nieuw || !nieuw.trim() || nieuw.trim()===huidig) return;
+  nieuw = nieuw.trim();
+  var idx = (state.tegenstanders[compId]||[]).indexOf(huidig);
+  if(idx!==-1) state.tegenstanders[compId][idx] = nieuw;
+  Object.values(state.wedstrijden).forEach(function(w){ if(w.competitie===compId&&w.teg===huidig) w.teg=nieuw; });
+  Object.values(state.poulewedstrijden||{}).forEach(function(w){ if(w.competitie===compId){ if(w.t1===huidig) w.t1=nieuw; if(w.t2===huidig) w.t2=nieuw; } });
+  await saveConfig();
+  toast('"'+huidig+'" hernoemd naar "'+nieuw+'"');
+  updateTegenstanders();
+  document.getElementById('f_teg').value = nieuw;
+}
+
+window.invoerVerwijder = async function() {
+  var sel = document.getElementById('f_teg');
+  var compId = document.getElementById('f_comp').value;
+  var naam = sel.value;
+  if(!naam || naam==='__nieuw__') { toast('Selecteer eerst een tegenstander'); return; }
+  if(!confirm('Tegenstander "'+naam+'" verwijderen uit de lijst?')) return;
+  state.tegenstanders[compId] = (state.tegenstanders[compId]||[]).filter(function(t){ return t!==naam; });
+  await saveConfig();
+  toast('"'+naam+'" verwijderd');
+  updateTegenstanders();
 }
 
 async function voegTegenstanderToe(compId, naam, sel) {
@@ -840,6 +870,7 @@ window.openEditModal = function(wid) {
     '<div style="display:flex;gap:6px;align-items:center">' +
     '<select id="em_teg" style="flex:1" onchange="editModalTegChange(\'' + compId + '\')"><option value="">– selecteer –</option>'+tegOpts+'<option value="__nieuw__">＋ Nieuwe tegenstander…</option></select>' +
     '<button class="btn-sm" onclick="editModalHernoem(\'' + compId + '\')" title="Naam wijzigen">✏️</button>' +
+    '<button class="btn-sm" onclick="editModalVerwijder(\'' + compId + '\')" title="Verwijderen">🗑️</button>' +
     '</div></div>' +
     '<div class="form-group"><label>Doelpunten voor</label><input type="number" id="em_dv" min="0" value="'+w.dv+'"></div>' +
     '<div class="form-group"><label>Doelpunten tegen</label><input type="number" id="em_dt" min="0" value="'+w.dt+'"></div>' +
@@ -883,6 +914,19 @@ window.editModalTegChange = async function(compId) {
       sel.value = '';
     }
   }
+}
+
+window.editModalVerwijder = async function(compId) {
+  var sel = document.getElementById('em_teg');
+  var naam = sel.value;
+  if(!naam || naam==='__nieuw__') { toast('Selecteer eerst een tegenstander'); return; }
+  if(!confirm('Tegenstander "'+naam+'" verwijderen uit de lijst?')) return;
+  state.tegenstanders[compId] = (state.tegenstanders[compId]||[]).filter(function(t){ return t!==naam; });
+  await saveConfig();
+  toast('"'+naam+'" verwijderd');
+  var opt = sel.querySelector('option[value="'+naam+'"]');
+  if(opt) opt.remove();
+  sel.value = '';
 }
 
 window.editModalHernoem = async function(compId) {
