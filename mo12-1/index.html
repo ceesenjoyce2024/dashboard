@@ -826,7 +826,9 @@ window.openEditModal = function(wid) {
   var w = state.wedstrijden[wid];
   if(!w) return;
   var comp = COMPS.find(function(c){ return c.id===w.competitie; });
-  var tegOpts = (state.tegenstanders[w.competitie]||[]).slice().sort().map(function(t){
+  var compId = w.competitie;
+  var tegLijst = (state.tegenstanders[compId]||[]).slice().sort();
+  var tegOpts = tegLijst.map(function(t){
     return '<option value="'+t+'"'+(t===w.teg?' selected':'')+'>'+t+'</option>';
   }).join('');
   document.getElementById('edit_modal_inner').innerHTML =
@@ -834,7 +836,11 @@ window.openEditModal = function(wid) {
     '<div class="edit-modal-form">' +
     '<div class="form-group"><label>Datum</label><input type="date" id="em_datum" value="'+(w.datum||'')+'"></div>' +
     '<div class="form-group"><label>Thuis / Uit</label><select id="em_thu"><option value="T"'+(w.thu==='T'?' selected':'')+'>Thuis</option><option value="U"'+(w.thu==='U'?' selected':'')+'>Uit</option></select></div>' +
-    '<div class="form-group"><label>Tegenstander</label><select id="em_teg"><option value="">– selecteer –</option>'+tegOpts+'</select></div>' +
+    '<div class="form-group"><label>Tegenstander</label>' +
+    '<div style="display:flex;gap:6px;align-items:center">' +
+    '<select id="em_teg" style="flex:1" onchange="editModalTegChange(\'' + compId + '\')"><option value="">– selecteer –</option>'+tegOpts+'<option value="__nieuw__">＋ Nieuwe tegenstander…</option></select>' +
+    '<button class="btn-sm" onclick="editModalHernoem(\'' + compId + '\')" title="Naam wijzigen">✏️</button>' +
+    '</div></div>' +
     '<div class="form-group"><label>Doelpunten voor</label><input type="number" id="em_dv" min="0" value="'+w.dv+'"></div>' +
     '<div class="form-group"><label>Doelpunten tegen</label><input type="number" id="em_dt" min="0" value="'+w.dt+'"></div>' +
     '</div>' +
@@ -854,6 +860,58 @@ window.saveEditModal = async function(wid) {
   toast('Wedstrijd bijgewerkt ✓');
   document.getElementById('edit_modal').style.display = 'none';
   render(currentSection);
+}
+
+window.editModalTegChange = async function(compId) {
+  var sel = document.getElementById('em_teg');
+  if(sel.value === '__nieuw__') {
+    var naam = prompt('Naam nieuwe tegenstander:');
+    if(naam && naam.trim()) {
+      naam = naam.trim();
+      if(!state.tegenstanders[compId]) state.tegenstanders[compId] = [];
+      if(!state.tegenstanders[compId].includes(naam)) {
+        state.tegenstanders[compId].push(naam);
+        await saveConfig();
+        toast(naam + ' toegevoegd');
+      }
+      // Add option and select it
+      var opt = document.createElement('option');
+      opt.value = naam; opt.text = naam; opt.selected = true;
+      sel.insertBefore(opt, sel.lastElementChild);
+      sel.value = naam;
+    } else {
+      sel.value = '';
+    }
+  }
+}
+
+window.editModalHernoem = async function(compId) {
+  var sel = document.getElementById('em_teg');
+  var huidig = sel.value;
+  if(!huidig || huidig === '__nieuw__') { toast('Selecteer eerst een tegenstander'); return; }
+  var nieuw = prompt('Nieuwe naam voor "' + huidig + '":', huidig);
+  if(!nieuw || !nieuw.trim() || nieuw.trim() === huidig) return;
+  nieuw = nieuw.trim();
+  // Update tegenstanders lijst
+  var idx = (state.tegenstanders[compId]||[]).indexOf(huidig);
+  if(idx !== -1) state.tegenstanders[compId][idx] = nieuw;
+  // Update wedstrijden
+  Object.values(state.wedstrijden).forEach(function(w) {
+    if(w.competitie === compId && w.teg === huidig) w.teg = nieuw;
+  });
+  // Update poule
+  Object.values(state.poulewedstrijden||{}).forEach(function(w) {
+    if(w.competitie === compId) {
+      if(w.t1 === huidig) w.t1 = nieuw;
+      if(w.t2 === huidig) w.t2 = nieuw;
+    }
+  });
+  await saveConfig();
+  toast('"' + huidig + '" hernoemd naar "' + nieuw + '"');
+  // Refresh dropdown
+  var opt = sel.querySelector('option[value="' + huidig + '"]');
+  if(opt) { opt.value = nieuw; opt.text = nieuw; }
+  sel.value = nieuw;
 }
 
 window.closeEditModal = function(e) {
