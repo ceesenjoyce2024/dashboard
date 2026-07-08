@@ -426,7 +426,8 @@ function htmlAlleWedstrijden(compId) {
             (g.sb?'<span class="badge badge-sc" style="margin-left:3px;background:#EEE6FB;color:#5B1FA3">SB</span>':'') +
             (g.a?'<span style="color:var(--text-faint);font-size:11px"> ▸'+g.a+'</span>':'');
         }).join(', ');
-        return '<tr><td style="white-space:nowrap;font-size:12px">' + (w.datum||'–') + '</td>' +
+        var tijdStr = w.tijd ? ' ' + w.tijd + ' uur' : '';
+        return '<tr><td style="white-space:nowrap;font-size:12px">' + (w.datum||'–') + tijdStr + '</td>' +
           '<td style="font-size:13px">' + matchLabel + '</td>' +
           '<td><span class="score">' + uitslag + '</span></td>' +
           '<td class="hide-mob"><span class="badge badge-' + r + '">' + r + '</span></td>' +
@@ -556,7 +557,8 @@ function htmlVolgendeWedstrijd() {
   html += '><div>';
   html += '<div class="next-match-label">' + label + ' - ' + compNaam + '</div>';
   html += '<div class="next-match-title">' + matchTitle + '</div>';
-  html += '<div class="next-match-date">' + datumFormatted + ' - ' + thuisUit + '</div>';
+  var tijdBanner = w.tijd ? ' · ' + w.tijd + ' uur' : '';
+  html += '<div class="next-match-date">' + datumFormatted + tijdBanner + ' - ' + thuisUit + '</div>';
   html += '</div><div class="next-match-arrow">&#8250;</div></div>';
   return html;
 }
@@ -594,6 +596,7 @@ function renderInvoer() {
     '<div class="form-grid">' +
     '<div class="form-group"><label>Competitie</label><select id="f_comp" onchange="updateTegenstanders()">'+compOpts+'</select></div>' +
     '<div class="form-group"><label>Datum</label><input type="date" id="f_datum" value="'+today+'"></div>' +
+    '<div class="form-group"><label>Tijd</label><input type="time" id="f_tijd" placeholder="14:30"></div>' +
     '<div class="form-group"><label>Thuis / Uit</label><select id="f_thu"><option value="T">Thuis</option><option value="U">Uit</option></select></div>' +
     '<div class="form-group"><label>Tegenstander</label><div style="display:flex;gap:6px;align-items:center"><select id="f_teg" style="flex:1" onchange="updateTegenstander()"><option value="">– selecteer tegenstander –</option></select><button class="btn-sm" onclick="invoerHernoem()" title="Naam wijzigen">✏️</button><button class="btn-sm" onclick="invoerVerwijder()" title="Verwijderen">🗑️</button></div></div>' +
     '<div class="form-group"><label>Doelpunten voor</label><input type="number" id="f_dv" min="0" value="0"></div>' +
@@ -631,7 +634,8 @@ window.slaOp = async function() {
     if(sp) goals.push({s:sp,sc:sc,sb:sb,a:as_||null});
   });
   var id = 'w_'+Date.now();
-  var w = {id:id,competitie:document.getElementById('f_comp').value,datum:document.getElementById('f_datum').value,thu:document.getElementById('f_thu').value,teg:teg,dv:parseInt(document.getElementById('f_dv').value)||0,dt:parseInt(document.getElementById('f_dt').value)||0,goals:goals};
+  var tijdVal = document.getElementById('f_tijd') ? document.getElementById('f_tijd').value : '';
+  var w = {id:id,competitie:document.getElementById('f_comp').value,datum:document.getElementById('f_datum').value,tijd:tijdVal,thu:document.getElementById('f_thu').value,teg:teg,dv:parseInt(document.getElementById('f_dv').value)||0,dt:parseInt(document.getElementById('f_dt').value)||0,goals:goals};
   state.wedstrijden[id] = w;
   await saveWedstrijd(w);
   toast('Wedstrijd opgeslagen ✓');
@@ -808,7 +812,7 @@ window.openGoalsModal = function(wid) {
       '<select class="g_as">'+asOpts(g.a||'')+'</select>' +
       '<button class="btn-danger" onclick="this.closest(\'.goal-row\').remove()">✕</button></div>';
   }).join('');
-  var datumDisplay = (w.datum||'').split('-').reverse().join('-');
+  var datumDisplay = (w.datum||'').split('-').reverse().join('-') + (w.tijd ? ' ' + w.tijd + ' uur' : '');
   var wedstrijdTitel = w.thu==='T' ? 'Rosmalen MO12-1 - ' + w.teg : w.teg + ' - Rosmalen MO12-1';
   document.getElementById('goals_modal_inner').innerHTML =
     '<div class="modal-header"><div>' +
@@ -865,6 +869,7 @@ window.openEditModal = function(wid) {
     '<div class="modal-header"><div class="modal-title">Wedstrijd bewerken</div><button class="btn-danger" onclick="closeEditModal()">✕</button></div>' +
     '<div class="edit-modal-form">' +
     '<div class="form-group"><label>Datum</label><input type="date" id="em_datum" value="'+(w.datum||'')+'"></div>' +
+    '<div class="form-group"><label>Tijd</label><input type="time" id="em_tijd" value="'+(w.tijd||'')+'"></div>' +
     '<div class="form-group"><label>Thuis / Uit</label><select id="em_thu"><option value="T"'+(w.thu==='T'?' selected':'')+'>Thuis</option><option value="U"'+(w.thu==='U'?' selected':'')+'>Uit</option></select></div>' +
     '<div class="form-group"><label>Tegenstander</label>' +
     '<div style="display:flex;gap:6px;align-items:center">' +
@@ -883,6 +888,7 @@ window.saveEditModal = async function(wid) {
   var w = state.wedstrijden[wid];
   if(!w) return;
   w.datum = document.getElementById('em_datum').value;
+  w.tijd  = document.getElementById('em_tijd') ? document.getElementById('em_tijd').value : (w.tijd||'');
   w.thu   = document.getElementById('em_thu').value;
   w.teg   = document.getElementById('em_teg').value || w.teg;
   w.dv    = parseInt(document.getElementById('em_dv').value)||0;
