@@ -411,7 +411,7 @@ function htmlAlleWedstrijden(compId) {
   poule.forEach(function(w){alles.push({datum:w.datum||'',soort:'poule',data:w});});
   alles.sort(function(a,b){return b.datum.localeCompare(a.datum);});
   if(!alles.length) return '<p class="empty">Nog geen wedstrijden ingevoerd.</p>';
-  return '<table><thead><tr><th>Datum</th><th>Wedstrijd</th><th>Uitslag</th><th class="hide-mob">Scorers</th><th></th></tr></thead><tbody>' +
+  return '<table><thead><tr><th>Datum</th><th>Wedstrijd</th><th>Uitslag</th><th class="hide-mob">Scoorders</th><th></th></tr></thead><tbody>' +
     alles.map(function(item) {
       var w = item.data;
       if(item.soort==='eigen') {
