@@ -17,6 +17,15 @@
     --serif: 'Playfair Display', Georgia, serif;
     --sans: 'Inter', system-ui, sans-serif;
   }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sand: #1e1c14; --sand-light: #2a2720; --sand-dark: #3a3728;
+      --olive: #c8c89a; --olive-mid: #a8a870; --olive-light: #6a6840;
+      --text: #e8e4d9; --text-muted: #a8a488; --card-bg: #252318;
+      --accent-light: #1a3028; --accent-mid: #4a9a68;
+      --gold: #c8a040; --red-light: #2a1818; --red: #e06060;
+    }
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--sans); background: var(--sand); color: var(--text); min-height: 100vh; }
   header { background: var(--accent); color: var(--sand-light); padding: 1rem 1.5rem; display: flex; align-items: center; gap: 12px; }
@@ -58,6 +67,7 @@
   .btn-save:hover { opacity: 0.88; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th { padding: 8px 10px; text-align: left; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--sand-dark); white-space: nowrap; }
+  th:not(:first-child) { text-align: center; }
   td { padding: 9px 10px; border-bottom: 1px solid var(--sand-dark); color: var(--text); }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: var(--sand-light); }
