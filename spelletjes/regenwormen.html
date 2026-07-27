@@ -94,6 +94,16 @@
   .btn-create { flex: 1; padding: 10px; border-radius: var(--radius); border: none; background: var(--game-accent); color: var(--header-text); cursor: pointer; font-size: 14px; font-weight: 600; font-family: var(--sans); }
   #toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--header-bg); color: var(--header-text); padding: 9px 20px; border-radius: 999px; font-size: 13px; font-weight: 500; transition: transform 0.25s; z-index: 999; pointer-events: none; }
   #toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sand: #1e1c14; --sand-light: #2a2720; --sand-dark: #3a3728;
+      --olive: #c8c89a; --olive-mid: #a8a870; --olive-light: #6a6840;
+      --text: #e8e4d9; --text-muted: #a8a488; --card-bg: #252318;
+      --accent: #2a5a18; --accent-mid: #4a8a30; --accent-light: #1a2a10;
+      --gold: #c8a040; --red-light: #2a1818; --red: #e06060;
+    }
+  }
 </style>
 </head>
 <body>

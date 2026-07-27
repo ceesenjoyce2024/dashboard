@@ -78,6 +78,16 @@
   #toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--header-bg); color: var(--header-text); padding: 9px 20px; border-radius: 999px; font-size: 13px; font-weight: 500; transition: transform 0.25s; z-index: 999; pointer-events: none; }
   #toast.show { transform: translateX(-50%) translateY(0); }
   @media (max-width: 500px) { main { padding: 0.75rem; } .card-body { padding: 12px; } }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sand: #1e1c14; --sand-light: #2a2720; --sand-dark: #3a3728;
+      --olive: #c8c89a; --olive-mid: #a8a870; --olive-light: #6a6840;
+      --text: #e8e4d9; --text-muted: #a8a488; --card-bg: #252318;
+      --accent: #4a42a0; --accent-mid: #6a62c0; --accent-light: #1a1830;
+      --gold: #c8a040; --red-light: #2a1818; --red: #e06060;
+    }
+  }
 </style>
 </head>
 <body>
