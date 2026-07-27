@@ -237,15 +237,17 @@ function renderAll(compId, games) {
     var sc=g.s||{}; var winner=getWinner(sc);
     return '<tr><td class="date-cell">'+g.d+'</td>'+
       players.map(function(p){
-        return '<td class="score-cell'+(p===winner?' winner':'')+'>'+(p in sc?sc[p]:'—')+'</td>';
+        var val = (p in sc && sc[p] !== null && sc[p] !== undefined) ? sc[p] : '—';
+        var isWinner = (p === winner && val !== '—');
+        return '<td class="score-cell'+(isWinner?' winner':'')+'">'+val+'</td>';
       }).join('')+
-      '<td><button class="del-btn" onclick="deleteGame(\''+compId+'\',\''+g.key+'\')">✕</button></td></tr>';
+      '<td style="text-align:right;width:36px"><button class="del-btn" onclick="deleteGame(\''+compId+'\',\''+g.key+'\')">✕</button></td></tr>';
   }).join('');
 
   var tableHTML = '<div class="card"><div class="card-head"><span class="card-title">Alle potjes</span></div>'+
     '<div class="games-wrap"><table><thead><tr><th>Datum</th>'+
     players.map(function(p){return'<th style="text-align:center">'+p+'</th>';}).join('')+
-    '<th></th></tr></thead><tbody>'+
+    '<th style="width:36px"></th></tr></thead><tbody>'+
     (tableRows||'<tr><td colspan="'+(players.length+2)+'" class="empty">Nog geen potjes</td></tr>')+
     '</tbody></table></div></div>';
 
