@@ -178,14 +178,65 @@ function calcStandings(games,players){
     return{name:p,punten:stats[p].punten,wins:stats[p].wins,games:stats[p].games};
   }).sort(function(a,b){return b.punten-a.punten||b.wins-a.wins;});
 }
-function renderAll(compId,games){var comp=comps.find(function(c){return c.id===compId;});if(!comp)return;var players=comp.players;var standings=calcStandings(games,players);var now=new Date();var todayVal=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-var standHTML='<div class="card"><div class="card-head"><span class="card-title">Stand — langste woord ooit</span><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;color:var(--text-muted)">'+games.length+' potjes</span><button class="del-comp-btn" onclick="deleteComp(\''+compId+'\')">Verwijder competitie</button></div></div><div class="card-body"><div class="stand-grid">'+standings.map(function(s,i){return'<div class="stand-item'+(i===0?' rank-1':'')+'"><div class="stand-rank">'+MEDALS[Math.min(i,3)]+'</div><div class="stand-name">'+s.name+'</div><div class="stand-stats"><div class="stand-stat"><span class="stand-stat-val">'+s.best+'</span><span class="stand-stat-lbl">langste woord</span></div><div class="stand-stat"><span class="stand-stat-val">'+s.wins+'</span><span class="stand-stat-lbl">gewonnen</span></div><div class="stand-stat"><span class="stand-stat-val">'+s.games+'</span><span class="stand-stat-lbl">gespeeld</span></div></div></div>';}).join('')+'</div></div></div>';
-var scoreInputs=players.map(function(p){return'<div class="score-row"><span class="pname">'+p+'</span><input type="number" id="sc_'+p+'" min="0" value="0" inputmode="numeric"></div>';}).join('');
-var formHTML='<div class="card"><div class="card-head"><span class="card-title">Potje toevoegen</span></div><div class="card-body"><div class="form-grid"><div class="form-row"><label>Datum</label><input type="date" id="new_date" value="'+todayVal+'"></div><div class="score-inputs">'+scoreInputs+'</div><p class="hint">Vul het aantal letters van ieders langste woord in. Hoogste = winnaar van dit potje.</p><button class="btn-save" onclick="saveGame(\''+compId+'\')">Potje opslaan</button></div></div></div>';
-var playerRecords={};players.forEach(function(p){playerRecords[p]=0;});var rowsData=games.map(function(g){var sc=g.s||{};var winner=getWinner(sc);var isRecord={};players.forEach(function(p){if(p in sc&&sc[p]>playerRecords[p]){isRecord[p]=true;playerRecords[p]=sc[p];}else{isRecord[p]=false;}});return{g:g,sc:sc,winner:winner,isRecord:isRecord};});
-var tableRows=[].concat(rowsData).reverse().map(function(row){return'<tr><td class="date-cell">'+row.g.d+'</td>'+players.map(function(p){var cls=row.isRecord[p]?'record':(p===row.winner?'winner':'');return'<td class="score-cell '+cls+'">'+(p in row.sc?row.sc[p]:'—')+'</td>';}).join('')+'<td><button class="del-btn" onclick="deleteGame(\''+compId+'\',\''+row.g.key+'\')">✕</button></td></tr>';}).join('');
-var tableHTML='<div class="card"><div class="card-head"><span class="card-title">Alle potjes</span><span style="font-size:11px;color:var(--text-muted)">★ = persoonlijk record</span></div><div class="games-wrap"><table><thead><tr><th>Datum</th>'+players.map(function(p){return'<th style="text-align:center">'+p+'</th>';}).join('')+'<th></th></tr></thead><tbody>'+(tableRows||'<tr><td colspan="'+(players.length+2)+'" class="empty">Nog geen potjes</td></tr>')+'</tbody></table></div></div>';
-document.getElementById('mainContent').innerHTML=standHTML+formHTML+tableHTML;}
+function renderAll(compId,games){
+  var comp=comps.find(function(c){return c.id===compId;});
+  if(!comp)return;
+  var players=comp.players;
+  var n=players.length;
+  var standings=calcStandings(games,players);
+  var now=new Date();
+  var todayVal=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+
+  var standHTML='<div class="card"><div class="card-head"><span class="card-title">Stand — totaal punten</span><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;color:var(--text-muted)">'+games.length+' potjes</span><button class="del-comp-btn" onclick="deleteComp(''+compId+'')">Verwijder competitie</button></div></div><div class="card-body"><div class="stand-grid">'+
+    standings.map(function(s,i){
+      return'<div class="stand-item'+(i===0?' rank-1':'')+'"><div class="stand-rank">'+MEDALS[Math.min(i,3)]+'</div><div class="stand-name">'+s.name+'</div><div class="stand-stats">'+
+        '<div class="stand-stat"><span class="stand-stat-val">'+s.punten+'</span><span class="stand-stat-lbl">punten</span></div>'+
+        '<div class="stand-stat"><span class="stand-stat-val">'+s.wins+'</span><span class="stand-stat-lbl">gewonnen</span></div>'+
+        '<div class="stand-stat"><span class="stand-stat-val">'+s.games+'</span><span class="stand-stat-lbl">gespeeld</span></div>'+
+        '</div></div>';
+    }).join('')+'</div></div></div>';
+
+  var puntLeg=players.map(function(p,i){return(i+1)+'e = '+(n-i)+' pt';}).join(' · ')+' · langste woord = +1 pt';
+
+  var posOpts='<option value="0">– niet klaar –</option>'+players.map(function(_,i){return'<option value="'+(i+1)+'">'+(i+1)+'e</option>';}).join('');
+  var volgordeInputs=players.map(function(p){
+    return'<div class="volgorde-row"><span class="pname">'+p+'</span><select id="pos_'+p+'">'+posOpts+'</select></div>';
+  }).join('');
+  var bonusInputs=players.map(function(p){
+    return'<div class="bonus-row"><label>⭐ '+p+' heeft langste woord</label><input type="checkbox" id="bonus_'+p+'"></div>';
+  }).join('');
+
+  var formHTML='<div class="card"><div class="card-head"><span class="card-title">Potje toevoegen</span></div><div class="card-body"><div class="form-grid">'+
+    '<div class="form-row"><label>Datum</label><input type="date" id="new_date" value="'+todayVal+'"></div>'+
+    '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin:8px 0 6px">Eindvolgorde</div>'+
+    volgordeInputs+
+    '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin:8px 0 6px">Bonus langste woord</div>'+
+    bonusInputs+
+    '<div class="hint-punten">'+puntLeg+'</div>'+
+    '<button class="btn-save" onclick="saveGame(''+compId+'')">Potje opslaan</button>'+
+    '</div></div></div>';
+
+  var tableRows=[].concat(games).reverse().map(function(g){
+    var sc=g.s||{};
+    return'<tr><td class="date-cell">'+g.d+'</td>'+
+      players.map(function(p){
+        var d=sc[p];
+        if(!d||!d.pos)return'<td class="score-cell" style="text-align:center">—</td>';
+        var pts=(n-d.pos+1)+(d.bonus?1:0);
+        return'<td class="score-cell'+(d.pos===1?' winner':'')+'" style="text-align:center">'+d.pos+'e'+(d.bonus?' ⭐':'')+' <span style="font-size:11px;color:var(--text-muted)">('+pts+'pt)</span></td>';
+      }).join('')+
+      '<td style="text-align:right;width:36px"><button class="del-btn" onclick="deleteGame(''+compId+'',''+g.key+'')">&#10005;</button></td></tr>';
+  }).join('');
+
+  var tableHTML='<div class="card"><div class="card-head"><span class="card-title">Alle potjes</span></div><div class="games-wrap"><table><thead><tr><th>Datum</th>'+
+    players.map(function(p){return'<th style="text-align:center">'+p+'</th>';}).join('')+
+    '<th></th></tr></thead><tbody>'+
+    (tableRows||'<tr><td colspan="'+(players.length+2)+'" class="empty">Nog geen potjes</td></tr>')+
+    '</tbody></table></div></div>';
+
+  document.getElementById('mainContent').innerHTML=standHTML+formHTML+tableHTML;
+}
+
 async function saveGame(compId){
   var comp=comps.find(function(c){return c.id===compId;});
   var dateInput=document.getElementById('new_date').value;
@@ -198,9 +249,8 @@ async function saveGame(compId){
     var pos=parseInt(document.getElementById('pos_'+p).value)||0;
     var bonus=document.getElementById('bonus_'+p).checked;
     scores[p]={pos:pos,bonus:bonus};
-    if(pos>0) posities.push(pos);
+    if(pos>0)posities.push(pos);
   });
-  // Valideer: geen dubbele posities
   var uniek=posities.filter(function(v,i,a){return a.indexOf(v)===i;});
   if(uniek.length!==posities.length){showToast('Elke speler moet een unieke positie hebben');return;}
   var newId=String(Date.now())+Math.random().toString(36).substr(2,5);
@@ -209,7 +259,6 @@ async function saveGame(compId){
   showToast('Potje opgeslagen ✓');
   laadGames(compId);
 }
-async function deleteGame(compId,key){if(!confirm('Potje verwijderen?'))return;var res=await sbClient.from('bananas_games').delete().eq('id',key);if(res.error){showToast('Fout bij verwijderen');return;}showToast('Potje verwijderd');laadGames(compId);}
 async function deleteComp(compId){if(!confirm('Hele competitie verwijderen inclusief alle potjes?'))return;await sbClient.from('bananas_games').delete().eq('comp_id',compId);var res=await sbClient.from('bananas_comps').delete().eq('id',compId);if(res.error){showToast('Fout bij verwijderen');return;}showToast('Competitie verwijderd');activeCompId=null;laadComps();}
 function openModal(){modalPlayers=[];document.getElementById('compName').value='';document.getElementById('newPlayerInput').value='';renderPlayerList();document.getElementById('modalBg').classList.add('open');setTimeout(function(){document.getElementById('compName').focus();},100);}
 function closeModal(){document.getElementById('modalBg').classList.remove('open');}
