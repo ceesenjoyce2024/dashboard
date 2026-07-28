@@ -187,7 +187,7 @@ function renderAll(compId,games){
   var now=new Date();
   var todayVal=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
 
-  var standHTML='<div class="card"><div class="card-head"><span class="card-title">Stand — totaal punten</span><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;color:var(--text-muted)">'+games.length+' potjes</span><button class="del-comp-btn" onclick="deleteComp(''+compId+'')">Verwijder competitie</button></div></div><div class="card-body"><div class="stand-grid">'+
+  var standHTML='<div class="card"><div class="card-head"><span class="card-title">Stand — totaal punten</span><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;color:var(--text-muted)">'+games.length+' potjes</span><button class="del-comp-btn" onclick="deleteComp(\''+compId+'\')">Verwijder competitie</button></div></div><div class="card-body"><div class="stand-grid">'+
     standings.map(function(s,i){
       return'<div class="stand-item'+(i===0?' rank-1':'')+'"><div class="stand-rank">'+MEDALS[Math.min(i,3)]+'</div><div class="stand-name">'+s.name+'</div><div class="stand-stats">'+
         '<div class="stand-stat"><span class="stand-stat-val">'+s.punten+'</span><span class="stand-stat-lbl">punten</span></div>'+
@@ -213,7 +213,7 @@ function renderAll(compId,games){
     '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin:8px 0 6px">Bonus langste woord</div>'+
     bonusInputs+
     '<div class="hint-punten">'+puntLeg+'</div>'+
-    '<button class="btn-save" onclick="saveGame(''+compId+'')">Potje opslaan</button>'+
+    '<button class="btn-save" onclick="saveGame(\''+compId+'\')">Potje opslaan</button>'+
     '</div></div></div>';
 
   var tableRows=[].concat(games).reverse().map(function(g){
@@ -225,7 +225,7 @@ function renderAll(compId,games){
         var pts=(n-d.pos+1)+(d.bonus?1:0);
         return'<td class="score-cell'+(d.pos===1?' winner':'')+'" style="text-align:center">'+d.pos+'e'+(d.bonus?' ⭐':'')+' <span style="font-size:11px;color:var(--text-muted)">('+pts+'pt)</span></td>';
       }).join('')+
-      '<td style="text-align:right;width:36px"><button class="del-btn" onclick="deleteGame(''+compId+'',''+g.key+'')">&#10005;</button></td></tr>';
+      '<td style="text-align:right;width:36px"><button class="del-btn" onclick="deleteGame(\''+compId+'\',\''+g.key+'\')">&#10005;</button></td></tr>';
   }).join('');
 
   var tableHTML='<div class="card"><div class="card-head"><span class="card-title">Alle potjes</span></div><div class="games-wrap"><table><thead><tr><th>Datum</th>'+
