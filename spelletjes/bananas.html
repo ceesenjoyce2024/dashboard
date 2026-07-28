@@ -147,13 +147,70 @@ async function laadGames(compId){document.getElementById('mainContent').innerHTM
 function renderTabs(){document.getElementById('tabBar').innerHTML=comps.map(function(c){return'<button class="tab'+(c.id===activeCompId?' active':'')+ '" onclick="switchComp(\''+c.id+'\')">'+c.label+'</button>';}).join('')+'<button class="tab-add" onclick="openModal()">＋</button>';}
 function switchComp(id){activeCompId=id;renderTabs();laadGames(id);}
 function getWinner(scores){var max=-Infinity,winner=null;Object.keys(scores).forEach(function(p){if(typeof scores[p]==='number'&&scores[p]>max){max=scores[p];winner=p;}});return winner;}
-function calcStandings(games,players){var stats={};players.forEach(function(p){stats[p]={best:0,wins:0,games:0};});games.forEach(function(g){var sc=g.s||{};players.forEach(function(p){if(p in sc){stats[p].games++;if(sc[p]>stats[p].best)stats[p].best=sc[p];}});var w=getWinner(sc);if(w&&w in stats)stats[w].wins++;});return players.map(function(p){return{name:p,best:stats[p].best,wins:stats[p].wins,games:stats[p].games};}).sort(function(a,b){return b.best-a.best||b.wins-a.wins;});}
+function berekenPunten(scores, players) {
+  // Volgorde punten: aantal spelers, aantal-1, ..., 1
+  // Langste woord krijgt 1 punt extra
+  var n = players.length;
+  var gespeeld = players.filter(function(p){ return p in scores && scores[p] > 0; });
+  // Sorteer op volgorde (score = positie invulvolgorde, hoger = eerder klaar... nee)
+  // Score = aantal letters langste woord
+  // Rangschik: hoogste letters = eerder klaar = meer punten
+  var gesorteerd = gespeeld.slice().sort(function(a,b){ return scores[b]-scores[a]; });
+  var punten = {};
+  players.forEach(function(p){ punten[p] = 0; });
+  gesorteerd.forEach(function(p, i){
+    punten[p] += (n - i); // 1e = n punten, 2e = n-1, etc.
+  });
+  // Extra punt voor langste woord
+  var maxLetters = 0;
+  gespeeld.forEach(function(p){ if(scores[p] > maxLetters) maxLetters = scores[p]; });
+  gespeeld.forEach(function(p){ if(scores[p] === maxLetters) punten[p] += 1; });
+  return punten;
+}
+
+function calcStandings(games,players){
+  var stats={};
+  players.forEach(function(p){ stats[p]={punten:0,wins:0,games:0,langste:0}; });
+  games.forEach(function(g){
+    var sc=g.s||{};
+    var pnt = berekenPunten(sc, players);
+    players.forEach(function(p){
+      if(p in sc && sc[p] > 0){
+        stats[p].games++;
+        stats[p].punten += pnt[p]||0;
+        if(sc[p] > stats[p].langste) stats[p].langste = sc[p];
+      }
+    });
+    // Winnaar = meeste punten dit potje
+    var maxPnt = 0;
+    players.forEach(function(p){ if((pnt[p]||0) > maxPnt) maxPnt = pnt[p]||0; });
+    players.forEach(function(p){ if((pnt[p]||0) === maxPnt && maxPnt > 0) stats[p].wins++; });
+  });
+  return players.map(function(p){
+    return{name:p, punten:stats[p].punten, wins:stats[p].wins, games:stats[p].games, langste:stats[p].langste};
+  }).sort(function(a,b){ return b.punten-a.punten||b.wins-a.wins; });
+}
 function renderAll(compId,games){var comp=comps.find(function(c){return c.id===compId;});if(!comp)return;var players=comp.players;var standings=calcStandings(games,players);var now=new Date();var todayVal=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
 var standHTML='<div class="card"><div class="card-head"><span class="card-title">Stand — langste woord ooit</span><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;color:var(--text-muted)">'+games.length+' potjes</span><button class="del-comp-btn" onclick="deleteComp(\''+compId+'\')">Verwijder competitie</button></div></div><div class="card-body"><div class="stand-grid">'+standings.map(function(s,i){return'<div class="stand-item'+(i===0?' rank-1':'')+'"><div class="stand-rank">'+MEDALS[Math.min(i,3)]+'</div><div class="stand-name">'+s.name+'</div><div class="stand-stats"><div class="stand-stat"><span class="stand-stat-val">'+s.best+'</span><span class="stand-stat-lbl">langste woord</span></div><div class="stand-stat"><span class="stand-stat-val">'+s.wins+'</span><span class="stand-stat-lbl">gewonnen</span></div><div class="stand-stat"><span class="stand-stat-val">'+s.games+'</span><span class="stand-stat-lbl">gespeeld</span></div></div></div>';}).join('')+'</div></div></div>';
 var scoreInputs=players.map(function(p){return'<div class="score-row"><span class="pname">'+p+'</span><input type="number" id="sc_'+p+'" min="0" value="0" inputmode="numeric"></div>';}).join('');
 var formHTML='<div class="card"><div class="card-head"><span class="card-title">Potje toevoegen</span></div><div class="card-body"><div class="form-grid"><div class="form-row"><label>Datum</label><input type="date" id="new_date" value="'+todayVal+'"></div><div class="score-inputs">'+scoreInputs+'</div><p class="hint">Vul het aantal letters van ieders langste woord in. Hoogste = winnaar van dit potje.</p><button class="btn-save" onclick="saveGame(\''+compId+'\')">Potje opslaan</button></div></div></div>';
-var playerRecords={};players.forEach(function(p){playerRecords[p]=0;});var rowsData=games.map(function(g){var sc=g.s||{};var winner=getWinner(sc);var isRecord={};players.forEach(function(p){if(p in sc&&sc[p]>playerRecords[p]){isRecord[p]=true;playerRecords[p]=sc[p];}else{isRecord[p]=false;}});return{g:g,sc:sc,winner:winner,isRecord:isRecord};});
-var tableRows=[].concat(rowsData).reverse().map(function(row){return'<tr><td class="date-cell">'+row.g.d+'</td>'+players.map(function(p){var cls=row.isRecord[p]?'record':(p===row.winner?'winner':'');return'<td class="score-cell '+cls+'">'+(p in row.sc?row.sc[p]:'—')+'</td>';}).join('')+'<td><button class="del-btn" onclick="deleteGame(\''+compId+'\',\''+row.g.key+'\')">✕</button></td></tr>';}).join('');
+var tableRows=[].concat(games).reverse().map(function(g){
+  var sc=g.s||{};
+  var pnt=berekenPunten(sc,players);
+  var maxLetters=0;
+  players.forEach(function(p){if(sc[p]>maxLetters)maxLetters=sc[p];});
+  return'<tr><td class="date-cell">'+g.d+'</td>'+
+    players.map(function(p){
+      var letters = p in sc && sc[p]>0 ? sc[p] : null;
+      var pts = pnt[p]||0;
+      var isLangste = letters===maxLetters && letters>0;
+      var cel = letters!==null
+        ? letters+'<span style="font-size:10px;color:var(--text-muted)"> ('+pts+'pt'+(isLangste?' ⭐':'')+')' +'</span>'
+        : '—';
+      return'<td class="score-cell" style="text-align:center">'+cel+'</td>';
+    }).join('')+
+    '<td style="text-align:right;width:36px"><button class="del-btn" onclick="deleteGame(\''+compId+'\',\''+g.key+'\')">✕</button></td></tr>';
+}).join('');
 var tableHTML='<div class="card"><div class="card-head"><span class="card-title">Alle potjes</span><span style="font-size:11px;color:var(--text-muted)">★ = persoonlijk record</span></div><div class="games-wrap"><table><thead><tr><th>Datum</th>'+players.map(function(p){return'<th style="text-align:center">'+p+'</th>';}).join('')+'<th></th></tr></thead><tbody>'+(tableRows||'<tr><td colspan="'+(players.length+2)+'" class="empty">Nog geen potjes</td></tr>')+'</tbody></table></div></div>';
 document.getElementById('mainContent').innerHTML=standHTML+formHTML+tableHTML;}
 async function saveGame(compId){var comp=comps.find(function(c){return c.id===compId;});var dateInput=document.getElementById('new_date').value;if(!dateInput){showToast('Kies een datum');return;}var parts=dateInput.split('-');var dateStr=parts[2]+'-'+parts[1]+'-'+parts[0];var scores={};comp.players.forEach(function(p){scores[p]=parseInt(document.getElementById('sc_'+p).value)||0;});var newId=String(Date.now())+Math.random().toString(36).substr(2,5);var res=await sbClient.from('bananas_games').insert({id:newId,comp_id:compId,datum:dateStr,scores:scores});if(res.error){showToast('Fout bij opslaan');console.error(res.error);return;}showToast('Potje opgeslagen ✓');comp.players.forEach(function(p){document.getElementById('sc_'+p).value=0;});laadGames(compId);}
