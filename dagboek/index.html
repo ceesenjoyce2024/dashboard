@@ -313,10 +313,10 @@ function sync(state, msg) {
 window.loadAll = async function() {
   sync('busy','Laden...');
   try {
-    const { data, error } = await sbClient.from('dagboek').select('datum, status');
+    const { data, error } = await sbClient.from('dagboek').select('datum, status, bedtijd');
     if (error) throw error;
     cache = {};
-    data.forEach(function(row){ cache[row.datum]=row.status; });
+    data.forEach(function(row){ cache[row.datum]={status:row.status, bedtijd:row.bedtijd||null}; });
     sync('ok','Gesynchroniseerd');
     renderCal();
     if (document.getElementById('chartView').style.display==='block') renderChart();
@@ -326,13 +326,15 @@ window.loadAll = async function() {
   }
 };
 
-async function saveDay(key, val) {
+async function saveDay(key, val, bedtijd) {
   sync('busy','Opslaan...');
   try {
     if (val) {
-      const { error } = await sbClient.from('dagboek').upsert({ datum:key, status:val },{ onConflict:'datum' });
+      const row = { datum:key, status:val };
+      if (bedtijd) row.bedtijd = bedtijd;
+      const { error } = await sbClient.from('dagboek').upsert(row, { onConflict:'datum' });
       if (error) throw error;
-      cache[key] = val;
+      cache[key] = { status:val, bedtijd:bedtijd||null };
     } else {
       const { error } = await sbClient.from('dagboek').delete().eq('datum',key);
       if (error) throw error;
@@ -361,7 +363,7 @@ function renderCal() {
   for(let d=1;d<=days;d++){
     const cell=document.createElement('div'); cell.className='cell';
     if(d===now.getDate()&&cm===now.getMonth()&&cy===now.getFullYear()) cell.classList.add('today');
-    const st=cache[dk(cy,cm,d)];
+    const entry=cache[dk(cy,cm,d)]; const st=entry?entry.status:null;
     if(st){
       const s=ST.find(function(x){return x.key===st;});
       if(s){
@@ -371,13 +373,22 @@ function renderCal() {
     }
     const num=document.createElement('div'); num.className='cell-num'; num.textContent=d;
     cell.appendChild(num);
+    if(entry&&entry.bedtijd){
+      const bt=document.createElement('div');
+      bt.style.cssText='font-size:8px;color:var(--text-muted);position:relative;z-index:1;margin-top:1px';
+      bt.textContent=entry.bedtijd.slice(0,5);
+      cell.appendChild(bt);
+    }
     cell.addEventListener('click',(function(day){return function(){openSheet(day);};})(d));
     grid.appendChild(cell);
   }
 }
 
 function openSheet(d) {
-  selDay=d; selKey=cache[dk(cy,cm,d)]||null;
+  selDay=d;
+  const entry=cache[dk(cy,cm,d)]||null;
+  selKey=entry?entry.status:null;
+  const selBedtijd=entry?entry.bedtijd||'':'';
   const dt=new Date(cy,cm,d);
   document.getElementById('sheetDate').textContent=dt.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
   const opts=document.getElementById('sheetOpts');
@@ -393,12 +404,19 @@ function openSheet(d) {
     };
     opts.appendChild(el);
   });
+  // Bedtijd veld
+  const bedtijdDiv=document.createElement('div');
+  bedtijdDiv.style.cssText='margin-top:12px;display:flex;align-items:center;gap:10px';
+  bedtijdDiv.innerHTML='<label style="font-size:13px;color:var(--text-muted);white-space:nowrap">🌙 Bedtijd</label>'+
+    '<input type="time" id="inp-bedtijd" value="'+selBedtijd+'" style="flex:1;padding:8px 12px;border:1px solid var(--sand-dark);border-radius:9px;font-size:15px;background:var(--sand-light);color:var(--text);outline:none;font-family:var(--sans)">';
+  opts.after(bedtijdDiv);
   document.getElementById('overlay').classList.add('open');
   document.getElementById('btnSave').onclick=async function(){
-    await saveDay(dk(cy,cm,selDay),selKey); closeSheet(); renderCal();
+    const bt=document.getElementById('inp-bedtijd').value||null;
+    await saveDay(dk(cy,cm,selDay),selKey,bt); closeSheet(); renderCal();
   };
   document.getElementById('btnWis').onclick=async function(){
-    await saveDay(dk(cy,cm,selDay),null); closeSheet(); renderCal();
+    await saveDay(dk(cy,cm,selDay),null,null); closeSheet(); renderCal();
   };
 }
 
