@@ -404,12 +404,20 @@ function openSheet(d) {
     };
     opts.appendChild(el);
   });
-  // Bedtijd veld
-  const bedtijdDiv=document.createElement('div');
+  // Bedtijd veld — verwijder eerder toegevoegde velden
+  var oudeVelden = document.querySelectorAll('.bedtijd-veld');
+  oudeVelden.forEach(function(el){ el.remove(); });
+  var bedtijdDiv=document.createElement('div');
+  bedtijdDiv.className='bedtijd-veld';
   bedtijdDiv.style.cssText='margin-top:12px;display:flex;align-items:center;gap:10px';
   bedtijdDiv.innerHTML='<label style="font-size:13px;color:var(--text-muted);white-space:nowrap">🌙 Bedtijd</label>'+
     '<input type="time" id="inp-bedtijd" value="'+selBedtijd+'" style="flex:1;padding:8px 12px;border:1px solid var(--sand-dark);border-radius:9px;font-size:15px;background:var(--sand-light);color:var(--text);outline:none;font-family:var(--sans)">';
   opts.after(bedtijdDiv);
+  // Reset waarde expliciet na DOM insert
+  setTimeout(function(){ 
+    var el=document.getElementById('inp-bedtijd');
+    if(el) el.value=selBedtijd||'';
+  }, 10);
   document.getElementById('overlay').classList.add('open');
   document.getElementById('btnSave').onclick=async function(){
     const bt=document.getElementById('inp-bedtijd').value||null;
