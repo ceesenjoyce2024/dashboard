@@ -136,7 +136,7 @@
   .cell.empty { background: transparent; border-color: transparent; cursor: default; }
   .cell.today { border-color: var(--olive); border-width: 2px; }
   .cell-bg { position: absolute; inset: 0; opacity: 0.55; }
-  .cell-num { font-size: 13px; color: var(--text-muted); position: relative; z-index: 1; }
+  .cell-num { font-size: 13px; color: var(--text-muted); position: relative; z-index: 1; line-height: 1.4; }
   .cell.today .cell-num { font-weight: 600; color: var(--olive); }
 
   /* ── Sheet ── */
@@ -371,12 +371,14 @@ function renderCal() {
         bg.style.background=s.fill; cell.appendChild(bg);
       }
     }
+    // Dagnummer volledig gecentreerd
     const num=document.createElement('div'); num.className='cell-num'; num.textContent=d;
     cell.appendChild(num);
+    // Bedtijd absoluut gecentreerd in onderste kwart
     if(entry&&entry.bedtijd){
       const bt=document.createElement('div');
-      bt.style.cssText='font-size:8px;color:var(--text-muted);position:relative;z-index:1;margin-top:1px';
-      bt.textContent=entry.bedtijd.slice(0,5);
+      bt.style.cssText='position:absolute;bottom:0;left:0;right:0;height:40%;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--text-muted);z-index:1;';
+      bt.textContent='🌙'+entry.bedtijd.slice(0,5);
       cell.appendChild(bt);
     }
     cell.addEventListener('click',(function(day){return function(){openSheet(day);};})(d));
