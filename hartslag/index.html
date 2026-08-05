@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -604,7 +604,11 @@ async function submitMeting() {
   document.getElementById('inp-onder').value    = '70';
   var sm = document.getElementById('succes-melding');
   sm.style.display='block';
-  setTimeout(function(){sm.style.display='none';},2000);
+  setTimeout(function(){
+    sm.style.display='none';
+    toonTab('week');
+    window.scrollTo(0,0);
+  },1000);
 }
 
 function bewerken(id) {
