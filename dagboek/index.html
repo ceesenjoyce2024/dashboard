@@ -457,7 +457,8 @@ function renderChart() {
     const days=new Date(cy,m+1,0).getDate();
     let d=0,mi=0,h=0;
     for(let dd=1;dd<=days;dd++){
-      const s=cache[dk(cy,m,dd)];
+      const entry=cache[dk(cy,m,dd)];
+      const s=entry?entry.status:null;
       if(s==='droog') d++;
       else if(s==='minimaal') mi++;
       else if(s==='net-droog') h++;
