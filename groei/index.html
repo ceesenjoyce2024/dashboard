@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Groei">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Groei — Jesper & Riva</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
+<style>
+  :root {
+    --sand:#e8e4d9;--sand-light:#f2efe6;--sand-dark:#d8d4c6;
+    --olive:#5c5a2e;--olive-mid:#7a7838;--olive-light:#c8c89a;
+    --text:#3d3b1e;--text-muted:#7a7860;--text-faint:#a8a890;
+    --card-bg:#f7f4ec;
+    --jesper:#2A7FD4;--jesper-light:#E6F1FB;
+    --riva:#C4526A;--riva-light:#FAEAED;
+    --green:#1A9E6E;--green-light:#D6F5EA;
+    --red:#8a2828;--red-light:#fdf0f0;
+    --radius:12px;--radius-sm:8px;
+    --serif:'Playfair Display',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);background:var(--sand);color:var(--text);min-height:100vh;}
+
+  /* Header */
+  .header{background:var(--olive);padding:0 1.5rem;position:sticky;top:0;z-index:100;}
+  .header-inner{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px;height:54px;}
+  .back-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:var(--sand-light);padding:5px 11px;border-radius:7px;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0;}
+  .back-btn:hover{background:rgba(255,255,255,0.25);}
+  .header-title{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--sand-light);}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--olive-light);margin-left:auto;flex-shrink:0;}
+
+  /* Nav tabs */
+  .nav-wrap{background:var(--card-bg);border-bottom:1px solid var(--sand-dark);overflow-x:auto;}
+  .nav-wrap::-webkit-scrollbar{display:none;}
+  .nav{max-width:760px;margin:0 auto;display:flex;padding:0 1rem;}
+  .nav-btn{font-family:var(--sans);font-size:13px;font-weight:500;padding:13px 16px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+  .nav-btn.active{color:var(--olive);border-bottom-color:var(--olive-mid);}
+  .nav-btn.add-btn{margin-left:auto;color:var(--olive-mid);}
+
+  /* Main */
+  .main{max-width:760px;margin:0 auto;padding:1.25rem 1rem 4rem;}
+  .section{display:none;}.section.active{display:block;}
+
+  /* Kaarten */
+  .card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--sand-dark);padding:1.25rem;margin-bottom:14px;}
+  .card-title{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--text-muted);letter-spacing:.03em;margin-bottom:1rem;}
+
+  /* Persoon badges */
+  .badge-jesper{display:inline-block;background:var(--jesper-light);color:var(--jesper);font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;border:1px solid #c0d8f0;}
+  .badge-riva{display:inline-block;background:var(--riva-light);color:var(--riva);font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;border:1px solid #f0c0cc;}
+
+  /* Laatste meting kaartjes */
+  .latest-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .latest-card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--sand-dark);padding:1rem;}
+  .latest-card.jesper{border-top:3px solid var(--jesper);}
+  .latest-card.riva{border-top:3px solid var(--riva);}
+  .latest-naam{font-family:var(--serif);font-size:16px;font-weight:700;margin-bottom:6px;}
+  .latest-naam.jesper{color:var(--jesper);}
+  .latest-naam.riva{color:var(--riva);}
+  .latest-stat{font-size:13px;color:var(--text-muted);margin-bottom:3px;}
+  .latest-val{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--text);}
+  .latest-date{font-size:11px;color:var(--text-faint);margin-top:6px;}
+
+  /* Grafiek */
+  .grafiek-kaart{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--sand-dark);padding:1.25rem;margin-bottom:14px;}
+  .grafiek-titel{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--text-muted);margin-bottom:1rem;}
+  .grafiek-legenda{display:flex;gap:16px;margin-bottom:12px;}
+  .leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);}
+  .leg-dot{width:12px;height:12px;border-radius:50%;}
+
+  /* Tab knoppen */
+  .tab-bar{display:flex;gap:6px;margin-bottom:1rem;}
+  .tab-btn{font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px;border:1px solid var(--sand-dark);background:var(--sand-light);color:var(--text-muted);cursor:pointer;font-family:var(--sans);}
+  .tab-btn.active{background:var(--olive);border-color:var(--olive);color:var(--sand-light);}
+
+  /* Tabel */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:1px solid var(--sand-dark);}
+  td{padding:9px 10px;border-bottom:1px solid var(--sand-dark);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:var(--sand-light);}
+
+  /* Formulier */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .form-group{display:flex;flex-direction:column;gap:5px;}
+  .form-group.full{grid-column:1/-1;}
+  .form-group label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;}
+  .form-group input,.form-group select{font-family:var(--sans);font-size:14px;padding:10px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none;transition:border-color .15s;}
+  .form-group input:focus,.form-group select:focus{border-color:var(--olive-mid);}
+  .btn-primary{font-family:var(--sans);font-weight:600;background:var(--olive);color:var(--sand-light);border:none;padding:11px 24px;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;width:100%;margin-top:8px;}
+  .btn-primary:hover{background:var(--olive-mid);}
+  .btn-sm{font-family:var(--sans);font-size:12px;padding:5px 10px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text-muted);cursor:pointer;}
+  .btn-danger{font-size:12px;padding:5px 10px;border:1px solid #dfc0b8;border-radius:var(--radius-sm);background:var(--red-light);color:var(--red);cursor:pointer;}
+
+  /* Delta pijlen */
+  .delta-up{color:var(--green);font-size:11px;}
+  .delta-down{color:var(--red);font-size:11px;}
+
+  .empty{text-align:center;padding:2rem;color:var(--text-faint);font-size:13px;}
+  .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--olive);color:var(--sand-light);padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;z-index:200;animation:fadeInUp .2s ease;}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .page-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--olive);margin-bottom:1.25rem;}
+
+  @media(max-width:500px){
+    .latest-grid{grid-template-columns:1fr 1fr;gap:8px;}
+    .form-grid{grid-template-columns:1fr 1fr;}
+    .latest-val{font-size:18px;}
+  }
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="back-btn">‹ Dashboard</a>
+    <div class="header-title">📏 Groei — Jesper & Riva</div>
+    <div class="status-dot" id="statusDot"></div>
+  </div>
+</header>
+
+<div class="nav-wrap">
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showSection('overzicht')">Overzicht</button>
+    <button class="nav-btn" onclick="showSection('grafieken')">Grafieken</button>
+    <button class="nav-btn" onclick="showSection('metingen')">Alle metingen</button>
+    <button class="nav-btn add-btn" onclick="showSection('invoer')">＋ Meting</button>
+  </nav>
+</div>
+
+<main class="main">
+  <!-- OVERZICHT -->
+  <div class="section active" id="overzicht">
+    <div class="page-title">Laatste metingen</div>
+    <div class="latest-grid" id="latest-grid"></div>
+    <div class="card">
+      <div class="card-title">Recente metingen</div>
+      <div id="recent-lijst"></div>
+    </div>
+  </div>
+
+  <!-- GRAFIEKEN -->
+  <div class="section" id="grafieken">
+    <div class="page-title">Groeicurves</div>
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-g-beiden" onclick="setGrafiekFilter('beiden')">Beiden</button>
+      <button class="tab-btn" id="tab-g-jesper" onclick="setGrafiekFilter('Jesper')">Jesper</button>
+      <button class="tab-btn" id="tab-g-riva" onclick="setGrafiekFilter('Riva')">Riva</button>
+    </div>
+    <div class="grafiek-legenda" id="grafiek-legenda">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--jesper)"></div>Jesper</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--riva)"></div>Riva</div>
+    </div>
+    <div class="grafiek-kaart">
+      <div class="grafiek-titel">Lengte (cm)</div>
+      <canvas id="grafiek-lengte" height="200"></canvas>
+    </div>
+    <div class="grafiek-kaart">
+      <div class="grafiek-titel">Gewicht (kg)</div>
+      <canvas id="grafiek-gewicht" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- ALLE METINGEN -->
+  <div class="section" id="metingen">
+    <div class="page-title">Alle metingen</div>
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-m-beiden" onclick="setMetingenFilter('beiden')">Beiden</button>
+      <button class="tab-btn" id="tab-m-jesper" onclick="setMetingenFilter('Jesper')">Jesper</button>
+      <button class="tab-btn" id="tab-m-riva" onclick="setMetingenFilter('Riva')">Riva</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div id="metingen-tabel"></div>
+    </div>
+  </div>
+
+  <!-- INVOER -->
+  <div class="section" id="invoer">
+    <div class="page-title" id="invoer-titel">Nieuwe meting</div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Persoon</label>
+          <select id="f-persoon">
+            <option value="Jesper">Jesper</option>
+            <option value="Riva">Riva</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Datum</label>
+          <input type="date" id="f-datum">
+        </div>
+        <div class="form-group">
+          <label>Lengte (cm)</label>
+          <input type="number" id="f-lengte" step="0.1" min="100" max="220" placeholder="bijv. 155.0">
+        </div>
+        <div class="form-group">
+          <label>Gewicht (kg)</label>
+          <input type="number" id="f-gewicht" step="0.1" min="20" max="150" placeholder="bijv. 42.5">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="slaOp()" id="submit-btn">Meting opslaan</button>
+      <button class="btn-primary" id="annuleer-btn" onclick="annuleerEdit()" style="display:none;background:var(--sand-dark);color:var(--text);margin-top:6px">Annuleren</button>
+    </div>
+  </div>
+</main>
+
+<script src="/theme.js" defer></script>
+<script>
+var sb = window.supabase.createClient(
+  'https://hvpooifxqhovskwgzpbr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g'
+);
+
+var metingen = [];
+var grafiekFilter = 'beiden';
+var metingenFilter = 'beiden';
+var editId = null;
+var grafiekLengte = null;
+var grafiekGewicht = null;
+var currentSection = 'overzicht';
+
+var MAANDEN = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+
+async function laad() {
+  document.getElementById('statusDot').style.background = '#E8A020';
+  var res = await sb.from('groei').select('*').order('datum');
+  if (res.error) { console.error(res.error); document.getElementById('statusDot').style.background = '#DC4B4B'; return; }
+  metingen = res.data;
+  document.getElementById('statusDot').style.background = '#5DCAA5';
+  render();
+}
+
+function showSection(id) {
+  currentSection = id;
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  var idx = ['overzicht','grafieken','metingen','invoer'].indexOf(id);
+  document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  render();
+}
+
+function render() {
+  if (currentSection === 'overzicht') renderOverzicht();
+  if (currentSection === 'grafieken') renderGrafieken();
+  if (currentSection === 'metingen') renderMetingen();
+  if (currentSection === 'invoer') renderInvoer();
+}
+
+function formatDatum(d) {
+  var dt = new Date(d + 'T12:00:00');
+  return dt.getDate() + ' ' + MAANDEN[dt.getMonth()] + ' ' + dt.getFullYear();
+}
+
+function getLatest(persoon) {
+  var p = metingen.filter(function(m){return m.persoon===persoon;});
+  return p.length ? p[p.length-1] : null;
+}
+
+function getPrev(persoon, datum) {
+  var p = metingen.filter(function(m){return m.persoon===persoon && m.datum < datum;});
+  return p.length ? p[p.length-1] : null;
+}
+
+function delta(curr, prev, field) {
+  if (!prev || prev[field] === null) return '';
+  var d = curr[field] - prev[field];
+  var sign = d >= 0 ? '+' : '';
+  var cls = d >= 0 ? 'delta-up' : 'delta-down';
+  return '<span class="'+cls+'"> ('+sign+d.toFixed(1)+')</span>';
+}
+
+function renderOverzicht() {
+  var persons = ['Jesper','Riva'];
+  var grid = document.getElementById('latest-grid');
+  grid.innerHTML = persons.map(function(p) {
+    var m = getLatest(p);
+    if (!m) return '<div class="latest-card '+p.toLowerCase()+'"><div class="latest-naam '+p.toLowerCase()+'">'+p+'</div><p class="empty" style="padding:0.5rem 0">Nog geen metingen</p></div>';
+    var prev = getPrev(p, m.datum);
+    return '<div class="latest-card '+p.toLowerCase()+'">' +
+      '<div class="latest-naam '+p.toLowerCase()+'">'+p+'</div>' +
+      '<div class="latest-stat">Lengte</div>' +
+      '<div class="latest-val">'+m.lengte+' cm'+delta(m,prev,'lengte')+'</div>' +
+      '<div class="latest-stat" style="margin-top:8px">Gewicht</div>' +
+      '<div class="latest-val">'+m.gewicht+' kg'+delta(m,prev,'gewicht')+'</div>' +
+      '<div class="latest-date">'+formatDatum(m.datum)+'</div>' +
+      '</div>';
+  }).join('');
+
+  // Recente metingen
+  var recent = metingen.slice().reverse().slice(0,8);
+  document.getElementById('recent-lijst').innerHTML = recent.length ?
+    '<table><thead><tr><th>Datum</th><th>Persoon</th><th>Lengte</th><th>Gewicht</th></tr></thead><tbody>' +
+    recent.map(function(m) {
+      return '<tr><td>'+formatDatum(m.datum)+'</td>' +
+        '<td><span class="badge-'+m.persoon.toLowerCase()+'">'+m.persoon+'</span></td>' +
+        '<td>'+m.lengte+' cm</td><td>'+m.gewicht+' kg</td></tr>';
+    }).join('') + '</tbody></table>' :
+    '<p class="empty">Nog geen metingen</p>';
+}
+
+function setGrafiekFilter(f) {
+  grafiekFilter = f;
+  ['beiden','Jesper','Riva'].forEach(function(k){
+    document.getElementById('tab-g-'+k.toLowerCase()).classList.toggle('active', k===f);
+  });
+  document.getElementById('grafiek-legenda').style.display = f==='beiden' ? 'flex' : 'none';
+  renderGrafieken();
+}
+
+function setMetingenFilter(f) {
+  metingenFilter = f;
+  ['beiden','Jesper','Riva'].forEach(function(k){
+    document.getElementById('tab-m-'+k.toLowerCase()).classList.toggle('active', k===f);
+  });
+  renderMetingen();
+}
+
+function getGefilterd(persoon) {
+  if (persoon === 'beiden') return metingen;
+  return metingen.filter(function(m){return m.persoon===persoon;});
+}
+
+function renderGrafieken() {
+  var SAND_DARK = '#d8d4c6';
+  var MUTED = '#7a7860';
+  var scaleOpts = function(min,max){return{x:{grid:{color:SAND_DARK},ticks:{color:MUTED,maxTicksLimit:8}},y:{min:min,max:max,grid:{color:SAND_DARK},ticks:{color:MUTED}}};};
+  var ttOpts = {backgroundColor:'#f7f4ec',borderColor:'#d8d4c6',borderWidth:1,titleColor:'#5c5a2e',bodyColor:'#3d3b1e'};
+
+  var personen = grafiekFilter === 'beiden' ? ['Jesper','Riva'] : [grafiekFilter];
+  var kleuren = {Jesper:'#2A7FD4', Riva:'#C4526A'};
+
+  function maakDataset(persoon, field) {
+    var data = metingen.filter(function(m){return m.persoon===persoon;}).map(function(m){
+      return {x: m.datum, y: m[field]};
+    });
+    return {
+      label: persoon,
+      data: data,
+      borderColor: kleuren[persoon],
+      backgroundColor: kleuren[persoon]+'22',
+      borderWidth: 2,
+      pointRadius: 5,
+      pointBackgroundColor: kleuren[persoon],
+      tension: 0.3
+    };
+  }
+
+  // Lengte
+  if (grafiekLengte) grafiekLengte.destroy();
+  grafiekLengte = new Chart(document.getElementById('grafiek-lengte'), {
+    type: 'line',
+    data: { datasets: personen.map(function(p){return maakDataset(p,'lengte');}) },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: grafiekFilter==='beiden', labels:{color:MUTED,font:{size:12}} }, tooltip: ttOpts },
+      scales: Object.assign(scaleOpts(120,180), {x:{type:'time',time:{unit:'month',displayFormats:{month:'MMM yyyy'}},grid:{color:SAND_DARK},ticks:{color:MUTED}}})
+    }
+  });
+
+  // Gewicht
+  if (grafiekGewicht) grafiekGewicht.destroy();
+  grafiekGewicht = new Chart(document.getElementById('grafiek-gewicht'), {
+    type: 'line',
+    data: { datasets: personen.map(function(p){return maakDataset(p,'gewicht');}) },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: grafiekFilter==='beiden', labels:{color:MUTED,font:{size:12}} }, tooltip: ttOpts },
+      scales: Object.assign(scaleOpts(20,60), {x:{type:'time',time:{unit:'month',displayFormats:{month:'MMM yyyy'}},grid:{color:SAND_DARK},ticks:{color:MUTED}}})
+    }
+  });
+}
+
+function renderMetingen() {
+  var data = metingenFilter === 'beiden'
+    ? metingen.slice().reverse()
+    : metingen.filter(function(m){return m.persoon===metingenFilter;}).slice().reverse();
+
+  document.getElementById('metingen-tabel').innerHTML = data.length ?
+    '<table><thead><tr><th>Datum</th><th>Persoon</th><th>Lengte</th><th>Gewicht</th><th></th></tr></thead><tbody>' +
+    data.map(function(m) {
+      return '<tr>' +
+        '<td style="white-space:nowrap;font-size:12px">'+formatDatum(m.datum)+'</td>' +
+        '<td><span class="badge-'+m.persoon.toLowerCase()+'">'+m.persoon+'</span></td>' +
+        '<td>'+m.lengte+' cm</td>' +
+        '<td>'+m.gewicht+' kg</td>' +
+        '<td style="display:flex;gap:4px">' +
+        '<button class="btn-sm" onclick="bewerken(\''+m.id+'\')">✏️</button>' +
+        '<button class="btn-danger" onclick="verwijder(\''+m.id+'\')">✕</button>' +
+        '</td></tr>';
+    }).join('') + '</tbody></table>' :
+    '<p class="empty">Nog geen metingen</p>';
+}
+
+function renderInvoer() {
+  if (!editId) {
+    var now = new Date();
+    document.getElementById('f-datum').value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  }
+}
+
+async function slaOp() {
+  var persoon = document.getElementById('f-persoon').value;
+  var datum   = document.getElementById('f-datum').value;
+  var lengte  = parseFloat(document.getElementById('f-lengte').value);
+  var gewicht = parseFloat(document.getElementById('f-gewicht').value);
+  if (!datum || isNaN(lengte) || isNaN(gewicht)) { toast('Vul alle velden in'); return; }
+  var id = editId || 'g_'+persoon.toLowerCase()+'_'+Date.now();
+  var res = await sb.from('groei').upsert({id:id,persoon:persoon,datum:datum,lengte:lengte,gewicht:gewicht},{onConflict:'id'});
+  if (res.error) { toast('Fout bij opslaan'); console.error(res.error); return; }
+  toast(editId ? 'Meting bijgewerkt ✓' : 'Meting opgeslagen ✓');
+  annuleerEdit();
+  await laad();
+  showSection('overzicht');
+}
+
+function bewerken(id) {
+  var m = metingen.find(function(x){return x.id===id;});
+  if (!m) return;
+  editId = id;
+  document.getElementById('f-persoon').value = m.persoon;
+  document.getElementById('f-datum').value   = m.datum;
+  document.getElementById('f-lengte').value  = m.lengte;
+  document.getElementById('f-gewicht').value = m.gewicht;
+  document.getElementById('invoer-titel').textContent = 'Meting bewerken';
+  document.getElementById('annuleer-btn').style.display = '';
+  showSection('invoer');
+}
+
+function annuleerEdit() {
+  editId = null;
+  document.getElementById('invoer-titel').textContent = 'Nieuwe meting';
+  document.getElementById('annuleer-btn').style.display = 'none';
+  document.getElementById('f-lengte').value = '';
+  document.getElementById('f-gewicht').value = '';
+}
+
+async function verwijder(id) {
+  if (!confirm('Meting verwijderen?')) return;
+  var res = await sb.from('groei').delete().eq('id',id);
+  if (res.error) { toast('Fout bij verwijderen'); return; }
+  toast('Meting verwijderd');
+  await laad();
+  renderMetingen();
+}
+
+function toast(msg) {
+  var t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(function(){t.remove();},2500);
+}
+
+// Chart.js time adapter
+var script = document.createElement('script');
+script.src = 'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js';
+script.onload = function(){ laad(); };
+document.head.appendChild(script);
+</script>
+</body>
+</html>
