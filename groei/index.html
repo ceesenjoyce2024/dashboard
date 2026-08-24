@@ -104,6 +104,8 @@
   .delta-down{color:var(--red);font-size:11px;}
 
   .empty{text-align:center;padding:2rem;color:var(--text-faint);font-size:13px;}
+  #fab{position:fixed;right:20px;bottom:32px;margin-bottom:env(safe-area-inset-bottom,0px);width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--olive);box-shadow:0 4px 16px rgba(92,90,46,0.35);font-size:24px;color:var(--sand-light);z-index:9999;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform 0.15s;}
+  #fab:active{transform:scale(0.92);}
   .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--olive);color:var(--sand-light);padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;z-index:200;animation:fadeInUp .2s ease;}
   @keyframes fadeInUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
   .page-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--olive);margin-bottom:1.25rem;}
@@ -210,6 +212,7 @@
   </div>
 </main>
 
+<button id="fab" onclick="showSection('invoer');window.scrollTo(0,0);" title="Nieuwe meting">➕</button>
 <script src="/theme.js" defer></script>
 <script>
 var sb = window.supabase.createClient(
@@ -243,6 +246,8 @@ function showSection(id) {
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
   var idx = ['overzicht','grafieken','metingen','invoer'].indexOf(id);
   document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  var fab = document.getElementById('fab');
+  if (fab) fab.style.display = id === 'invoer' ? 'none' : 'flex';
   render();
 }
 
