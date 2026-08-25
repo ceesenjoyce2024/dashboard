@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gewicht Joyce">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Gewicht — Joyce</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
+<style>
+  :root {
+    --sand:#e8e4d9;--sand-light:#f2efe6;--sand-dark:#d8d4c6;
+    --olive:#5c5a2e;--olive-mid:#7a7838;--olive-light:#c8c89a;
+    --text:#3d3b1e;--text-muted:#7a7860;--text-faint:#a8a890;
+    --card-bg:#f7f4ec;
+    --accent:#7a3870;--accent-mid:#9a5090;--accent-light:#f5eaf4;
+    --green:#1A9E6E;--green-light:#D6F5EA;
+    --red:#8a2828;--red-light:#fdf0f0;
+    --radius:12px;--radius-sm:8px;
+    --serif:'Playfair Display',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);background:var(--sand);color:var(--text);min-height:100vh;}
+
+  .header{background:var(--accent);padding:0 1.5rem;position:sticky;top:0;z-index:100;}
+  .header-inner{max-width:680px;margin:0 auto;display:flex;align-items:center;gap:12px;height:54px;}
+  .back-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:var(--sand-light);padding:5px 11px;border-radius:7px;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0;}
+  .back-btn:hover{background:rgba(255,255,255,0.25);}
+  .header-title{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--sand-light);}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.4);margin-left:auto;flex-shrink:0;}
+
+  .nav-wrap{background:var(--card-bg);border-bottom:1px solid var(--sand-dark);overflow-x:auto;}
+  .nav-wrap::-webkit-scrollbar{display:none;}
+  .nav{max-width:680px;margin:0 auto;display:flex;padding:0 1rem;}
+  .nav-btn{font-family:var(--sans);font-size:13px;font-weight:500;padding:13px 16px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+  .nav-btn.active{color:var(--accent);border-bottom-color:var(--accent-mid);}
+  .nav-btn.add-btn{margin-left:auto;color:var(--accent-mid);}
+
+  .main{max-width:680px;margin:0 auto;padding:1.25rem 1rem 5rem;}
+  .section{display:none;}.section.active{display:block;}
+  .page-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--accent);margin-bottom:1.25rem;}
+
+  /* Stats tegels */
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+  .stat-tegel{background:var(--card-bg);border-radius:var(--radius-sm);border:1px solid var(--sand-dark);padding:14px 10px;text-align:center;}
+  .stat-label{font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+  .stat-value{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--accent);}
+  .stat-sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
+
+  /* Grafiek */
+  .grafiek-kaart{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--sand-dark);padding:1.25rem;margin-bottom:14px;}
+  .grafiek-titel{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--text-muted);margin-bottom:1rem;}
+
+  /* Filter knoppen */
+  .filter-rij{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+  .filter-btn{font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px;border:1px solid var(--sand-dark);background:var(--sand-light);color:var(--text-muted);cursor:pointer;font-family:var(--sans);}
+  .filter-btn.active{background:var(--accent);border-color:var(--accent);color:white;}
+
+  /* Lijst */
+  .meting-rij{display:flex;align-items:center;gap:10px;background:var(--card-bg);border-radius:var(--radius-sm);border:1px solid var(--sand-dark);padding:12px 14px;margin-bottom:8px;}
+  .meting-datum{flex:1;font-size:13px;color:var(--olive);font-weight:600;}
+  .meting-gewicht{font-size:18px;font-weight:700;color:var(--accent);min-width:80px;text-align:right;}
+  .meting-delta{font-size:11px;min-width:52px;text-align:center;}
+  .delta-up{color:var(--red);}
+  .delta-down{color:var(--green);}
+  .acties{display:flex;gap:4px;}
+  .icoon-knop{background:none;border:none;cursor:pointer;font-size:15px;padding:4px;}
+
+  /* Formulier */
+  .card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--sand-dark);padding:1.25rem;margin-bottom:14px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .form-group{display:flex;flex-direction:column;gap:5px;}
+  .form-group label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;}
+  .form-group input{font-family:var(--sans);font-size:15px;padding:11px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none;}
+  .form-group input:focus{border-color:var(--accent-mid);}
+  .btn-primary{font-family:var(--sans);font-weight:600;background:var(--accent);color:white;border:none;padding:12px 24px;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;width:100%;margin-top:8px;}
+  .btn-primary:hover{background:var(--accent-mid);}
+  .btn-cancel{font-family:var(--sans);font-weight:500;background:var(--sand-dark);color:var(--text);border:none;padding:12px 24px;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;width:100%;margin-top:6px;}
+
+  /* FAB */
+  #fab{position:fixed;right:20px;bottom:calc(32px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--accent);box-shadow:0 4px 16px rgba(122,56,112,0.4);font-size:24px;color:white;z-index:9999;display:flex;align-items:center;justify-content:center;transition:transform 0.15s;line-height:1;}
+  #fab:active{transform:scale(0.92);}
+
+  .leeg{text-align:center;padding:2rem;color:var(--text-faint);font-size:13px;}
+  .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--accent);color:white;padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;z-index:200;animation:fadeInUp .2s ease;}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<button id="fab" onclick="showSection('invoer');window.scrollTo(0,0);" title="Nieuwe meting">➕</button>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="back-btn">‹ Dashboard</a>
+    <div class="header-title">⚖️ Gewicht — Joyce</div>
+    <div class="status-dot" id="statusDot"></div>
+  </div>
+</header>
+
+<div class="nav-wrap">
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showSection('overzicht')">Overzicht</button>
+    <button class="nav-btn" onclick="showSection('grafiek')">Grafiek</button>
+    <button class="nav-btn" onclick="showSection('metingen')">Alle metingen</button>
+    <button class="nav-btn add-btn" onclick="showSection('invoer')">＋ Meting</button>
+  </nav>
+</div>
+
+<main class="main">
+  <div class="section active" id="overzicht">
+    <div class="page-title">Overzicht</div>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div id="recent-metingen"></div>
+  </div>
+
+  <div class="section" id="grafiek">
+    <div class="page-title">Grafiek</div>
+    <div class="filter-rij">
+      <button class="filter-btn active" id="f-1m" onclick="setFilter('1m')">1 mnd</button>
+      <button class="filter-btn" id="f-3m" onclick="setFilter('3m')">3 mnd</button>
+      <button class="filter-btn" id="f-6m" onclick="setFilter('6m')">6 mnd</button>
+      <button class="filter-btn" id="f-1j" onclick="setFilter('1j')">1 jaar</button>
+      <button class="filter-btn" id="f-alles" onclick="setFilter('alles')">Alles</button>
+    </div>
+    <div class="grafiek-kaart">
+      <div class="grafiek-titel">Gewicht (kg)</div>
+      <canvas id="grafiek-canvas" height="220"></canvas>
+    </div>
+    <div class="stats-grid" id="grafiek-stats"></div>
+  </div>
+
+  <div class="section" id="metingen">
+    <div class="page-title">Alle metingen</div>
+    <div id="alle-metingen"></div>
+  </div>
+
+  <div class="section" id="invoer">
+    <div class="page-title" id="invoer-titel">Nieuwe meting</div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Datum</label>
+          <input type="date" id="f-datum">
+        </div>
+        <div class="form-group">
+          <label>Gewicht (kg)</label>
+          <input type="number" id="f-gewicht" step="0.1" min="30" max="200" placeholder="bijv. 68.5">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="slaOp()">Opslaan</button>
+      <button class="btn-cancel" id="annuleer-btn" onclick="annuleer()" style="display:none">Annuleren</button>
+    </div>
+  </div>
+</main>
+
+<script src="/theme.js" defer></script>
+<script>
+var sb = window.supabase.createClient(
+  'https://hvpooifxqhovskwgzpbr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g'
+);
+
+var metingen = [];
+var huidigFilter = '1m';
+var editId = null;
+var grafiek = null;
+var currentSection = 'overzicht';
+var MAANDEN = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+
+async function laad() {
+  document.getElementById('statusDot').style.background = '#E8A020';
+  var res = await sb.from('gewicht_joyce').select('*').order('datum');
+  if (res.error) { document.getElementById('statusDot').style.background = '#DC4B4B'; return; }
+  metingen = res.data;
+  document.getElementById('statusDot').style.background = '#5DCAA5';
+  render();
+}
+
+function showSection(id) {
+  currentSection = id;
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  var idx = ['overzicht','grafiek','metingen','invoer'].indexOf(id);
+  document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  document.getElementById('fab').style.display = id === 'invoer' ? 'none' : 'flex';
+  render();
+}
+
+function render() {
+  if (currentSection === 'overzicht') renderOverzicht();
+  if (currentSection === 'grafiek') renderGrafiek();
+  if (currentSection === 'metingen') renderMetingen();
+  if (currentSection === 'invoer') renderInvoer();
+}
+
+function formatDatum(d) {
+  var dt = new Date(d + 'T12:00:00');
+  return dt.getDate() + ' ' + MAANDEN[dt.getMonth()] + ' ' + dt.getFullYear();
+}
+
+function renderOverzicht() {
+  if (!metingen.length) {
+    document.getElementById('stats-grid').innerHTML = '';
+    document.getElementById('recent-metingen').innerHTML = '<p class="leeg">Nog geen metingen ingevoerd.</p>';
+    return;
+  }
+  var laatste = metingen[metingen.length-1];
+  var eerste = metingen[0];
+  var min = Math.min.apply(null, metingen.map(function(m){return m.gewicht;}));
+  var max = Math.max.apply(null, metingen.map(function(m){return m.gewicht;}));
+  var verschil = (laatste.gewicht - eerste.gewicht).toFixed(1);
+  var verschilTxt = (verschil > 0 ? '+' : '') + verschil + ' kg';
+
+  document.getElementById('stats-grid').innerHTML =
+    '<div class="stat-tegel"><div class="stat-label">Huidig</div><div class="stat-value">'+laatste.gewicht+'</div><div class="stat-sub">kg · '+formatDatum(laatste.datum)+'</div></div>' +
+    '<div class="stat-tegel"><div class="stat-label">Laagste</div><div class="stat-value" style="color:var(--green)">'+min+'</div><div class="stat-sub">kg</div></div>' +
+    '<div class="stat-tegel"><div class="stat-label">Verschil</div><div class="stat-value" style="color:'+(verschil<=0?'var(--green)':'var(--red)')+'">'+verschilTxt+'</div><div class="stat-sub">t.o.v. start</div></div>';
+
+  var recent = metingen.slice().reverse().slice(0, 10);
+  document.getElementById('recent-metingen').innerHTML = recent.map(function(m, i) {
+    var prev = recent[i+1];
+    var delta = prev ? (m.gewicht - prev.gewicht).toFixed(1) : null;
+    var deltaHtml = delta !== null
+      ? '<span class="meting-delta '+(delta<=0?'delta-down':'delta-up')+'">'+(delta>0?'+':'')+delta+' kg</span>'
+      : '<span class="meting-delta"></span>';
+    return '<div class="meting-rij">' +
+      '<div class="meting-datum">'+formatDatum(m.datum)+'</div>' +
+      deltaHtml +
+      '<div class="meting-gewicht">'+m.gewicht+' kg</div>' +
+      '<div class="acties">' +
+      '<button class="icoon-knop" onclick="bewerk(\''+m.id+'\')">✏️</button>' +
+      '<button class="icoon-knop" onclick="verwijder(\''+m.id+'\')">🗑️</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+function setFilter(f) {
+  huidigFilter = f;
+  ['1m','3m','6m','1j','alles'].forEach(function(k){
+    document.getElementById('f-'+k).classList.toggle('active', k===f);
+  });
+  renderGrafiek();
+}
+
+function getGefilterd() {
+  var nu = new Date(); var van = new Date();
+  if      (huidigFilter==='1m')    van.setMonth(nu.getMonth()-1);
+  else if (huidigFilter==='3m')    van.setMonth(nu.getMonth()-3);
+  else if (huidigFilter==='6m')    van.setMonth(nu.getMonth()-6);
+  else if (huidigFilter==='1j')    van.setFullYear(nu.getFullYear()-1);
+  else van = new Date('2000-01-01');
+  return metingen.filter(function(m){ return new Date(m.datum+'T12:00:00') >= van; });
+}
+
+function renderGrafiek() {
+  var data = getGefilterd();
+  if (data.length < 2) {
+    document.getElementById('grafiek-stats').innerHTML = '<p class="leeg" style="grid-column:1/-1">Voer minimaal 2 metingen in voor de grafiek.</p>';
+    return;
+  }
+  var CLR = '#7a3870';
+  var GRID = '#d8d4c6';
+  var TICK = '#7a7860';
+  var TT = {backgroundColor:'#f7f4ec',borderColor:'#d8d4c6',borderWidth:1,titleColor:'#5c5a2e',bodyColor:'#3d3b1e'};
+  var labels = data.map(function(m){ var d=new Date(m.datum+'T12:00:00'); return d.getDate()+' '+MAANDEN[d.getMonth()]; });
+  var values = data.map(function(m){ return m.gewicht; });
+  var minVal = Math.min.apply(null,values); var maxVal = Math.max.apply(null,values);
+  var pad = Math.max(1, (maxVal-minVal)*0.2);
+
+  if (grafiek) grafiek.destroy();
+  grafiek = new Chart(document.getElementById('grafiek-canvas'), {
+    type: 'line',
+    data: { labels: labels, datasets: [{
+      label: 'Gewicht', data: values,
+      borderColor: CLR, backgroundColor: CLR+'22',
+      borderWidth: 2, tension: 0.3,
+      pointRadius: data.length > 60 ? 1 : 4,
+      pointBackgroundColor: CLR
+    }]},
+    options: {
+      responsive: true,
+      plugins: { legend:{display:false}, tooltip: TT },
+      scales: {
+        x: { grid:{color:GRID}, ticks:{color:TICK, maxTicksLimit:8} },
+        y: { min: Math.floor(minVal-pad), max: Math.ceil(maxVal+pad), grid:{color:GRID}, ticks:{color:TICK} }
+      }
+    }
+  });
+
+  var gem = (values.reduce(function(a,b){return a+b;},0)/values.length).toFixed(1);
+  document.getElementById('grafiek-stats').innerHTML =
+    '<div class="stat-tegel"><div class="stat-label">Laagste</div><div class="stat-value" style="color:var(--green)">'+minVal.toFixed(1)+'</div><div class="stat-sub">kg</div></div>' +
+    '<div class="stat-tegel"><div class="stat-label">Gemiddeld</div><div class="stat-value" style="color:var(--accent)">'+gem+'</div><div class="stat-sub">kg</div></div>' +
+    '<div class="stat-tegel"><div class="stat-label">Hoogste</div><div class="stat-value" style="color:var(--red)">'+maxVal.toFixed(1)+'</div><div class="stat-sub">kg</div></div>';
+}
+
+function renderMetingen() {
+  var rev = metingen.slice().reverse();
+  document.getElementById('alle-metingen').innerHTML = rev.length ?
+    rev.map(function(m, i) {
+      var prev = rev[i+1];
+      var delta = prev ? (m.gewicht - prev.gewicht).toFixed(1) : null;
+      var deltaHtml = delta !== null
+        ? '<span class="meting-delta '+(delta<=0?'delta-down':'delta-up')+'">'+(delta>0?'+':'')+delta+' kg</span>'
+        : '<span class="meting-delta"></span>';
+      return '<div class="meting-rij">' +
+        '<div class="meting-datum">'+formatDatum(m.datum)+'</div>' +
+        deltaHtml +
+        '<div class="meting-gewicht">'+m.gewicht+' kg</div>' +
+        '<div class="acties">' +
+        '<button class="icoon-knop" onclick="bewerk(\''+m.id+'\')">✏️</button>' +
+        '<button class="icoon-knop" onclick="verwijder(\''+m.id+'\')">🗑️</button>' +
+        '</div></div>';
+    }).join('') :
+    '<p class="leeg">Nog geen metingen ingevoerd.</p>';
+}
+
+function renderInvoer() {
+  if (!editId) {
+    var now = new Date();
+    document.getElementById('f-datum').value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    document.getElementById('f-gewicht').value = '';
+  }
+}
+
+async function slaOp() {
+  var datum   = document.getElementById('f-datum').value;
+  var gewicht = parseFloat(document.getElementById('f-gewicht').value);
+  if (!datum || isNaN(gewicht)) { toast('Vul datum en gewicht in'); return; }
+  var id = editId || 'gw_'+Date.now();
+  var res = await sb.from('gewicht_joyce').upsert({id:id, datum:datum, gewicht:gewicht}, {onConflict:'id'});
+  if (res.error) { toast('Fout bij opslaan'); console.error(res.error); return; }
+  toast(editId ? 'Meting bijgewerkt ✓' : 'Meting opgeslagen ✓');
+  annuleer();
+  await laad();
+  showSection('overzicht');
+}
+
+function bewerk(id) {
+  var m = metingen.find(function(x){return x.id===id;});
+  if (!m) return;
+  editId = id;
+  document.getElementById('f-datum').value   = m.datum;
+  document.getElementById('f-gewicht').value = m.gewicht;
+  document.getElementById('invoer-titel').textContent = 'Meting bewerken';
+  document.getElementById('annuleer-btn').style.display = '';
+  showSection('invoer');
+}
+
+function annuleer() {
+  editId = null;
+  document.getElementById('invoer-titel').textContent = 'Nieuwe meting';
+  document.getElementById('annuleer-btn').style.display = 'none';
+  document.getElementById('f-gewicht').value = '';
+}
+
+async function verwijder(id) {
+  if (!confirm('Meting verwijderen?')) return;
+  var res = await sb.from('gewicht_joyce').delete().eq('id', id);
+  if (res.error) { toast('Fout bij verwijderen'); return; }
+  toast('Meting verwijderd');
+  await laad();
+  render();
+}
+
+function toast(msg) {
+  var t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(function(){t.remove();},2500);
+}
+
+laad();
+</script>
+</body>
+</html>
