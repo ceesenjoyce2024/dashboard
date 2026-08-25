@@ -880,6 +880,7 @@ function tekenOverzicht() {
     '<div class="datum">'+(m.moment==='ochtend'?'🌅':'🌙')+' '+m.datum+' · '+m.moment+'</div>'+
     '<div class="hs">'+m.hartslag+' <span style="font-size:11px;font-weight:400">bpm</span></div>'+
     '<div class="bd">'+m.boven+'<span style="color:var(--teal)">/'+m.onder+'</span></div>'+
+    (m.gewicht?'<div style="font-size:13px;font-weight:700;color:var(--olive-mid);min-width:52px;text-align:center">⚖️ '+m.gewicht+' kg</div>':'<div style="min-width:52px"></div>')+
     '<div class="acties">'+
     '<button class="icoon-knop" onclick="bewerken(\''+m.id+'\')">✏️</button>'+
     '<button class="icoon-knop" onclick="verwijderen(\''+m.id+'\')">🗑️</button>'+
