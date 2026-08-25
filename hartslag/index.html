@@ -360,7 +360,10 @@
           <label class="veld-label">Hartslag (bpm)</label>
           <input type="number" id="inp-hartslag" placeholder="bv. 72" min="30" max="220" step="1"/>
         </div>
-        <div></div>
+        <div>
+          <label class="veld-label">Gewicht (kg)</label>
+          <input type="number" id="inp-gewicht" placeholder="bv. 75.5" min="20" max="250" step="0.1"/>
+        </div>
         <div>
           <label class="veld-label">Bovendruk (mmHg)</label>
           <input type="number" id="inp-boven" placeholder="bv. 120" min="60" max="250" step="1"/>
@@ -527,7 +530,7 @@ async function laadMetingen() {
     var res = await sbClient.from(TABEL).select('*').order('datum').order('moment');
     if (res.error) throw res.error;
     window._metingen = res.data.map(function(r) {
-      return { id:r.id, datum:r.datum, moment:r.moment, hartslag:r.hartslag, boven:r.boven, onder:r.onder };
+      return { id:r.id, datum:r.datum, moment:r.moment, hartslag:r.hartslag, boven:r.boven, onder:r.onder, gewicht:r.gewicht||null };
     });
     herlaadUI();
   } catch(e) { console.error('Laden mislukt:', e); }
@@ -592,7 +595,8 @@ async function submitMeting() {
   var boven    = parseInt(document.getElementById('inp-boven').value);
   var onder    = parseInt(document.getElementById('inp-onder').value);
   if (!datum||!hartslag||!boven||!onder) return;
-  var meting = { id:editId||String(Date.now()), datum:datum, moment:huidigMoment, hartslag:hartslag, boven:boven, onder:onder };
+  var gewichtVal = parseFloat(document.getElementById('inp-gewicht').value) || null;
+  var meting = { id:editId||String(Date.now()), datum:datum, moment:huidigMoment, hartslag:hartslag, boven:boven, onder:onder, gewicht:gewichtVal };
   var ok = await window.slaMetingOp(meting);
   if (!ok) return;
   editId = null;
@@ -602,6 +606,7 @@ async function submitMeting() {
   document.getElementById('inp-hartslag').value = '60';
   document.getElementById('inp-boven').value    = '110';
   document.getElementById('inp-onder').value    = '70';
+  document.getElementById('inp-gewicht').value  = '';
   var sm = document.getElementById('succes-melding');
   sm.style.display='block';
   setTimeout(function(){
@@ -618,6 +623,7 @@ function bewerken(id) {
   document.getElementById('inp-hartslag').value = m.hartslag;
   document.getElementById('inp-boven').value    = m.boven;
   document.getElementById('inp-onder').value    = m.onder;
+  document.getElementById('inp-gewicht').value  = m.gewicht||'';
   setMoment(m.moment);
   editId = m.id;
   document.getElementById('invoer-titel').textContent    = 'Meting bewerken';
@@ -742,6 +748,7 @@ function tekenWeek() {
           '<span style="color:var(--red)">♥ '+m.hartslag+' bpm</span>'+
           '<span style="color:var(--blue)">⬆ '+m.boven+'</span>'+
           '<span style="color:var(--teal)">⬇ '+m.onder+'</span>'+
+          (m.gewicht?'<span style="color:var(--text-muted)">⚖ '+m.gewicht+' kg</span>':'')+
           '<div style="margin-left:auto;display:flex;gap:4px">'+
           '<button class="icoon-knop" onclick="bewerken(\''+m.id+'\')">✏️</button>'+
           '<button class="icoon-knop" onclick="verwijderen(\''+m.id+'\')">🗑️</button>'+
