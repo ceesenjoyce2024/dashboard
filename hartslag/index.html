@@ -546,7 +546,7 @@ async function laadMetingen() {
 
 window.slaMetingOp = async function(meting) {
   var res = await sbClient.from(TABEL).upsert(
-    { id:meting.id, datum:meting.datum, moment:meting.moment, hartslag:meting.hartslag, boven:meting.boven, onder:meting.onder },
+    { id:meting.id, datum:meting.datum, moment:meting.moment, hartslag:meting.hartslag, boven:meting.boven, onder:meting.onder, gewicht:meting.gewicht||null },
     { onConflict:'id' }
   );
   if (res.error) { console.error(res.error); return false; }
@@ -561,7 +561,7 @@ window.verwijderMeting = async function(id) {
 
 window.slaAlleMetingenOp = async function(metingen) {
   var rows = metingen.map(function(m) {
-    return { id:m.id, datum:m.datum, moment:m.moment, hartslag:m.hartslag, boven:m.boven, onder:m.onder };
+    return { id:m.id, datum:m.datum, moment:m.moment, hartslag:m.hartslag, boven:m.boven, onder:m.onder, gewicht:m.gewicht||null };
   });
   var res = await sbClient.from(TABEL).upsert(rows, { onConflict:'id' });
   if (res.error) { console.error(res.error); return false; }
