@@ -402,6 +402,10 @@
       <h3>🩺 Bloeddruk deze week</h3>
       <canvas id="grafiek-week-bd" height="160"></canvas>
     </div>
+    <div class="grafiek-kaart" id="week-gw-kaart" style="display:none">
+      <h3>⚖️ Gewicht deze week</h3>
+      <canvas id="grafiek-week-gw" height="120"></canvas>
+    </div>
     <div id="week-details"></div>
     <div id="week-leeg" class="leeg" style="display:none">
       Geen metingen voor deze week.<br>
@@ -427,6 +431,10 @@
     <div class="grafiek-kaart" id="grafiek-bd-kaart">
       <h3>🩺 Bloeddruk (mmHg)</h3>
       <canvas id="grafiek-bd" height="200"></canvas>
+    </div>
+    <div class="grafiek-kaart" id="grafiek-gw-kaart">
+      <h3>⚖️ Gewicht (kg)</h3>
+      <canvas id="grafiek-gw" height="160"></canvas>
     </div>
     <div class="gem-grid" id="lang-gem"></div>
   </div>
@@ -721,10 +729,12 @@ function tekenWeek() {
   var dagData=days.map(function(d){
     var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     var dM=window._metingen.filter(function(m){return m.datum===ds;});
+    var dMGw=dM.filter(function(m){return m.gewicht;});
     return{dag:DAGEN_NL[d.getDay()],
       hs:   dM.length?avg(dM.map(function(m){return m.hartslag;})):null,
       boven:dM.length?avg(dM.map(function(m){return m.boven;})):null,
-      onder:dM.length?avg(dM.map(function(m){return m.onder;})):null};
+      onder:dM.length?avg(dM.map(function(m){return m.onder;})):null,
+      gw:   dMGw.length?parseFloat(avg(dMGw.map(function(m){return m.gewicht;})).toFixed(1)):null};
   });
 
   if(dagData.filter(function(d){return d.hs!==null;}).length>=2){
@@ -734,6 +744,7 @@ function tekenWeek() {
   } else {
     document.getElementById('week-hs-kaart').style.display='none';
     document.getElementById('week-bd-kaart').style.display='none';
+    document.getElementById('week-gw-kaart').style.display='none';
   }
 
   document.getElementById('week-details').innerHTML=
@@ -776,6 +787,20 @@ function tekenWeekGrafieken(dagData) {
     ]},
     options:{responsive:true,plugins:{legend:{display:true,labels:{color:CLR_TICK,font:{size:12}}},tooltip:TT},scales:sc(50,150)}
   });
+  // Gewicht week grafiek
+  var gwData=dagData.map(function(d){return d.gw;});
+  var heeftGwData=gwData.some(function(v){return v!==null;});
+  var gwKaart=document.getElementById('week-gw-kaart');
+  if(heeftGwData){
+    gwKaart.style.display='';
+    if(window.weekGrafiekGw) window.weekGrafiekGw.destroy();
+    window.weekGrafiekGw=new Chart(document.getElementById('grafiek-week-gw'),{
+      type:'line',data:{labels:labels,datasets:[{label:'Gewicht',data:gwData,
+        borderColor:'var(--olive-mid)',backgroundColor:'rgba(92,90,46,0.08)',
+        borderWidth:1.5,tension:0.3,pointRadius:4,pointBackgroundColor:'#5c5a2e',spanGaps:false}]},
+      options:{responsive:true,plugins:{legend:{display:false},tooltip:TT},scales:sc(50,120)}
+    });
+  } else { gwKaart.style.display='none'; }
 }
 
 function setFilter(f) {
@@ -821,12 +846,28 @@ function tekenGrafieken() {
     ]},
     options:{responsive:true,plugins:{legend:{display:true,labels:{color:CLR_TICK,font:{size:12}}},tooltip:TT},scales:sc(50,150)}
   });
+  // Gewicht grafiek
+  var dataMetGw=data.filter(function(m){return m.gewicht;});
+  var gwKaartL=document.getElementById('grafiek-gw-kaart');
+  if(dataMetGw.length>=2){
+    gwKaartL.style.display='';
+    var labelsGw=dataMetGw.map(function(m){var d=new Date(m.datum+'T12:00:00');return d.getDate()+' '+MONTHS_NL[d.getMonth()]+' '+(m.moment==='ochtend'?'🌅':'🌙');});
+    if(window.grafiekGw) window.grafiekGw.destroy();
+    window.grafiekGw=new Chart(document.getElementById('grafiek-gw'),{
+      type:'line',data:{labels:labelsGw,datasets:[{label:'Gewicht',data:dataMetGw.map(function(m){return m.gewicht;}),
+        borderColor:'#5c5a2e',backgroundColor:'rgba(92,90,46,0.06)',
+        borderWidth:1.5,tension:0.3,pointRadius:2.5,pointBackgroundColor:'#5c5a2e'}]},
+      options:{responsive:true,plugins:{legend:{display:false},tooltip:TT},scales:sc(50,120)}
+    });
+  } else { gwKaartL.style.display='none'; }
   function avg(arr){return Math.round(arr.reduce(function(a,b){return a+b;},0)/arr.length);}
-  gem.innerHTML=[
-    ['Gem. hartslag', avg(data.map(function(m){return m.hartslag;}))+' bpm',  'var(--red)'],
+  var gemRijen=[
+    ['Gem. hartslag', avg(data.map(function(m){return m.hartslag;}))+' bpm','var(--red)'],
     ['Gem. bovendruk',avg(data.map(function(m){return m.boven;}))+' mmHg','var(--blue)'],
     ['Gem. onderdruk',avg(data.map(function(m){return m.onder;}))+' mmHg','var(--teal)'],
-  ].map(function(x){return '<div class="gem-tegel"><div class="gem-label">'+x[0]+'</div><div class="gem-waarde" style="color:'+x[2]+'">'+x[1]+'</div></div>';}).join('');
+  ];
+  if(dataMetGw.length) gemRijen.push(['Gem. gewicht',(dataMetGw.reduce(function(a,m){return a+m.gewicht;},0)/dataMetGw.length).toFixed(1)+' kg','var(--olive)']);
+  gem.innerHTML=gemRijen.map(function(x){return '<div class="gem-tegel"><div class="gem-label">'+x[0]+'</div><div class="gem-waarde" style="color:'+x[2]+'">'+x[1]+'</div></div>';}).join('');
 }
 
 function tekenOverzicht() {
