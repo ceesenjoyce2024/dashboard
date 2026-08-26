@@ -413,11 +413,15 @@ function renderInvoer() {
 async function slaOp() {
   var persoon = document.getElementById('f-persoon').value;
   var datum   = document.getElementById('f-datum').value;
-  var lengte  = parseFloat(document.getElementById('f-lengte').value);
-  var gewicht = parseFloat(document.getElementById('f-gewicht').value);
-  if (!datum || isNaN(lengte) || isNaN(gewicht)) { toast('Vul alle velden in'); return; }
+  var lengte  = document.getElementById('f-lengte').value ? parseFloat(document.getElementById('f-lengte').value) : null;
+  var gewicht = document.getElementById('f-gewicht').value ? parseFloat(document.getElementById('f-gewicht').value) : null;
+  if (!datum) { toast('Vul een datum in'); return; }
+  if (lengte === null && gewicht === null) { toast('Vul minimaal lengte of gewicht in'); return; }
   var id = editId || 'g_'+persoon.toLowerCase()+'_'+Date.now();
-  var res = await sb.from('groei').upsert({id:id,persoon:persoon,datum:datum,lengte:lengte,gewicht:gewicht},{onConflict:'id'});
+  var row = {id:id, persoon:persoon, datum:datum};
+  if (lengte !== null) row.lengte = lengte;
+  if (gewicht !== null) row.gewicht = gewicht;
+  var res = await sb.from('groei').upsert(row, {onConflict:'id'});
   if (res.error) { toast('Fout bij opslaan'); console.error(res.error); return; }
   toast(editId ? 'Meting bijgewerkt ✓' : 'Meting opgeslagen ✓');
   annuleerEdit();
