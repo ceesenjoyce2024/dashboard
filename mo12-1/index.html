@@ -417,6 +417,7 @@ function htmlAlleWedstrijden(compId) {
           '<td class="hide-mob" style="font-size:12px;max-width:180px;line-height:1.5">' + (scorers||'–') + '</td>' +
           '<td style="display:flex;gap:4px">' +
           (kanInvoeren ? '<button class="btn-sm" onclick="openGoalsModal(\'' + w.id + '\')" title="Doelpunten">⚽</button>' : '') +
+          (kanInvoeren ? '<button class="btn-sm" onclick="openEditModal(\'' + w.id + '\')" title="Bewerken">✏️</button>' : '') +
           (kanInvoeren ? '<button class="btn-danger" onclick="deleteWedstrijd(\'' + w.id + '\')">✕</button>' : '') +
           '</td></tr>';
       } else {
@@ -489,15 +490,18 @@ function renderComp(id) {
     '<div class="comp-header"><div><div class="comp-sub">'+ws.length+' wedstrijd'+(ws.length!==1?'en':'')+'</div><div class="comp-title">'+comp.naam+'</div></div></div>' +
     (id!=='oefenwedstrijden' ? '<div class="card" style="margin-bottom:14px"><div class="card-header" style="margin-bottom:.75rem"><div class="card-title">Ranglijst</div>' + (kanInvoeren ? '<button class="btn-sm" onclick="togglePouleInvoer(\''+id+'\')">＋ Poule-uitslag</button>' : '') + '</div><div id="poule_invoer_'+id+'" style="display:none;margin-bottom:12px">'+(kanInvoeren?htmlPouleInvoer(id):'')+'</div>'+htmlRanglijst(id)+'</div>' : '') +
     htmlMetrics(stats) +
-    '<div class="tab-bar"><button class="tab-btn active" id="tab_w_'+id+'" onclick="switchTab(\''+id+'\',\'w\')">Wedstrijden</button><button class="tab-btn" id="tab_t_'+id+'" onclick="switchTab(\''+id+'\',\'t\')">Topscoorders</button></div>' +
+    '<div class="tab-bar"><button class="tab-btn active" id="tab_w_'+id+'" onclick="switchTab(\''+id+'\',\'w\')">Wedstrijden</button><button class="tab-btn" id="tab_t_'+id+'" onclick="switchTab(\''+id+'\',\'t\')">Topscoorders</button><button class="tab-btn" id="tab_a_'+id+'" onclick="switchTab(\''+id+'\',\'a\')">Assists</button></div>' +
     '<div class="card" id="pane_w_'+id+'">' + htmlAlleWedstrijden(id) + '</div>' +
-    '<div class="card" id="pane_t_'+id+'" style="display:none">' + htmlTopscorers(topscore) + '</div>';
+    '<div class="card" id="pane_t_'+id+'" style="display:none">' + htmlTopscorers(topscore) + '</div>' +
+    '<div class="card" id="pane_a_'+id+'" style="display:none">' + htmlAssists(topscore) + '</div>';
 }
 
 window.switchTab = function(id, pane) {
-  ['w','t'].forEach(function(p) {
-    document.getElementById('tab_'+p+'_'+id).classList.toggle('active', p===pane);
-    document.getElementById('pane_'+p+'_'+id).style.display = p===pane?'':'none';
+  ['w','t','a'].forEach(function(p) {
+    var tabEl = document.getElementById('tab_'+p+'_'+id);
+    var paneEl = document.getElementById('pane_'+p+'_'+id);
+    if(tabEl) tabEl.classList.toggle('active', p===pane);
+    if(paneEl) paneEl.style.display = p===pane?'':'none';
   });
 }
 
