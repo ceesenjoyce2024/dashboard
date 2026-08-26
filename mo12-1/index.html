@@ -401,8 +401,8 @@ function htmlAlleWedstrijden(compId) {
       if(item.soort==='eigen') {
         var r = resultaat(w);
         var matchLabel = w.thu==='T'
-          ? '<span style="color:var(--olive);font-weight:600">Rosmalen</span> vs ' + w.teg
-          : w.teg + ' vs <span style="color:var(--olive);font-weight:600">Rosmalen</span>';
+          ? '<span style="color:var(--olive);font-weight:600">Rosmalen MO12-1</span> vs ' + w.teg
+          : w.teg + ' vs <span style="color:var(--olive);font-weight:600">Rosmalen MO12-1</span>';
         var uitslag = w.thu==='T' ? (w.dv + '–' + w.dt) : (w.dt + '–' + w.dv);
         var scorers = (w.goals||[]).map(function(g) {
           return g.s +
@@ -445,10 +445,22 @@ function htmlTopscorers(topscore) {
     }).join('') + '</tbody></table>';
 }
 
-function htmlAssists(topscore) {
-  var metAssists = topscore.filter(function(e){ return e[1].assists > 0; });
-  if(!metAssists.length) return '<p class="empty">Nog geen assists geregistreerd.</p>';
-  var gesorteerd = metAssists.slice().sort(function(a,b){ return b[1].assists - a[1].assists; });
+function getAssists(ws) {
+  var map = {};
+  ws.forEach(function(w) {
+    (w.goals||[]).forEach(function(g) {
+      if(g.a) {
+        if(!map[g.a]) map[g.a] = {assists:0};
+        map[g.a].assists++;
+      }
+    });
+  });
+  return Object.entries(map).filter(function(e){ return e[1].assists > 0; }).sort(function(a,b){ return b[1].assists - a[1].assists; });
+}
+
+function htmlAssists(assistsLijst) {
+  if(!assistsLijst.length) return '<p class="empty">Nog geen assists geregistreerd.</p>';
+  var gesorteerd = assistsLijst;
   return '<table><thead><tr><th>#</th><th>Speelster</th><th>Assists</th></tr></thead><tbody>' +
     gesorteerd.map(function(entry,i) {
       var naam=entry[0],s=entry[1];
@@ -486,6 +498,7 @@ function renderComp(id) {
   var gespeeld = gespeeldVoor(id);
   var stats = getStats(gespeeld);
   var topscore = getTopscorers(gespeeld);
+  var assists = getAssists(gespeeld);
   document.getElementById(id).innerHTML =
     '<div class="comp-header"><div><div class="comp-sub">'+ws.length+' wedstrijd'+(ws.length!==1?'en':'')+'</div><div class="comp-title">'+comp.naam+'</div></div></div>' +
     (id!=='oefenwedstrijden' ? '<div class="card" style="margin-bottom:14px"><div class="card-header" style="margin-bottom:.75rem"><div class="card-title">Ranglijst</div>' + (kanInvoeren ? '<button class="btn-sm" onclick="togglePouleInvoer(\''+id+'\')">＋ Poule-uitslag</button>' : '') + '</div><div id="poule_invoer_'+id+'" style="display:none;margin-bottom:12px">'+(kanInvoeren?htmlPouleInvoer(id):'')+'</div>'+htmlRanglijst(id)+'</div>' : '') +
@@ -493,7 +506,7 @@ function renderComp(id) {
     '<div class="tab-bar"><button class="tab-btn active" id="tab_w_'+id+'" onclick="switchTab(\''+id+'\',\'w\')">Wedstrijden</button><button class="tab-btn" id="tab_t_'+id+'" onclick="switchTab(\''+id+'\',\'t\')">Topscoorders</button><button class="tab-btn" id="tab_a_'+id+'" onclick="switchTab(\''+id+'\',\'a\')">Assists</button></div>' +
     '<div class="card" id="pane_w_'+id+'">' + htmlAlleWedstrijden(id) + '</div>' +
     '<div class="card" id="pane_t_'+id+'" style="display:none">' + htmlTopscorers(topscore) + '</div>' +
-    '<div class="card" id="pane_a_'+id+'" style="display:none">' + htmlAssists(topscore) + '</div>';
+    '<div class="card" id="pane_a_'+id+'" style="display:none">' + htmlAssists(assists) + '</div>';
 }
 
 window.switchTab = function(id, pane) {
@@ -538,6 +551,7 @@ function renderTotaal() {
   var all = gespeeldWedstrijden();
   var stats = getStats(all);
   var topscore = getTopscorers(all);
+  var allAssists = getAssists(all);
   var rangItems = COMPS.filter(function(c){return c.id!=='oefenwedstrijden';}).map(function(comp) {
     var stand = berekenStand(comp.id);
     var ws = wedstrijdenVoor(comp.id);
@@ -554,7 +568,7 @@ function renderTotaal() {
     htmlMetrics(stats) +
     ranglijsten +
     '<div class="card"><div class="card-header"><div class="card-title">Topscoorders — alle competities</div></div>' + htmlTopscorers(topscore) + '</div>' +
-    '<div class="card" style="margin-top:14px"><div class="card-header"><div class="card-title">Assists — alle competities</div></div>' + htmlAssists(topscore) + '</div>';
+    '<div class="card" style="margin-top:14px"><div class="card-header"><div class="card-title">Assists — alle competities</div></div>' + htmlAssists(allAssists) + '</div>';
 }
 
 function renderInvoer() {
