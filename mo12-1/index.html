@@ -7,8 +7,6 @@
 <title>Rosmalen MO12-1 — Hockey Stats</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../theme.css">
-<script src="../theme.js" defer></script>
 <style>
   :root {
     --sand:#e8e4d9;--sand-light:#f2efe6;--sand-dark:#d8d4c6;
@@ -25,12 +23,12 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:var(--sans);background:var(--sand);color:var(--text);min-height:100vh;font-size:15px;}
-  .header{background:var(--header-bg);padding:0 1.5rem;position:sticky;top:0;z-index:100;}
+  .header{background:var(--olive);padding:0 1.5rem;position:sticky;top:0;z-index:100;}
   .header-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:12px;height:54px;}
-  .back-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:var(--header-text);padding:5px 11px;border-radius:7px;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0;}
+  .back-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:var(--sand-light);padding:5px 11px;border-radius:7px;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0;}
   .back-btn:hover{background:rgba(255,255,255,0.25);}
   .logo{width:34px;height:34px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
-  .header-title{color:var(--header-text);}
+  .header-title{color:var(--sand-light);}
   .header-title h1{font-family:var(--serif);font-size:17px;font-weight:600;line-height:1.1;}
   .header-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(242,239,230,0.7);}
   .status-dot{width:7px;height:7px;border-radius:50%;background:var(--olive-light);}
@@ -99,7 +97,7 @@
   .empty{text-align:center;padding:2rem 0;color:var(--text-faint);font-size:13px;}
   .speler-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--sand-dark);}
   .speler-item:last-child{border-bottom:none;}
-  .speler-avatar{width:32px;height:32px;border-radius:50%;background:var(--rol-admin-bg);color:var(--olive);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+  .speler-avatar{width:32px;height:32px;border-radius:50%;background:#e8ead6;color:var(--olive);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
   .loading{position:fixed;inset:0;background:var(--sand);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:999;}
   .spinner{width:36px;height:36px;border:3px solid var(--sand-dark);border-top-color:var(--olive);border-radius:50%;animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
@@ -109,16 +107,7 @@
   .modal-overlay{position:fixed;inset:0;background:rgba(60,58,30,0.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem;}
   .modal{background:var(--card-bg);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2);border:1px solid var(--sand-dark);}
   .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
-  .next-match{background:var(--olive);color:var(--sand-light);border-radius:var(--radius);padding:1.1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;transition:background .15s;}
-  .next-match:hover{background:var(--olive-mid);}
-  .next-match-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;opacity:.7;margin-bottom:4px;}
-  .next-match-title{font-family:var(--serif);font-size:17px;font-weight:700;}
-  .next-match-date{font-size:13px;opacity:.8;margin-top:2px;}
-  .next-match-arrow{font-size:22px;opacity:.6;flex-shrink:0;}
   .modal-title{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--olive);}
-  .edit-modal-form .form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
-  .edit-modal-form .form-group label{font-size:12px;font-weight:500;color:var(--text-muted);}
-  .edit-modal-form .form-group input,.edit-modal-form .form-group select{font-family:var(--sans);font-size:14px;padding:9px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none;}
   @media(max-width:600px){
     .metric-grid{grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1rem;}
     .metric{padding:8px;}.metric-label{font-size:10px;}.metric-value{font-size:18px;}
@@ -137,7 +126,7 @@
 
 <header class="header">
   <div class="header-inner">
-    <a href="../index.html" class="back-btn">‹ Dashboard</a>
+    <a href="/" class="back-btn">‹ Dashboard</a>
     <div class="logo">🏑</div>
     <div class="header-title"><h1>Rosmalen MO12-1</h1></div>
     <div class="header-status">
@@ -173,9 +162,6 @@
   <div class="section" id="tegenstanders"></div>
 </main>
 
-<div id="edit_modal" style="display:none" class="modal-overlay" onclick="closeEditModal(event)">
-  <div class="modal" id="edit_modal_inner"></div>
-</div>
 <div id="goals_modal" style="display:none" class="modal-overlay" onclick="closeGoalsModal(event)">
   <div class="modal" id="goals_modal_inner"></div>
 </div>
@@ -286,12 +272,6 @@ function render(id) {
 function allWedstrijden() { return Object.values(state.wedstrijden); }
 function wedstrijdenVoor(compId) { return Object.values(state.wedstrijden).filter(function(w) { return w.competitie === compId; }); }
 
-// Alleen wedstrijden waarvan de datum vandaag of eerder is (voor statistieken)
-function vandaag() { return new Date().toISOString().slice(0,10); }
-function gespeeldWedstrijden() { var d = vandaag(); return Object.values(state.wedstrijden).filter(function(w) { return !w.datum || w.datum <= d; }); }
-function gespeeldVoor(compId) { var d = vandaag(); return Object.values(state.wedstrijden).filter(function(w) { return w.competitie === compId && (!w.datum || w.datum <= d); }); }
-function gespeeldPoule(compId) { var d = vandaag(); return Object.values(state.poulewedstrijden||{}).filter(function(w) { return w.competitie === compId && (!w.datum || w.datum <= d); }); }
-
 function resultaat(w) {
   if (w.dv > w.dt) return 'W';
   if (w.dv < w.dt) return 'V';
@@ -345,7 +325,7 @@ function getPoulewedstrijden(compId) {
 function berekenStand(compId) {
   var stand = {};
   var ROSMALEN = 'Rosmalen MO12-1';
-  gespeeldVoor(compId).forEach(function(w) {
+  wedstrijdenVoor(compId).forEach(function(w) {
     if(!stand[ROSMALEN]) stand[ROSMALEN]={naam:ROSMALEN,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:true};
     if(!stand[w.teg]) stand[w.teg]={naam:w.teg,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:false};
     stand[ROSMALEN].g++; stand[w.teg].g++;
@@ -355,7 +335,7 @@ function berekenStand(compId) {
     else if(w.dv<w.dt){stand[w.teg].w++;stand[w.teg].pts+=3;stand[ROSMALEN].v++;}
     else{stand[ROSMALEN].gl++;stand[ROSMALEN].pts+=1;stand[w.teg].gl++;stand[w.teg].pts+=1;}
   });
-  gespeeldPoule(compId).forEach(function(w) {
+  getPoulewedstrijden(compId).forEach(function(w) {
     if(!stand[w.t1]) stand[w.t1]={naam:w.t1,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:false};
     if(!stand[w.t2]) stand[w.t2]={naam:w.t2,g:0,w:0,gl:0,v:0,dv:0,dt:0,pts:0,rosmalen:false};
     stand[w.t1].g++;stand[w.t2].g++;
@@ -411,14 +391,14 @@ function htmlAlleWedstrijden(compId) {
   poule.forEach(function(w){alles.push({datum:w.datum||'',soort:'poule',data:w});});
   alles.sort(function(a,b){return b.datum.localeCompare(a.datum);});
   if(!alles.length) return '<p class="empty">Nog geen wedstrijden ingevoerd.</p>';
-  return '<table><thead><tr><th>Datum</th><th>Wedstrijd</th><th>Uitslag</th><th class="hide-mob">Scoorders</th><th></th></tr></thead><tbody>' +
+  return '<table><thead><tr><th>Datum</th><th>Wedstrijd</th><th>Uitslag</th><th class="hide-mob">R</th><th class="hide-mob">Scorers</th><th></th></tr></thead><tbody>' +
     alles.map(function(item) {
       var w = item.data;
       if(item.soort==='eigen') {
         var r = resultaat(w);
         var matchLabel = w.thu==='T'
-          ? '<span style="color:var(--olive);font-weight:600">Rosmalen MO12-1</span> vs ' + w.teg
-          : w.teg + ' vs <span style="color:var(--olive);font-weight:600">Rosmalen MO12-1</span>';
+          ? '<span style="color:var(--olive);font-weight:600">Rosmalen</span> vs ' + w.teg
+          : w.teg + ' vs <span style="color:var(--olive);font-weight:600">Rosmalen</span>';
         var uitslag = w.thu==='T' ? (w.dv + '–' + w.dt) : (w.dt + '–' + w.dv);
         var scorers = (w.goals||[]).map(function(g) {
           return g.s +
@@ -426,15 +406,13 @@ function htmlAlleWedstrijden(compId) {
             (g.sb?'<span class="badge badge-sc" style="margin-left:3px;background:#EEE6FB;color:#5B1FA3">SB</span>':'') +
             (g.a?'<span style="color:var(--text-faint);font-size:11px"> ▸'+g.a+'</span>':'');
         }).join(', ');
-        var tijdStr = w.tijd ? ' ' + w.tijd + ' uur' : '';
-        return '<tr><td style="white-space:nowrap;font-size:12px">' + (w.datum||'–') + tijdStr + '</td>' +
+        return '<tr><td style="white-space:nowrap;font-size:12px">' + (w.datum||'–') + '</td>' +
           '<td style="font-size:13px">' + matchLabel + '</td>' +
           '<td><span class="score">' + uitslag + '</span></td>' +
-          
+          '<td class="hide-mob"><span class="badge badge-' + r + '">' + r + '</span></td>' +
           '<td class="hide-mob" style="font-size:12px;max-width:180px;line-height:1.5">' + (scorers||'–') + '</td>' +
           '<td style="display:flex;gap:4px">' +
           (kanInvoeren ? '<button class="btn-sm" onclick="openGoalsModal(\'' + w.id + '\')" title="Doelpunten">⚽</button>' : '') +
-          (kanInvoeren ? '<button class="btn-sm" onclick="openEditModal(\'' + w.id + '\')" title="Bewerken">✏️</button>' : '') +
           (kanInvoeren ? '<button class="btn-danger" onclick="deleteWedstrijd(\'' + w.id + '\')">✕</button>' : '') +
           '</td></tr>';
       } else {
@@ -450,7 +428,7 @@ function htmlAlleWedstrijden(compId) {
 
 function htmlTopscorers(topscore) {
   if(!topscore.length) return '<p class="empty">Geen doelpunten geregistreerd.</p>';
-  return '<table><thead><tr><th>#</th><th>Speelster</th><th>Goals</th><th>SC</th><th>SB</th><th>Assists</th></tr></thead><tbody>' +
+  return '<table><thead><tr><th>#</th><th>Speelster</th><th>Goals</th><th>SC</th><th>SB</th></tr></thead><tbody>' +
     topscore.map(function(entry,i) {
       var naam=entry[0],s=entry[1];
       return '<tr><td class="rank">' + (i+1) + '</td>' +
@@ -458,14 +436,29 @@ function htmlTopscorers(topscore) {
         '<td><span style="font-family:var(--serif);font-size:15px;font-weight:700">' + s.goals + '</span></td>' +
         '<td>' + (s.sc?'<span class="badge badge-sc">'+s.sc+'</span>':'–') + '</td>' +
         '<td>' + (s.sb?'<span class="badge badge-sc" style="background:#EEE6FB;color:#5B1FA3">'+s.sb+'</span>':'–') + '</td>' +
-        '<td>' + (s.assists?'<span class="badge badge-assist">'+s.assists+'</span>':'–') + '</td>' +
+        '</tr>';
+    }).join('') + '</tbody></table>';
+}
+
+function htmlAssists(topscore) {
+  var metAssists = topscore.filter(function(e){ return e[1].assists > 0; });
+  if(!metAssists.length) return '<p class="empty">Nog geen assists geregistreerd.</p>';
+  var gesorteerd = metAssists.slice().sort(function(a,b){ return b[1].assists - a[1].assists; });
+  return '<table><thead><tr><th>#</th><th>Speelster</th><th>Assists</th></tr></thead><tbody>' +
+    gesorteerd.map(function(entry,i) {
+      var naam=entry[0],s=entry[1];
+      var posClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      return '<tr>' +
+        '<td class="stand-pos '+posClass+'">'+(i+1)+'</td>' +
+        '<td style="font-weight:500">'+naam+'</td>' +
+        '<td><span class="badge badge-assist">'+s.assists+'</span></td>' +
         '</tr>';
     }).join('') + '</tbody></table>';
 }
 
 function htmlPouleInvoer(compId) {
   var tegList = (state.tegenstanders[compId] || []).slice().sort();
-  var allTeams = ['Rosmalen MO12-1'].concat(tegList);
+  var allTeams = ['Rosmalen MO11-1'].concat(tegList);
   function teamOpts(sel) {
     return ['<option value="">– team –'].concat(allTeams.map(function(t){ return '<option value="'+t+'"'+(t===sel?' selected':'')+'>'+t+'</option>'; })).join('');
   }
@@ -485,9 +478,8 @@ function htmlPouleInvoer(compId) {
 function renderComp(id) {
   var comp = COMPS.find(function(c){return c.id===id;});
   var ws = wedstrijdenVoor(id);
-  var gespeeld = gespeeldVoor(id);
-  var stats = getStats(gespeeld);
-  var topscore = getTopscorers(gespeeld);
+  var stats = getStats(ws);
+  var topscore = getTopscorers(ws);
   document.getElementById(id).innerHTML =
     '<div class="comp-header"><div><div class="comp-sub">'+ws.length+' wedstrijd'+(ws.length!==1?'en':'')+'</div><div class="comp-title">'+comp.naam+'</div></div></div>' +
     (id!=='oefenwedstrijden' ? '<div class="card" style="margin-bottom:14px"><div class="card-header" style="margin-bottom:.75rem"><div class="card-title">Ranglijst</div>' + (kanInvoeren ? '<button class="btn-sm" onclick="togglePouleInvoer(\''+id+'\')">＋ Poule-uitslag</button>' : '') + '</div><div id="poule_invoer_'+id+'" style="display:none;margin-bottom:12px">'+(kanInvoeren?htmlPouleInvoer(id):'')+'</div>'+htmlRanglijst(id)+'</div>' : '') +
@@ -533,38 +525,8 @@ window.deletePouleWedstrijd = async function(id, compId) {
   renderComp(compId);
 }
 
-function volgendeWedstrijd() {
-  var d = vandaag();
-  var toekomst = Object.values(state.wedstrijden).filter(function(w){ return w.datum && w.datum >= d; });
-  if(!toekomst.length) return null;
-  toekomst.sort(function(a,b){ return a.datum.localeCompare(b.datum); });
-  return toekomst[0];
-}
-
-function htmlVolgendeWedstrijd() {
-  var w = volgendeWedstrijd();
-  if(!w) return '';
-  var comp = COMPS.find(function(c){ return c.id===w.competitie; });
-  var compNaam = comp ? comp.naam : '';
-  var thuisUit = w.thu==='T' ? 'Thuis' : 'Uit';
-  var parts = w.datum ? w.datum.split('-') : [];
-  var datumFormatted = parts.length===3 ? parts[2]+'-'+parts[1]+'-'+parts[0] : '-';
-  var isVandaag = w.datum === vandaag();
-  var label = isVandaag ? 'Wedstrijd vandaag!' : 'Volgende wedstrijd';
-  var matchTitle = w.thu==='T' ? 'Rosmalen MO12-1 vs ' + w.teg : w.teg + ' vs Rosmalen MO12-1';
-  var html = '<div class="next-match"';
-  if(kanInvoeren) { html += ' onclick="openGoalsModal(\'' + w.id + '\')"'; }
-  html += '><div>';
-  html += '<div class="next-match-label">' + label + ' - ' + compNaam + '</div>';
-  html += '<div class="next-match-title">' + matchTitle + '</div>';
-  var tijdBanner = w.tijd ? ' · ' + w.tijd + ' uur' : '';
-  html += '<div class="next-match-date">' + datumFormatted + tijdBanner + ' - ' + thuisUit + '</div>';
-  html += '</div><div class="next-match-arrow">&#8250;</div></div>';
-  return html;
-}
-
 function renderTotaal() {
-  var all = gespeeldWedstrijden();
+  var all = allWedstrijden();
   var stats = getStats(all);
   var topscore = getTopscorers(all);
   var rangItems = COMPS.filter(function(c){return c.id!=='oefenwedstrijden';}).map(function(comp) {
@@ -578,13 +540,12 @@ function renderTotaal() {
     var row = rangItems.slice(i,i+2);
     ranglijsten += '<div style="display:grid;grid-template-columns:repeat('+row.length+',1fr);gap:12px;margin-bottom:12px">'+row.join('')+'</div>';
   }
-  var d = vandaag();
   document.getElementById('totaal').innerHTML =
-    htmlVolgendeWedstrijd() +
     '<div class="page-title">Totaal overzicht</div>' +
     htmlMetrics(stats) +
     ranglijsten +
-    '<div class="card"><div class="card-header"><div class="card-title">Topscoorders — alle competities</div></div>' + htmlTopscorers(topscore) + '</div>';
+    '<div class="card"><div class="card-header"><div class="card-title">Topscoorders — alle competities</div></div>' + htmlTopscorers(topscore) + '</div>' +
+    '<div class="card" style="margin-top:14px"><div class="card-header"><div class="card-title">Assists — alle competities</div></div>' + htmlAssists(topscore) + '</div>';
 }
 
 function renderInvoer() {
@@ -596,9 +557,8 @@ function renderInvoer() {
     '<div class="form-grid">' +
     '<div class="form-group"><label>Competitie</label><select id="f_comp" onchange="updateTegenstanders()">'+compOpts+'</select></div>' +
     '<div class="form-group"><label>Datum</label><input type="date" id="f_datum" value="'+today+'"></div>' +
-    '<div class="form-group"><label>Tijd</label><input type="time" id="f_tijd" placeholder="14:30"></div>' +
     '<div class="form-group"><label>Thuis / Uit</label><select id="f_thu"><option value="T">Thuis</option><option value="U">Uit</option></select></div>' +
-    '<div class="form-group"><label>Tegenstander</label><div style="display:flex;gap:6px;align-items:center"><select id="f_teg" style="flex:1" onchange="updateTegenstander()"><option value="">– selecteer tegenstander –</option></select><button class="btn-sm" onclick="invoerHernoem()" title="Naam wijzigen">✏️</button><button class="btn-sm" onclick="invoerVerwijder()" title="Verwijderen">🗑️</button></div></div>' +
+    '<div class="form-group"><label>Tegenstander</label><select id="f_teg" onchange="updateTegenstander()"><option value="">– selecteer tegenstander –</option></select></div>' +
     '<div class="form-group"><label>Doelpunten voor</label><input type="number" id="f_dv" min="0" value="0"></div>' +
     '<div class="form-group"><label>Doelpunten tegen</label><input type="number" id="f_dt" min="0" value="0"></div>' +
     '</div></div>' +
@@ -634,8 +594,7 @@ window.slaOp = async function() {
     if(sp) goals.push({s:sp,sc:sc,sb:sb,a:as_||null});
   });
   var id = 'w_'+Date.now();
-  var tijdVal = document.getElementById('f_tijd') ? document.getElementById('f_tijd').value : '';
-  var w = {id:id,competitie:document.getElementById('f_comp').value,datum:document.getElementById('f_datum').value,tijd:tijdVal,thu:document.getElementById('f_thu').value,teg:teg,dv:parseInt(document.getElementById('f_dv').value)||0,dt:parseInt(document.getElementById('f_dt').value)||0,goals:goals};
+  var w = {id:id,competitie:document.getElementById('f_comp').value,datum:document.getElementById('f_datum').value,thu:document.getElementById('f_thu').value,teg:teg,dv:parseInt(document.getElementById('f_dv').value)||0,dt:parseInt(document.getElementById('f_dt').value)||0,goals:goals};
   state.wedstrijden[id] = w;
   await saveWedstrijd(w);
   toast('Wedstrijd opgeslagen ✓');
@@ -670,36 +629,6 @@ window.updateTegenstander = function() {
       voegTegenstanderToe(document.getElementById('f_comp').value, naam.trim(), sel);
     } else { sel.value=''; }
   }
-}
-
-window.invoerHernoem = async function() {
-  var sel = document.getElementById('f_teg');
-  var compId = document.getElementById('f_comp').value;
-  var huidig = sel.value;
-  if(!huidig || huidig==='__nieuw__') { toast('Selecteer eerst een tegenstander'); return; }
-  var nieuw = prompt('Nieuwe naam voor "'+huidig+'":', huidig);
-  if(!nieuw || !nieuw.trim() || nieuw.trim()===huidig) return;
-  nieuw = nieuw.trim();
-  var idx = (state.tegenstanders[compId]||[]).indexOf(huidig);
-  if(idx!==-1) state.tegenstanders[compId][idx] = nieuw;
-  Object.values(state.wedstrijden).forEach(function(w){ if(w.competitie===compId&&w.teg===huidig) w.teg=nieuw; });
-  Object.values(state.poulewedstrijden||{}).forEach(function(w){ if(w.competitie===compId){ if(w.t1===huidig) w.t1=nieuw; if(w.t2===huidig) w.t2=nieuw; } });
-  await saveConfig();
-  toast('"'+huidig+'" hernoemd naar "'+nieuw+'"');
-  updateTegenstanders();
-  document.getElementById('f_teg').value = nieuw;
-}
-
-window.invoerVerwijder = async function() {
-  var sel = document.getElementById('f_teg');
-  var compId = document.getElementById('f_comp').value;
-  var naam = sel.value;
-  if(!naam || naam==='__nieuw__') { toast('Selecteer eerst een tegenstander'); return; }
-  if(!confirm('Tegenstander "'+naam+'" verwijderen uit de lijst?')) return;
-  state.tegenstanders[compId] = (state.tegenstanders[compId]||[]).filter(function(t){ return t!==naam; });
-  await saveConfig();
-  toast('"'+naam+'" verwijderd');
-  updateTegenstanders();
 }
 
 async function voegTegenstanderToe(compId, naam, sel) {
@@ -812,14 +741,10 @@ window.openGoalsModal = function(wid) {
       '<select class="g_as">'+asOpts(g.a||'')+'</select>' +
       '<button class="btn-danger" onclick="this.closest(\'.goal-row\').remove()">✕</button></div>';
   }).join('');
-  var datumDisplay = (w.datum||'').split('-').reverse().join('-') + (w.tijd ? ' ' + w.tijd + ' uur' : '');
-  var wedstrijdTitel = w.thu==='T' ? 'Rosmalen MO12-1 - ' + w.teg : w.teg + ' - Rosmalen MO12-1';
   document.getElementById('goals_modal_inner').innerHTML =
-    '<div class="modal-header"><div>' +
-    '<div style="font-size:12px;color:var(--text-faint);margin-bottom:3px">' + datumDisplay + '</div>' +
-    '<div class="modal-title">' + wedstrijdTitel + '</div>' +
-    '</div><button class="btn-danger" onclick="closeGoalsModal()">✕</button></div>' +
-    '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);margin-bottom:10px">Doelpunten Rosmalen MO12-1</div>' +
+    '<div class="modal-header"><div class="modal-title">'+(w.datum||'')+' — '+w.teg+' ('+w.dv+'–'+w.dt+')</div>' +
+    '<button class="btn-danger" onclick="closeGoalsModal()">✕</button></div>' +
+    '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);margin-bottom:10px">Doelpunten Rosmalen</div>' +
     '<div id="modal_goals">'+goalsHtml+'</div>' +
     '<button class="btn-sm" style="margin-bottom:1rem" onclick="addModalGoalRow(\''+wid+'\')">+ doelpunt toevoegen</button><br>' +
     '<button class="btn-primary" onclick="saveGoalsModal(\''+wid+'\')">Opslaan</button>';
@@ -853,120 +778,6 @@ window.saveGoalsModal = async function(wid) {
   toast('Doelpunten opgeslagen ✓');
   document.getElementById('goals_modal').style.display = 'none';
   render(currentSection);
-}
-
-// ── Edit wedstrijd modal ──
-window.openEditModal = function(wid) {
-  var w = state.wedstrijden[wid];
-  if(!w) return;
-  var comp = COMPS.find(function(c){ return c.id===w.competitie; });
-  var compId = w.competitie;
-  var tegLijst = (state.tegenstanders[compId]||[]).slice().sort();
-  var tegOpts = tegLijst.map(function(t){
-    return '<option value="'+t+'"'+(t===w.teg?' selected':'')+'>'+t+'</option>';
-  }).join('');
-  document.getElementById('edit_modal_inner').innerHTML =
-    '<div class="modal-header"><div class="modal-title">Wedstrijd bewerken</div><button class="btn-danger" onclick="closeEditModal()">✕</button></div>' +
-    '<div class="edit-modal-form">' +
-    '<div class="form-group"><label>Datum</label><input type="date" id="em_datum" value="'+(w.datum||'')+'"></div>' +
-    '<div class="form-group"><label>Tijd</label><input type="time" id="em_tijd" value="'+(w.tijd||'')+'"></div>' +
-    '<div class="form-group"><label>Thuis / Uit</label><select id="em_thu"><option value="T"'+(w.thu==='T'?' selected':'')+'>Thuis</option><option value="U"'+(w.thu==='U'?' selected':'')+'>Uit</option></select></div>' +
-    '<div class="form-group"><label>Tegenstander</label>' +
-    '<div style="display:flex;gap:6px;align-items:center">' +
-    '<select id="em_teg" style="flex:1" onchange="editModalTegChange(\'' + compId + '\')"><option value="">– selecteer –</option>'+tegOpts+'<option value="__nieuw__">＋ Nieuwe tegenstander…</option></select>' +
-    '<button class="btn-sm" onclick="editModalHernoem(\'' + compId + '\')" title="Naam wijzigen">✏️</button>' +
-    '<button class="btn-sm" onclick="editModalVerwijder(\'' + compId + '\')" title="Verwijderen">🗑️</button>' +
-    '</div></div>' +
-    '<div class="form-group"><label>Doelpunten voor</label><input type="number" id="em_dv" min="0" value="'+w.dv+'"></div>' +
-    '<div class="form-group"><label>Doelpunten tegen</label><input type="number" id="em_dt" min="0" value="'+w.dt+'"></div>' +
-    '</div>' +
-    '<button class="btn-primary" onclick="saveEditModal(\'' + wid + '\')">Opslaan</button>';
-  document.getElementById('edit_modal').style.display = 'flex';
-}
-
-window.saveEditModal = async function(wid) {
-  var w = state.wedstrijden[wid];
-  if(!w) return;
-  w.datum = document.getElementById('em_datum').value;
-  w.tijd  = document.getElementById('em_tijd') ? document.getElementById('em_tijd').value : (w.tijd||'');
-  w.thu   = document.getElementById('em_thu').value;
-  w.teg   = document.getElementById('em_teg').value || w.teg;
-  w.dv    = parseInt(document.getElementById('em_dv').value)||0;
-  w.dt    = parseInt(document.getElementById('em_dt').value)||0;
-  await saveWedstrijd(w);
-  toast('Wedstrijd bijgewerkt ✓');
-  document.getElementById('edit_modal').style.display = 'none';
-  render(currentSection);
-}
-
-window.editModalTegChange = async function(compId) {
-  var sel = document.getElementById('em_teg');
-  if(sel.value === '__nieuw__') {
-    var naam = prompt('Naam nieuwe tegenstander:');
-    if(naam && naam.trim()) {
-      naam = naam.trim();
-      if(!state.tegenstanders[compId]) state.tegenstanders[compId] = [];
-      if(!state.tegenstanders[compId].includes(naam)) {
-        state.tegenstanders[compId].push(naam);
-        await saveConfig();
-        toast(naam + ' toegevoegd');
-      }
-      // Add option and select it
-      var opt = document.createElement('option');
-      opt.value = naam; opt.text = naam; opt.selected = true;
-      sel.insertBefore(opt, sel.lastElementChild);
-      sel.value = naam;
-    } else {
-      sel.value = '';
-    }
-  }
-}
-
-window.editModalVerwijder = async function(compId) {
-  var sel = document.getElementById('em_teg');
-  var naam = sel.value;
-  if(!naam || naam==='__nieuw__') { toast('Selecteer eerst een tegenstander'); return; }
-  if(!confirm('Tegenstander "'+naam+'" verwijderen uit de lijst?')) return;
-  state.tegenstanders[compId] = (state.tegenstanders[compId]||[]).filter(function(t){ return t!==naam; });
-  await saveConfig();
-  toast('"'+naam+'" verwijderd');
-  var opt = sel.querySelector('option[value="'+naam+'"]');
-  if(opt) opt.remove();
-  sel.value = '';
-}
-
-window.editModalHernoem = async function(compId) {
-  var sel = document.getElementById('em_teg');
-  var huidig = sel.value;
-  if(!huidig || huidig === '__nieuw__') { toast('Selecteer eerst een tegenstander'); return; }
-  var nieuw = prompt('Nieuwe naam voor "' + huidig + '":', huidig);
-  if(!nieuw || !nieuw.trim() || nieuw.trim() === huidig) return;
-  nieuw = nieuw.trim();
-  // Update tegenstanders lijst
-  var idx = (state.tegenstanders[compId]||[]).indexOf(huidig);
-  if(idx !== -1) state.tegenstanders[compId][idx] = nieuw;
-  // Update wedstrijden
-  Object.values(state.wedstrijden).forEach(function(w) {
-    if(w.competitie === compId && w.teg === huidig) w.teg = nieuw;
-  });
-  // Update poule
-  Object.values(state.poulewedstrijden||{}).forEach(function(w) {
-    if(w.competitie === compId) {
-      if(w.t1 === huidig) w.t1 = nieuw;
-      if(w.t2 === huidig) w.t2 = nieuw;
-    }
-  });
-  await saveConfig();
-  toast('"' + huidig + '" hernoemd naar "' + nieuw + '"');
-  // Refresh dropdown
-  var opt = sel.querySelector('option[value="' + huidig + '"]');
-  if(opt) { opt.value = nieuw; opt.text = nieuw; }
-  sel.value = nieuw;
-}
-
-window.closeEditModal = function(e) {
-  if(e && e.target !== document.getElementById('edit_modal')) return;
-  document.getElementById('edit_modal').style.display = 'none';
 }
 
 window.closeGoalsModal = function(e) {
