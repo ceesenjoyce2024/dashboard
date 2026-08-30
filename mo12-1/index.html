@@ -105,6 +105,9 @@
   @keyframes fadeInUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
   .page-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--olive);margin-bottom:1.25rem;}
   .modal-overlay{position:fixed;inset:0;background:rgba(60,58,30,0.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem;}
+  .edit-modal-form .form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+  .edit-modal-form .form-group label{font-size:12px;font-weight:500;color:var(--text-muted);}
+  .edit-modal-form .form-group input,.edit-modal-form .form-group select{font-family:var(--sans);font-size:14px;padding:9px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none;}
   .modal{background:var(--card-bg);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2);border:1px solid var(--sand-dark);}
   .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
   .modal-title{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--olive);}
@@ -162,6 +165,9 @@
   <div class="section" id="tegenstanders"></div>
 </main>
 
+<div id="edit_modal" style="display:none" class="modal-overlay" onclick="closeEditModal(event)">
+  <div class="modal" id="edit_modal_inner"></div>
+</div>
 <div id="goals_modal" style="display:none" class="modal-overlay" onclick="closeGoalsModal(event)">
   <div class="modal" id="goals_modal_inner"></div>
 </div>
@@ -801,6 +807,91 @@ window.saveGoalsModal = async function(wid) {
   toast('Doelpunten opgeslagen ✓');
   document.getElementById('goals_modal').style.display = 'none';
   render(currentSection);
+}
+
+window.openEditModal = function(wid) {
+  var w = state.wedstrijden[wid];
+  if(!w) return;
+  var compId = w.competitie;
+  var tegLijst = (state.tegenstanders[compId]||[]).slice().sort();
+  var tegOpts = tegLijst.map(function(t){ return '<option value="'+t+'"'+(t===w.teg?' selected':'')+'>'+t+'</option>'; }).join('');
+  document.getElementById('edit_modal_inner').innerHTML =
+    '<div class="modal-header"><div class="modal-title">Wedstrijd bewerken</div><button class="btn-danger" onclick="closeEditModal()">✕</button></div>' +
+    '<div class="edit-modal-form">' +
+    '<div class="form-group"><label>Datum</label><input type="date" id="em_datum" value="'+(w.datum||'')+'"></div>' +
+    '<div class="form-group"><label>Tijd</label><input type="time" id="em_tijd" value="'+(w.tijd||'')+'"></div>' +
+    '<div class="form-group"><label>Thuis / Uit</label><select id="em_thu"><option value="T"'+(w.thu==='T'?' selected':'')+'>Thuis</option><option value="U"'+(w.thu==='U'?' selected':'')+'>Uit</option></select></div>' +
+    '<div class="form-group"><label>Tegenstander</label>' +
+    '<div style="display:flex;gap:6px;align-items:center">' +
+    '<select id="em_teg" style="flex:1" onchange="editModalTegChange(\'' + compId + '\')"><option value="">– selecteer –</option>'+tegOpts+'<option value="__nieuw__">＋ Nieuwe tegenstander…</option></select>' +
+    '<button class="btn-sm" onclick="editModalHernoem(\'' + compId + '\')" title="Naam wijzigen">✏️</button>' +
+    '<button class="btn-sm" onclick="editModalVerwijder(\'' + compId + '\')" title="Verwijderen">🗑️</button>' +
+    '</div></div>' +
+    '<div class="form-group"><label>Doelpunten voor</label><input type="number" id="em_dv" min="0" value="'+w.dv+'"></div>' +
+    '<div class="form-group"><label>Doelpunten tegen</label><input type="number" id="em_dt" min="0" value="'+w.dt+'"></div>' +
+    '</div>' +
+    '<button class="btn-primary" onclick="saveEditModal(\'' + wid + '\')">Opslaan</button>';
+  document.getElementById('edit_modal').style.display = 'flex';
+}
+
+window.saveEditModal = async function(wid) {
+  var w = state.wedstrijden[wid];
+  if(!w) return;
+  w.datum = document.getElementById('em_datum').value;
+  w.tijd  = document.getElementById('em_tijd').value;
+  w.thu   = document.getElementById('em_thu').value;
+  w.teg   = document.getElementById('em_teg').value || w.teg;
+  w.dv    = parseInt(document.getElementById('em_dv').value)||0;
+  w.dt    = parseInt(document.getElementById('em_dt').value)||0;
+  await saveWedstrijd(w);
+  toast('Wedstrijd bijgewerkt');
+  document.getElementById('edit_modal').style.display = 'none';
+  render(currentSection);
+}
+
+window.closeEditModal = function(e) {
+  if(e&&e.target!==document.getElementById('edit_modal')) return;
+  document.getElementById('edit_modal').style.display = 'none';
+}
+
+window.editModalTegChange = async function(compId) {
+  var sel = document.getElementById('em_teg');
+  if(sel.value==='__nieuw__') {
+    var naam = prompt('Naam nieuwe tegenstander:');
+    if(naam&&naam.trim()) {
+      naam = naam.trim();
+      if(!state.tegenstanders[compId]) state.tegenstanders[compId] = [];
+      if(!state.tegenstanders[compId].includes(naam)) { state.tegenstanders[compId].push(naam); await saveConfig(); toast(naam+' toegevoegd'); }
+      var opt = document.createElement('option'); opt.value=naam; opt.text=naam; opt.selected=true;
+      sel.insertBefore(opt, sel.lastElementChild); sel.value=naam;
+    } else { sel.value=''; }
+  }
+}
+
+window.editModalHernoem = async function(compId) {
+  var sel = document.getElementById('em_teg');
+  var huidig = sel.value;
+  if(!huidig||huidig==='__nieuw__') { toast('Selecteer eerst een tegenstander'); return; }
+  var nieuw = prompt('Nieuwe naam voor "'+huidig+'":', huidig);
+  if(!nieuw||!nieuw.trim()||nieuw.trim()===huidig) return;
+  nieuw = nieuw.trim();
+  var idx = (state.tegenstanders[compId]||[]).indexOf(huidig);
+  if(idx!==-1) state.tegenstanders[compId][idx]=nieuw;
+  Object.values(state.wedstrijden).forEach(function(w){ if(w.competitie===compId&&w.teg===huidig) w.teg=nieuw; });
+  Object.values(state.poulewedstrijden||{}).forEach(function(w){ if(w.competitie===compId){ if(w.t1===huidig) w.t1=nieuw; if(w.t2===huidig) w.t2=nieuw; } });
+  await saveConfig(); toast('"'+huidig+'" hernoemd naar "'+nieuw+'"');
+  var opt = sel.querySelector('option[value="'+huidig+'"]');
+  if(opt){ opt.value=nieuw; opt.text=nieuw; } sel.value=nieuw;
+}
+
+window.editModalVerwijder = async function(compId) {
+  var sel = document.getElementById('em_teg');
+  var naam = sel.value;
+  if(!naam||naam==='__nieuw__') { toast('Selecteer eerst een tegenstander'); return; }
+  if(!confirm('Tegenstander "'+naam+'" verwijderen?')) return;
+  state.tegenstanders[compId] = (state.tegenstanders[compId]||[]).filter(function(t){ return t!==naam; });
+  await saveConfig(); toast('"'+naam+'" verwijderd');
+  var opt = sel.querySelector('option[value="'+naam+'"]'); if(opt) opt.remove(); sel.value='';
 }
 
 window.closeGoalsModal = function(e) {
