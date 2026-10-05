@@ -42,12 +42,11 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
   .app { max-width: 480px; margin: 0 auto; padding: 0 12px 80px; }
-  @media (orientation: landscape) {
-    .app { max-width: 100%; padding: 0 20px 60px; }
-    .cal-grid { grid-template-columns: repeat(7, 1fr); }
+  @media (orientation: landscape) and (max-width: 900px) {
+    .app { max-width: 100%; padding: 0 16px 60px; }
   }
   @media (min-width: 600px) {
-    .app { max-width: 680px; }
+    .app { max-width: 640px; }
   }
 
   /* ── Header ── */
@@ -158,11 +157,14 @@
     background: var(--card-bg);
     border-radius: 20px 20px 0 0;
     padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
-    width: 100%; max-width: 480px; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 540px;
     animation: up .2s ease;
     border-top: 1px solid var(--sand-dark);
   }
   @keyframes up { from{transform:translateY(100%)}to{transform:translateY(0)} }
+  @media (orientation: landscape) {
+    .sheet { max-height: 90vh; overflow-y: auto; }
+  }
   .handle {
     width: 36px; height: 4px; background: var(--sand-dark);
     border-radius: 2px; margin: 0 auto 16px;
@@ -269,15 +271,18 @@
 
   <div class="chart-view" id="patternView" style="display:none;padding-top:8px">
     <div class="chart-box">
-      <h3 style="font-size:13px;color:var(--text-muted);margin-bottom:4px">Bedtijd vs droogheid — alle jaren</h3>
-      <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Elk punt is één nacht. Kleur = uitkomst.</p>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="patternFilters">
+        <button class="tab active" id="pf-jaar" onclick="setPatternFilter('jaar')">Dit jaar</button>
+        <button class="tab" id="pf-alles" onclick="setPatternFilter('alles')">Alle jaren</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;overflow-x:auto" id="patternMaanden"></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:5px;font-size:11px"><div style="width:10px;height:10px;border-radius:50%;background:#a8d4a8"></div>Droog</div>
         <div style="display:flex;align-items:center;gap:5px;font-size:11px"><div style="width:10px;height:10px;border-radius:50%;background:#e6c84a"></div>Minimaal</div>
         <div style="display:flex;align-items:center;gap:5px;font-size:11px"><div style="width:10px;height:10px;border-radius:50%;background:#e08080"></div>Niet droog</div>
       </div>
-      <canvas id="patternCanvas" style="width:100%;max-height:320px"></canvas>
-      <div id="patternStats" style="margin-top:14px;font-size:12px;color:var(--text-muted);display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center"></div>
+      <canvas id="patternCanvas"></canvas>
+      <div id="patternStats" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center"></div>
     </div>
   </div>
   <div class="chart-view" id="chartView">
@@ -513,66 +518,119 @@ function renderChart() {
   });
 }
 
+var patternFilterMode = 'jaar';
+var patternFilterMaand = null;
+var MONTHS_NL_KORT = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+
+window.setPatternFilter = function(mode) {
+  patternFilterMode = mode;
+  patternFilterMaand = null;
+  document.getElementById('pf-jaar').classList.toggle('active', mode==='jaar');
+  document.getElementById('pf-alles').classList.toggle('active', mode==='alles');
+  renderPattern();
+};
+
+window.setPatternMaand = function(m) {
+  patternFilterMaand = (patternFilterMaand === m) ? null : m;
+  renderPattern();
+};
+
 function renderPattern() {
-  // Verzamel alle punten met zowel bedtijd als status
+  // Bepaal jaar voor filter
+  var nu = new Date();
+  var filterJaar = nu.getFullYear();
+
+  // Bouw maandfilter knoppen
+  var maandEl = document.getElementById('patternMaanden');
+  maandEl.innerHTML = '';
+  var maandKnop = document.createElement('button');
+  maandKnop.className = 'tab' + (patternFilterMaand===null?' active':'');
+  maandKnop.textContent = 'Alle maanden';
+  maandKnop.onclick = function(){ setPatternMaand(null); };
+  maandEl.appendChild(maandKnop);
+  MONTHS_NL_KORT.forEach(function(m, i) {
+    var k = document.createElement('button');
+    k.className = 'tab' + (patternFilterMaand===i?' active':'');
+    k.textContent = m;
+    k.onclick = function(){ setPatternMaand(i); };
+    maandEl.appendChild(k);
+  });
+
+  // Verzamel punten
+  var kleuren = { 'droog': '#a8d4a8', 'minimaal': '#e6c84a', 'net-droog': '#e08080' };
   var punten = [];
-  Object.keys(cache).forEach(function(key) {
+  Object.keys(cache).sort().forEach(function(key) {
     var entry = cache[key];
     if (!entry || !entry.bedtijd || !entry.status) return;
+    var datum = new Date(key + 'T12:00:00');
+    if (patternFilterMode === 'jaar' && datum.getFullYear() !== filterJaar) return;
+    if (patternFilterMaand !== null && datum.getMonth() !== patternFilterMaand) return;
     var parts = entry.bedtijd.split(':');
     if (parts.length < 2) return;
     var uur = parseInt(parts[0]);
     var min = parseInt(parts[1]);
-    // Normaliseer: voor middernacht (bv 23:00) en na middernacht (bv 01:00)
     var tijdMinuten = uur * 60 + min;
-    // Laat tijden na middernacht (0-6 uur) 24u optellen voor sortering
     if (uur < 6) tijdMinuten += 24 * 60;
-    punten.push({ key: key, status: entry.status, tijd: tijdMinuten, label: entry.bedtijd.slice(0,5) });
+    punten.push({ key: key, datum: datum, status: entry.status, tijd: tijdMinuten });
   });
 
   if (punten.length < 2) {
-    document.getElementById('patternStats').innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted)">Voer minimaal 2 metingen met bedtijd in.</p>';
+    document.getElementById('patternStats').innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);padding:12px 0">Onvoldoende data voor deze selectie.</p>';
+    var c2 = document.getElementById('patternCanvas');
+    c2.width = 0; c2.height = 0;
     return;
   }
 
-  punten.sort(function(a,b){ return a.key.localeCompare(b.key); });
-
-  var kleuren = { 'droog': '#a8d4a8', 'minimaal': '#e6c84a', 'net-droog': '#e08080' };
-  var tijdMin = Math.min.apply(null, punten.map(function(p){return p.tijd;}));
-  var tijdMax = Math.max.apply(null, punten.map(function(p){return p.tijd;}));
-  var pad = 15;
-  tijdMin -= pad; tijdMax += pad;
+  // Vaste schaal 21:00 (1260 min) t/m 03:00 (1620 min)
+  var tijdMin = 21 * 60;
+  var tijdMax = 27 * 60; // 03:00 = 24+3 uur
 
   var canvas = document.getElementById('patternCanvas');
-  var W = canvas.parentElement.clientWidth - 32;
+  var W = canvas.parentElement.clientWidth - 4;
   var H = 280;
-  canvas.width = W; canvas.height = H;
+  canvas.style.width = '100%';
+  canvas.style.height = H + 'px';
+  canvas.width = W;
+  canvas.height = H;
   var ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,W,H);
+  ctx.clearRect(0, 0, W, H);
 
-  var ML = 44, MR = 16, MT = 16, MB = 24;
+  var ML = 44, MR = 12, MT = 12, MB = 28;
   var PW = W - ML - MR;
   var PH = H - MT - MB;
 
-  // Grid lijnen Y (bedtijd)
+  // Gridlijnen Y — elke 30 min van 21:00 t/m 03:00
   ctx.strokeStyle = '#d8d4c6';
   ctx.lineWidth = 0.5;
-  var tijdStap = 30; // elke 30 min
-  for (var t = Math.ceil(tijdMin/tijdStap)*tijdStap; t <= tijdMax; t += tijdStap) {
+  for (var t = tijdMin; t <= tijdMax; t += 30) {
     var y = MT + PH - ((t - tijdMin) / (tijdMax - tijdMin)) * PH;
-    ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(ML+PW, y); ctx.stroke();
-    var uur2 = Math.floor(t/60) % 24;
+    ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(ML + PW, y); ctx.stroke();
+    var uur2 = Math.floor(t / 60) % 24;
     var min2 = t % 60;
     ctx.fillStyle = '#a8a488';
     ctx.font = '9px Inter, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(String(uur2).padStart(2,'0')+':'+String(min2).padStart(2,'0'), ML-4, y+3);
+    ctx.fillText(String(uur2).padStart(2,'0') + ':' + String(min2).padStart(2,'0'), ML - 4, y + 3);
   }
+
+  // X-as labels (datum)
+  var labelStap = Math.max(1, Math.floor(punten.length / 6));
+  punten.forEach(function(p, i) {
+    if (i % labelStap === 0 || i === punten.length - 1) {
+      var x = ML + (i / (punten.length - 1)) * PW;
+      ctx.fillStyle = '#a8a488';
+      ctx.font = '8px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      var d = p.datum;
+      ctx.fillText(d.getDate() + ' ' + MONTHS_NL_KORT[d.getMonth()], x, H - 4);
+    }
+  });
 
   // Punten
   punten.forEach(function(p, i) {
     var x = ML + (i / (punten.length - 1 || 1)) * PW;
-    var y = MT + PH - ((p.tijd - tijdMin) / (tijdMax - tijdMin)) * PH;
+    var tijdGeklemd = Math.max(tijdMin, Math.min(tijdMax, p.tijd));
+    var y = MT + PH - ((tijdGeklemd - tijdMin) / (tijdMax - tijdMin)) * PH;
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, 2 * Math.PI);
     ctx.fillStyle = kleuren[p.status] || '#ccc';
@@ -582,36 +640,39 @@ function renderPattern() {
     ctx.stroke();
   });
 
-  // Trend lijn per status
-  ['droog','minimaal','net-droog'].forEach(function(st) {
-    var subset = punten.filter(function(p){return p.status===st;});
-    if (subset.length < 2) return;
-    var gemTijd = subset.reduce(function(a,p){return a+p.tijd;},0) / subset.length;
-    var gemY = MT + PH - ((gemTijd - tijdMin) / (tijdMax - tijdMin)) * PH;
-    ctx.setLineDash([4,3]);
+  // Gemiddelde lijnen per status
+  var stGroepen = { 'droog': [], 'minimaal': [], 'net-droog': [] };
+  punten.forEach(function(p) { if (stGroepen[p.status]) stGroepen[p.status].push(p.tijd); });
+  ['droog', 'minimaal', 'net-droog'].forEach(function(st) {
+    var arr = stGroepen[st];
+    if (arr.length < 1) return;
+    var gem = arr.reduce(function(a, b) { return a + b; }, 0) / arr.length;
+    var gemY = MT + PH - ((Math.max(tijdMin, Math.min(tijdMax, gem)) - tijdMin) / (tijdMax - tijdMin)) * PH;
+    ctx.setLineDash([4, 3]);
     ctx.strokeStyle = kleuren[st];
     ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(ML, gemY); ctx.lineTo(ML+PW, gemY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ML, gemY); ctx.lineTo(ML + PW, gemY); ctx.stroke();
     ctx.setLineDash([]);
   });
 
-  // Stats onderaan
-  var stGroepen = { 'droog': [], 'minimaal': [], 'net-droog': [] };
-  punten.forEach(function(p){ if(stGroepen[p.status]) stGroepen[p.status].push(p.tijd); });
   function gemTijdLabel(arr) {
     if (!arr.length) return '–';
-    var gem = arr.reduce(function(a,b){return a+b;},0)/arr.length;
-    var u = Math.floor(gem/60)%24; var m = Math.round(gem%60);
-    return String(u).padStart(2,'0')+':'+String(m).padStart(2,'0');
+    var gem = arr.reduce(function(a, b) { return a + b; }, 0) / arr.length;
+    var u = Math.floor(gem / 60) % 24;
+    var m = Math.round(gem % 60);
+    return String(u).padStart(2, '0') + ':' + String(m).padStart(2, '0');
   }
   document.getElementById('patternStats').innerHTML =
-    '<div style="background:rgba(168,212,168,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. bedtijd droog</div><div style="font-size:15px;font-weight:600;color:var(--green-dark)">'+gemTijdLabel(stGroepen['droog'])+'</div></div>'+
-    '<div style="background:rgba(230,200,74,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. bedtijd minimaal</div><div style="font-size:15px;font-weight:600;color:var(--yellow-dark)">'+gemTijdLabel(stGroepen['minimaal'])+'</div></div>'+
-    '<div style="background:rgba(224,128,128,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. bedtijd niet droog</div><div style="font-size:15px;font-weight:600;color:var(--red-dark)">'+gemTijdLabel(stGroepen['net-droog'])+'</div></div>';
+    '<div style="background:rgba(168,212,168,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. droog</div><div style="font-size:15px;font-weight:600;color:var(--green-dark)">'+gemTijdLabel(stGroepen['droog'])+'</div><div style="font-size:10px;color:var(--text-muted)">'+stGroepen['droog'].length+' nachten</div></div>'+
+    '<div style="background:rgba(230,200,74,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. minimaal</div><div style="font-size:15px;font-weight:600;color:var(--yellow-dark)">'+gemTijdLabel(stGroepen['minimaal'])+'</div><div style="font-size:10px;color:var(--text-muted)">'+stGroepen['minimaal'].length+' nachten</div></div>'+
+    '<div style="background:rgba(224,128,128,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. niet droog</div><div style="font-size:15px;font-weight:600;color:var(--red-dark)">'+gemTijdLabel(stGroepen['net-droog'])+'</div><div style="font-size:10px;color:var(--text-muted)">'+stGroepen['net-droog'].length+' nachten</div></div>';
 }
 
 loadAll();
 setInterval(loadAll,30000);
+window.addEventListener('resize', function() {
+  if (document.getElementById('patternView').style.display === 'block') renderPattern();
+});
 </script>
 </body>
 </html>
