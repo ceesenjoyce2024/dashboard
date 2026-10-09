@@ -16,7 +16,7 @@
 :root{
   --bg:#eef1f6; --surface:#ffffff; --fg:#14213d; --muted:#5b6782; --line:#d6dce8;
   --t1:#1d5fb8; --t2:#d0601c;
-  --floor:#d8ad73; --floor-2:#cfa268; --mark:#ffffff; --board:#1f2a44; --keeper:#2f8f5b;
+  --floor:#2a6fc4; --floor-2:#2a6fc4; --mark:#ffffff; --board:#0f2340; --keeper:#2f8f5b;
   --extra:#8a6d12; --extra-soft:#f5ecd0;
   --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --body:"Barlow",system-ui,-apple-system,Segoe UI,Arial,sans-serif;
@@ -24,12 +24,12 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0d1424; --surface:#16203a; --fg:#e8edf7; --muted:#9aa7c2; --line:#26324f;
   --t1:#4f8fe6; --t2:#e57a38;
-  --floor:#a97f4b; --floor-2:#9f7643; --mark:#f3ede2; --board:#0a1020; --keeper:#3fa96f;
+  --floor:#1f5aa6; --floor-2:#1f5aa6; --mark:#ffffff; --board:#08152b; --keeper:#3fa96f;
   --extra:#d8b54a; --extra-soft:#3a3218; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d1424; --surface:#16203a; --fg:#e8edf7; --muted:#9aa7c2; --line:#26324f;
   --t1:#4f8fe6; --t2:#e57a38;
-  --floor:#a97f4b; --floor-2:#9f7643; --mark:#f3ede2; --board:#0a1020; --keeper:#3fa96f;
+  --floor:#1f5aa6; --floor-2:#1f5aa6; --mark:#ffffff; --board:#08152b; --keeper:#3fa96f;
   --extra:#d8b54a; --extra-soft:#3a3218; color-scheme:dark}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent}
@@ -84,8 +84,9 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
 .dot{width:46px;height:46px;border-radius:50%;background:var(--active);border:3px solid #fff;display:grid;place-items:center;
   font-family:var(--display);font-weight:800;font-size:20px;color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.3)}
 .dot.k{background:var(--keeper)}
-.name{font-family:var(--display);font-weight:700;font-size:20px;line-height:1;color:#fff;background:rgba(20,28,48,.82);
-  padding:3px 8px 4px;border-radius:7px;white-space:nowrap}
+.name{font-family:var(--display);font-weight:700;font-size:24px;line-height:1;color:#111;background:#fff;
+  border:3px solid var(--active);padding:5px 12px 6px;border-radius:9px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.name.k{border-color:var(--keeper)}
 
 .side{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
@@ -101,7 +102,7 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
 .switch button[aria-pressed="true"].b2{background:var(--t2);border-color:var(--t2);color:#fff}
 .switch button[aria-pressed="true"] .small{color:rgba(255,255,255,.85)}
 
-@media (max-height:680px){.dot{width:38px;height:38px;font-size:17px}.name{font-size:17px}.box p{font-size:14px}}
+@media (max-height:680px){.name{font-size:19px;padding:4px 9px 5px}.box p{font-size:14px}}
 </style>
 </head>
 <body>
@@ -223,9 +224,9 @@ function render(){
   $("mTitle").textContent="Wedstrijd "+(M.indexOf(m)+1);
   $("mExtra").hidden=true;
   $("mBlocks").innerHTML=`<span class="chip"></span> Team ${team} speelt <b>${team===1?"0'–6' en 12'–18'":"6'–12' en 18'–25'"}</b>`;
-  let h=`<div class="p" style="left:50%;top:86%"><div class="dot k">C</div><div class="name">Charlotte</div></div>`;
+  let h=`<div class="p" style="left:50%;top:86%"><div class="name k">Charlotte</div></div>`;
   on.forEach((n,i)=>{const p=POS[i];
-    h+=`<div class="p" style="left:${p.x}%;top:${p.y}%"><div class="dot">${n[0]}</div><div class="name">${n}</div></div>`});
+    h+=`<div class="p" style="left:${p.x}%;top:${p.y}%"><div class="name">${n}</div></div>`});
   $("players").innerHTML=h;
   $("benchTitle").textContent=`Bank · Team ${team===1?2:1}`;
   $("bench").textContent=off.join(", ");
