@@ -1,1 +1,216 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Level Up">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Level Up toernooi MO12-1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: overzicht met wedstrijdkaarten → tik → schermvullend zaalhockeyveld (houten vloer, cirkels, middenlijn), Team 1/Team 2 onderin */
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --fg:#14213d; --muted:#5b6782; --line:#d6dce8;
+  --t1:#1d5fb8; --t2:#d0601c;
+  --floor:#d8ad73; --floor-2:#cfa268; --mark:#ffffff; --board:#1f2a44; --keeper:#2f8f5b;
+  --extra:#8a6d12; --extra-soft:#f5ecd0;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1424; --surface:#16203a; --fg:#e8edf7; --muted:#9aa7c2; --line:#26324f;
+  --t1:#4f8fe6; --t2:#e57a38;
+  --floor:#a97f4b; --floor-2:#9f7643; --mark:#f3ede2; --board:#0a1020; --keeper:#3fa96f;
+  --extra:#d8b54a; --extra-soft:#3a3218; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1424; --surface:#16203a; --fg:#e8edf7; --muted:#9aa7c2; --line:#26324f;
+  --t1:#4f8fe6; --t2:#e57a38;
+  --floor:#a97f4b; --floor-2:#9f7643; --mark:#f3ede2; --board:#0a1020; --keeper:#3fa96f;
+  --extra:#d8b54a; --extra-soft:#3a3218; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:3px solid var(--t1);outline-offset:2px}
 
+/* ---------- overzicht ---------- */
+#list{max-width:560px;margin:0 auto;padding:20px 16px 32px}
+.eyebrow{font-family:var(--display);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--muted)}
+h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margin:4px 0 6px;text-wrap:balance}
+.sub{color:var(--muted);font-size:14px;margin:0 0 20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 14px;text-align:left;cursor:pointer;
+  display:flex;flex-direction:column;gap:4px;min-width:0}
+.card:active{transform:scale(.98)}
+.card .num{font-family:var(--display);font-weight:800;font-size:46px;line-height:.9}
+.card .meta{font-size:14px;color:var(--muted)}
+.card.extra{border-style:dashed;border-color:var(--extra)}
+.tag{align-self:flex-start;font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 8px;border-radius:99px;background:var(--extra-soft);color:var(--extra);margin-top:4px}
+.sect{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px}
+
+/* ---------- wedstrijdscherm ---------- */
+#match{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.top{display:flex;align-items:center;gap:10px;padding:10px 16px 6px}
+.back{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600}
+.top h2{font-family:var(--display);font-weight:800;font-size:30px;margin:0;line-height:1}
+.top .tag{margin:0 0 0 auto}
+.blocks{padding:0 16px;font-size:14px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.blocks b{color:var(--fg);font-variant-numeric:tabular-nums}
+.chip{width:10px;height:10px;border-radius:3px;background:var(--active)}
+
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:10px 16px}
+.courtwrap{flex:1;min-height:0;display:flex;justify-content:center;align-items:center}
+/* veld 2:3 zoals de schets; groeit tot de beschikbare hoogte of breedte */
+.court{position:relative;aspect-ratio:200/324;height:100%;max-width:100%;max-height:100%}
+.court svg{position:absolute;inset:0;width:100%;height:100%}
+.p{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px}
+.dot{width:46px;height:46px;border-radius:50%;background:var(--active);border:3px solid #fff;display:grid;place-items:center;
+  font-family:var(--display);font-weight:800;font-size:20px;color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.dot.k{background:var(--keeper)}
+.name{font-family:var(--display);font-weight:700;font-size:20px;line-height:1;color:#fff;background:rgba(20,28,48,.82);
+  padding:3px 8px 4px;border-radius:7px;white-space:nowrap}
+
+.side{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.box h3{margin:0 0 4px;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.box p{margin:0;font-size:15px;line-height:1.35}
+
+.switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 16px 12px}
+.switch button{border:2px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 8px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px}
+.switch .big{font-family:var(--display);font-weight:800;font-size:24px;line-height:1}
+.switch .small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.switch button[aria-pressed="true"].b1{background:var(--t1);border-color:var(--t1);color:#fff}
+.switch button[aria-pressed="true"].b2{background:var(--t2);border-color:var(--t2);color:#fff}
+.switch button[aria-pressed="true"] .small{color:rgba(255,255,255,.85)}
+
+@media (max-height:680px){.dot{width:38px;height:38px;font-size:17px}.name{font-size:17px}.box p{font-size:14px}}
+</style>
+</head>
+<body>
+
+<section id="list" aria-label="Wedstrijden">
+  <div class="eyebrow">Zaalhockey · 29 november 2026</div>
+  <h1>Level Up toernooi MO12-1</h1>
+  <p class="sub">Tik op een wedstrijd voor de opstelling.</p>
+  <div class="grid" id="main"></div>
+  <div class="sect">Alleen bij extra wedstrijden</div>
+  <div class="grid" id="extra"></div>
+</section>
+
+<section id="match" hidden aria-live="polite">
+  <div class="top">
+    <button class="back" id="back" type="button">‹ Wedstrijden</button>
+    <h2 id="mTitle">W1</h2>
+    <span class="tag" id="mExtra" hidden></span>
+  </div>
+  <div class="blocks" id="mBlocks"></div>
+  <div class="stage">
+    <div class="courtwrap">
+      <div class="court" id="court">
+        <svg viewBox="0 -12 200 324" aria-hidden="true">
+          <defs>
+            <pattern id="planks" width="14" height="300" patternUnits="userSpaceOnUse">
+              <rect width="14" height="300" fill="var(--floor)"/>
+              <rect width="7" height="300" fill="var(--floor-2)"/>
+            </pattern>
+            <clipPath id="field"><rect x="0" y="0" width="200" height="300"/></clipPath>
+          </defs>
+          <rect x="0" y="0" width="200" height="300" fill="url(#planks)"/>
+          <g clip-path="url(#field)" fill="none" stroke="var(--mark)" stroke-width="2">
+            <line x1="0" y1="150" x2="200" y2="150"/>
+            <path d="M15 0 A70 70 0 0 0 85 70 L115 70 A70 70 0 0 0 185 0"/>
+            <path d="M15 300 A70 70 0 0 1 85 230 L115 230 A70 70 0 0 1 185 300"/>
+          </g>
+          <circle cx="100" cy="150" r="2.2" fill="var(--mark)"/>
+          <circle cx="100" cy="55" r="1.8" fill="var(--mark)"/>
+          <circle cx="100" cy="245" r="1.8" fill="var(--mark)"/>
+          <rect x="0" y="0" width="200" height="300" fill="none" stroke="var(--mark)" stroke-width="2"/>
+          <!-- boarding langs de zijlijnen -->
+          <rect x="-3" y="0" width="4" height="300" fill="var(--board)"/>
+          <rect x="199" y="0" width="4" height="300" fill="var(--board)"/>
+          <!-- doelen -->
+          <rect x="85" y="-10" width="30" height="10" fill="none" stroke="var(--board)" stroke-width="2.5"/>
+          <rect x="85" y="300" width="30" height="10" fill="none" stroke="var(--board)" stroke-width="2.5"/>
+        </svg>
+        <div id="players"></div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="box"><h3 id="benchTitle">Bank</h3><p id="bench"></p></div>
+      <div class="box"><h3>Tribune</h3><p id="trib"></p></div>
+    </div>
+  </div>
+  <div class="switch" role="group" aria-label="Kies team">
+    <button type="button" class="b1" id="tb1" aria-pressed="true"><span class="big">Team 1</span><span class="small">0'–6' · 12'–18'</span></button>
+    <button type="button" class="b2" id="tb2" aria-pressed="false"><span class="big">Team 2</span><span class="small">6'–12' · 18'–25'</span></button>
+  </div>
+</section>
+
+<script>
+// volgorde per team: verd 1, verd 2, midden, aanval 1, aanval 2
+const M=[
+ {id:"w1",t1:["Veerle","Elise","Bo","Rosalie","Annemijn"],t2:["Jinte","June","Riva","Tess","Dante"],tr:["Ella","Lillemor","Emma"]},
+ {id:"w2",t1:["Elise","Jinte","Riva","Dante","Emma"],t2:["Veerle","Ella","Bo","Tess","Lillemor"],tr:["June","Rosalie","Annemijn"]},
+ {id:"w3",t1:["Elise","Jinte","Dante","Lillemor","Rosalie"],t2:["Ella","June","Annemijn","Emma","Tess"],tr:["Veerle","Riva","Bo"]},
+ {id:"w4",t1:["Ella","Elise","Bo","Lillemor","Rosalie"],t2:["Veerle","June","Riva","Emma","Annemijn"],tr:["Jinte","Dante","Tess"]},
+ {id:"w5",extra:"Alleen bij 5e wedstrijd",t1:["Veerle","Jinte","Bo","Rosalie","Tess"],t2:["Ella","June","Riva","Dante","Annemijn"],tr:["Elise","Emma","Lillemor"]},
+ {id:"w6",extra:"Alleen bij 6e wedstrijd",t1:["Ella","Jinte","Riva","Lillemor","Annemijn"],t2:["Elise","June","Bo","Dante","Emma"],tr:["Veerle","Rosalie","Tess"]},
+];
+// posities volgens de schets (% van het veld); eigen doel onderaan
+const POS=[{x:24,y:73},{x:76,y:72},{x:50,y:50},{x:24,y:37},{x:74,y:16}];
+const $=id=>document.getElementById(id);
+let cur=null, team=1, lock=null;
+
+M.forEach((m,i)=>{
+  const b=document.createElement("button"); b.type="button"; b.className="card"+(m.extra?" extra":"");
+  b.innerHTML=`<span class="num">${m.id.toUpperCase()}</span><span class="meta">Wedstrijd ${i+1}</span>`+(m.extra?`<span class="tag">Extra</span>`:"");
+  b.onclick=()=>open(m.id);
+  $(m.extra?"extra":"main").appendChild(b);
+});
+
+function render(){
+  const m=M.find(x=>x.id===cur); if(!m) return;
+  const on=team===1?m.t1:m.t2, off=team===1?m.t2:m.t1;
+  document.documentElement.style.setProperty("--active",team===1?"var(--t1)":"var(--t2)");
+  $("mTitle").textContent=m.id.toUpperCase();
+  $("mExtra").hidden=!m.extra; $("mExtra").textContent=m.extra||"";
+  $("mBlocks").innerHTML=`<span class="chip"></span> Team ${team} speelt <b>${team===1?"0'–6' en 12'–18'":"6'–12' en 18'–25'"}</b>`;
+  let h=`<div class="p" style="left:50%;top:86%"><div class="dot k">C</div><div class="name">Charlotte</div></div>`;
+  on.forEach((n,i)=>{const p=POS[i];
+    h+=`<div class="p" style="left:${p.x}%;top:${p.y}%"><div class="dot">${n[0]}</div><div class="name">${n}</div></div>`});
+  $("players").innerHTML=h;
+  $("benchTitle").textContent=`Bank · Team ${team===1?2:1}`;
+  $("bench").textContent=off.join(", ");
+  $("trib").textContent=m.tr.join(", ");
+  $("tb1").setAttribute("aria-pressed",team===1); $("tb2").setAttribute("aria-pressed",team===2);
+}
+async function keepAwake(){try{if("wakeLock" in navigator&&!lock){lock=await navigator.wakeLock.request("screen");lock.addEventListener("release",()=>lock=null)}}catch(e){}}
+function open(id){
+  cur=id; team=1; $("list").hidden=true; $("match").hidden=false; render(); keepAwake();
+  try{history.replaceState(null,"","#"+id)}catch(e){}
+}
+function close(){
+  cur=null; $("match").hidden=true; $("list").hidden=false;
+  try{history.replaceState(null,"","#")}catch(e){}
+  if(lock){lock.release().catch(()=>{});lock=null}
+}
+$("back").onclick=close;
+$("tb1").onclick=()=>{team=1;render()};
+$("tb2").onclick=()=>{team=2;render()};
+// veeg over het veld om van team te wisselen
+let sx=null;
+$("court").addEventListener("touchstart",e=>{sx=e.touches[0].clientX},{passive:true});
+$("court").addEventListener("touchend",e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx;sx=null;
+  if(Math.abs(dx)>50){team=dx<0?2:1;render()}},{passive:true});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&cur)keepAwake()});
+const h=(location.hash||"").slice(1); if(M.some(m=>m.id===h)) open(h);
+</script>
+
+</body>
+</html>
