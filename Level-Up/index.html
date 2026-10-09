@@ -185,7 +185,7 @@ const CODE="2911";
 const LOCK_IDS=["w5","w6"];
 let unlocked=0, asking=null;
 try{unlocked=Math.min(2,parseInt(localStorage.getItem("levelup-unlocked")||"0",10)||0)}catch(e){}
-const LOCK_SVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const LOCK_SVG='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const isOpen=id=>{const k=LOCK_IDS.indexOf(id);return k<0||k<unlocked};
 function saveUnlocked(){try{localStorage.setItem("levelup-unlocked",String(unlocked))}catch(e){}}
 function renderList(){
@@ -195,7 +195,7 @@ function renderList(){
     const b=document.createElement("button"); b.type="button";
     b.className="card"+(open?"":" locked")+(!open&&!next?" blocked":"");
     b.innerHTML=`<span class="num">Wedstrijd ${i+1}</span>`+(open?'<span class="go" aria-hidden="true">›</span>'
-      :`<span class="state">${LOCK_SVG}${next?"Code nodig":"Eerst wedstrijd "+i}</span>`);
+      :`<span class="state" aria-label="Vergrendeld">${LOCK_SVG}</span>`);
     b.onclick=()=>{ if(open) return open_(m.id); if(next){asking=asking===m.id?null:m.id;renderList();
         if(asking) setTimeout(()=>$("code").focus(),50);} };
     const box=$(k<0?"main":"extra"); box.appendChild(b);
