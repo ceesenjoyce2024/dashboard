@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pagina niet gevonden</title>
+<script>
+// Adressen zijn op GitHub Pages hoofdlettergevoelig. Dit vangt /MO12-1, /Level-Up, /Dagboek enz. op
+// en stuurt door naar de juiste map. Ook /level-up zonder slash werkt.
+(function () {
+  var mappen = ['level-up', 'mo11-1', 'mo12-1', 'dagboek', 'gewicht-joyce', 'groei', 'hartslag', 'spelletjes'];
+  var pad = location.pathname.toLowerCase();
+  var delen = pad.split('/').filter(Boolean);
+  if (delen.length && mappen.indexOf(delen[0]) >= 0) {
+    var doel = '/' + delen.join('/') + (delen.length === 1 ? '/' : '');
+    if (doel !== location.pathname) { location.replace(doel + location.search + location.hash); }
+  }
+})();
+</script>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:#f4f1ea;color:#2d2a24;padding:16px}
+  .box{max-width:360px;text-align:center}
+  h1{font-size:22px;margin:0 0 8px}
+  p{color:#6b6559;margin:0 0 18px;line-height:1.5}
+  a{display:inline-block;padding:10px 18px;border-radius:10px;background:#5b6b3a;color:#fff;text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>Deze pagina bestaat niet</h1>
+    <p>Controleer het adres, of ga terug naar het overzicht.</p>
+    <a href="/">Naar het dashboard</a>
+  </div>
+</body>
+</html>
