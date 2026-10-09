@@ -266,11 +266,27 @@ function formatNaam(email) {
   return n.charAt(0).toUpperCase() + n.slice(1);
 }
 
+// ── Terugkeren naar de oorspronkelijke app na inloggen ──
+function haalNext() {
+  let n = new URLSearchParams(location.search).get('next');
+  try { if (!n) n = localStorage.getItem('eikenlaan-next'); localStorage.removeItem('eikenlaan-next'); } catch (e) {}
+  if (n && n.startsWith('/') && !n.startsWith('//') && n !== '/') return n;
+  return null;
+}
+function bewaarNext() {
+  const n = new URLSearchParams(location.search).get('next');
+  try { if (n) localStorage.setItem('eikenlaan-next', n); } catch (e) {}
+}
+
 // ── Dashboard tonen op basis van rol ──
 async function toonDashboard(user) {
   const email = user.email;
-  const { data } = await sb.from('email_whitelist').select('rol').eq('email', email).single();
-  const rol = data ? data.rol : 'ouder';
+  const { data: rol } = await sb.rpc('mijn_rol');
+  if (!rol) { await sb.auth.signOut(); toonLoginScherm(); toonErr(document.getElementById('l-error'), 'Dit account heeft (nog) geen toegang. Neem contact op met de beheerder.'); return; }
+
+  // Terug naar de app waar de gebruiker vandaan kwam
+  const next = haalNext();
+  if (next) { location.replace(next); return; }
 
   if (rol === 'admin') {
     document.getElementById('admin-email').textContent = email;
@@ -304,6 +320,10 @@ async function init() {
     toonDashboard(session.user);
   } else {
     toonLoginScherm();
+  }
+  if (new URLSearchParams(location.search).get('geentoegang') === '1') {
+    window.history.replaceState({}, '', window.location.pathname);
+    setTimeout(() => alert('Je hebt geen toegang tot die app.'), 300);
   }
 
   sb.auth.onAuthStateChange((_e, session) => {
@@ -383,7 +403,7 @@ async function stuurMagicLink() {
   btn.disabled = true; btn.textContent = 'Controleren…';
 
   // Check of email in whitelist staat
-  const { data: wl } = await sb.from('email_whitelist').select('rol').eq('email', email).single();
+  const { data: wl } = await sb.rpc('is_whitelisted', { p_email: email });
   if (!wl) {
     toonErr(err, 'Dit e-mailadres is niet bekend. Neem contact op met de beheerder.');
     btn.disabled=false; btn.textContent='Verstuur activatielink';
@@ -391,6 +411,7 @@ async function stuurMagicLink() {
   }
 
   // Stuur magic link — redirect naar /stel-wachtwoord-in pagina
+  bewaarNext();
   const redirectUrl = window.location.origin + '/?stelww=1';
   const { error } = await sb.auth.signInWithOtp({
     email,
