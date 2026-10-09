@@ -41,13 +41,25 @@ button:focus-visible{outline:3px solid var(--t1);outline-offset:2px}
 .eyebrow{font-family:var(--display);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--muted)}
 h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margin:4px 0 6px;text-wrap:balance}
 .sub{color:var(--muted);font-size:14px;margin:0 0 20px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 14px;text-align:left;cursor:pointer;
-  display:flex;flex-direction:column;gap:4px;min-width:0}
+.grid{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-align:left;cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;width:100%}
 .card:active{transform:scale(.98)}
-.card .num{font-family:var(--display);font-weight:800;font-size:46px;line-height:.9}
-.card .meta{font-size:14px;color:var(--muted)}
-.card.extra{border-style:dashed;border-color:var(--extra)}
+.card .num{font-family:var(--display);font-weight:800;font-size:32px;line-height:1}
+.card .go{font-size:28px;color:var(--muted);line-height:1}
+.card .state{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.card.locked{background:var(--bg);border-style:dashed;color:var(--muted);opacity:.7}
+.card.locked .num{color:var(--muted)}
+.card.blocked{opacity:.45}
+.unlock{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.unlock label{font-size:14px;color:var(--muted)}
+.unlock .row{display:flex;gap:8px}
+.unlock input{flex:1;min-width:0;font:inherit;font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:.4em;text-align:center;padding:8px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg)}
+.unlock input:focus{outline:none;border-color:var(--t1)}
+.unlock button{border:0;border-radius:10px;padding:0 18px;background:var(--t1);color:#fff;font-weight:600;cursor:pointer}
+.unlock .err{color:#c0392b;font-size:14px;min-height:1em}
+.relock{align-self:flex-start;margin-top:14px;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:14px;padding:0}
+@media (prefers-reduced-motion:no-preference){.shake{animation:shake .3s}@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}}
 .tag{align-self:flex-start;font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
   padding:2px 8px;border-radius:99px;background:var(--extra-soft);color:var(--extra);margin-top:4px}
 .sect{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px}
@@ -101,12 +113,13 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
   <div class="grid" id="main"></div>
   <div class="sect">Alleen bij extra wedstrijden</div>
   <div class="grid" id="extra"></div>
+  <button type="button" class="relock" id="relock" hidden>Extra wedstrijden weer vergrendelen</button>
 </section>
 
 <section id="match" hidden aria-live="polite">
   <div class="top">
     <button class="back" id="back" type="button">‹ Wedstrijden</button>
-    <h2 id="mTitle">W1</h2>
+    <h2 id="mTitle">Wedstrijd 1</h2>
     <span class="tag" id="mExtra" hidden></span>
   </div>
   <div class="blocks" id="mBlocks"></div>
@@ -167,19 +180,48 @@ const POS=[{x:24,y:73},{x:76,y:72},{x:50,y:50},{x:24,y:37},{x:74,y:16}];
 const $=id=>document.getElementById(id);
 let cur=null, team=1, lock=null;
 
-M.forEach((m,i)=>{
-  const b=document.createElement("button"); b.type="button"; b.className="card"+(m.extra?" extra":"");
-  b.innerHTML=`<span class="num">${m.id.toUpperCase()}</span><span class="meta">Wedstrijd ${i+1}</span>`+(m.extra?`<span class="tag">Extra</span>`:"");
-  b.onclick=()=>open(m.id);
-  $(m.extra?"extra":"main").appendChild(b);
-});
+// extra wedstrijden: ontgrendelen met code, W6 pas na W5 (onthouden op dit toestel)
+const CODE="2911";
+const LOCK_IDS=["w5","w6"];
+let unlocked=0, asking=null;
+try{unlocked=Math.min(2,parseInt(localStorage.getItem("levelup-unlocked")||"0",10)||0)}catch(e){}
+const LOCK_SVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const isOpen=id=>{const k=LOCK_IDS.indexOf(id);return k<0||k<unlocked};
+function saveUnlocked(){try{localStorage.setItem("levelup-unlocked",String(unlocked))}catch(e){}}
+function renderList(){
+  $("main").innerHTML=""; $("extra").innerHTML="";
+  M.forEach((m,i)=>{
+    const k=LOCK_IDS.indexOf(m.id), open=isOpen(m.id), next=k===unlocked;
+    const b=document.createElement("button"); b.type="button";
+    b.className="card"+(open?"":" locked")+(!open&&!next?" blocked":"");
+    b.innerHTML=`<span class="num">Wedstrijd ${i+1}</span>`+(open?'<span class="go" aria-hidden="true">›</span>'
+      :`<span class="state">${LOCK_SVG}${next?"Code nodig":"Eerst wedstrijd "+i}</span>`);
+    b.onclick=()=>{ if(open) return open_(m.id); if(next){asking=asking===m.id?null:m.id;renderList();
+        if(asking) setTimeout(()=>$("code").focus(),50);} };
+    const box=$(k<0?"main":"extra"); box.appendChild(b);
+    if(asking===m.id){
+      const f=document.createElement("form"); f.className="unlock";
+      f.innerHTML=`<label for="code">Code voor wedstrijd ${i+1}</label><div class="row">
+        <input id="code" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-describedby="err">
+        <button type="submit">Ontgrendel</button></div><div class="err" id="err"></div>`;
+      f.onsubmit=e=>{e.preventDefault(); const v=$("code").value.trim();
+        if(v===CODE){unlocked=k+1;saveUnlocked();asking=null;renderList()}
+        else{$("err").textContent="Onjuiste code. Probeer het opnieuw.";$("code").value="";f.classList.remove("shake");void f.offsetWidth;f.classList.add("shake");$("code").focus()}};
+      f.querySelector("input").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,4);if(e.target.value.length===4)f.requestSubmit()});
+      box.appendChild(f);
+    }
+  });
+  $("relock").hidden=unlocked===0;
+}
+$("relock").onclick=()=>{unlocked=0;asking=null;saveUnlocked();renderList()};
+renderList();
 
 function render(){
   const m=M.find(x=>x.id===cur); if(!m) return;
   const on=team===1?m.t1:m.t2, off=team===1?m.t2:m.t1;
   document.documentElement.style.setProperty("--active",team===1?"var(--t1)":"var(--t2)");
-  $("mTitle").textContent=m.id.toUpperCase();
-  $("mExtra").hidden=!m.extra; $("mExtra").textContent=m.extra||"";
+  $("mTitle").textContent="Wedstrijd "+(M.indexOf(m)+1);
+  $("mExtra").hidden=true;
   $("mBlocks").innerHTML=`<span class="chip"></span> Team ${team} speelt <b>${team===1?"0'–6' en 12'–18'":"6'–12' en 18'–25'"}</b>`;
   let h=`<div class="p" style="left:50%;top:86%"><div class="dot k">C</div><div class="name">Charlotte</div></div>`;
   on.forEach((n,i)=>{const p=POS[i];
@@ -191,7 +233,7 @@ function render(){
   $("tb1").setAttribute("aria-pressed",team===1); $("tb2").setAttribute("aria-pressed",team===2);
 }
 async function keepAwake(){try{if("wakeLock" in navigator&&!lock){lock=await navigator.wakeLock.request("screen");lock.addEventListener("release",()=>lock=null)}}catch(e){}}
-function open(id){
+function open_(id){
   cur=id; team=1; $("list").hidden=true; $("match").hidden=false; render(); keepAwake();
   try{history.replaceState(null,"","#"+id)}catch(e){}
 }
@@ -209,7 +251,7 @@ $("court").addEventListener("touchstart",e=>{sx=e.touches[0].clientX},{passive:t
 $("court").addEventListener("touchend",e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx;sx=null;
   if(Math.abs(dx)>50){team=dx<0?2:1;render()}},{passive:true});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&cur)keepAwake()});
-const h=(location.hash||"").slice(1); if(M.some(m=>m.id===h)) open(h);
+const h=(location.hash||"").slice(1); if(M.some(m=>m.id===h)&&isOpen(h)) open_(h);
 </script>
 
 </body>
