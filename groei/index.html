@@ -79,6 +79,12 @@
   .tab-bar{display:flex;gap:6px;margin-bottom:1rem;}
   .tab-btn{font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px;border:1px solid var(--sand-dark);background:var(--sand-light);color:var(--text-muted);cursor:pointer;font-family:var(--sans);}
   .tab-btn.active{background:var(--olive);border-color:var(--olive);color:var(--sand-light);}
+  .datum-filter{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--card-bg);border-radius:var(--radius-sm);border:1px solid var(--sand-dark);}
+  .datum-filter label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
+  .datum-filter input[type=date]{font-family:var(--sans);font-size:13px;padding:6px 10px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none;}
+  .datum-filter input[type=date]:focus{border-color:var(--olive-mid);}
+  .btn-reset{font-family:var(--sans);font-size:12px;padding:6px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text-muted);cursor:pointer;white-space:nowrap;}
+  .btn-reset:hover{border-color:var(--olive-light);color:var(--olive);}
 
   /* Tabel */
   table{width:100%;border-collapse:collapse;font-size:13px;}
@@ -153,6 +159,13 @@
       <button class="tab-btn active" id="tab-g-beiden" onclick="setGrafiekFilter('beiden')">Beiden</button>
       <button class="tab-btn" id="tab-g-jesper" onclick="setGrafiekFilter('Jesper')">Jesper</button>
       <button class="tab-btn" id="tab-g-riva" onclick="setGrafiekFilter('Riva')">Riva</button>
+    </div>
+    <div class="datum-filter">
+      <label>Van</label>
+      <input type="date" id="g-van" onchange="renderGrafieken()">
+      <label>Tot</label>
+      <input type="date" id="g-tot" onchange="renderGrafieken()">
+      <button class="btn-reset" onclick="resetDatumFilter()">Alles</button>
     </div>
     <div class="grafiek-legenda" id="grafiek-legenda">
       <div class="leg-item"><div class="leg-dot" style="background:var(--jesper)"></div>Jesper</div>
@@ -310,6 +323,12 @@ function renderOverzicht() {
     '<p class="empty">Nog geen metingen</p>';
 }
 
+function resetDatumFilter() {
+  document.getElementById('g-van').value = '';
+  document.getElementById('g-tot').value = '';
+  renderGrafieken();
+}
+
 function setGrafiekFilter(f) {
   grafiekFilter = f;
   ['beiden','Jesper','Riva'].forEach(function(k){
@@ -341,8 +360,16 @@ function renderGrafieken() {
   var personen = grafiekFilter === 'beiden' ? ['Jesper','Riva'] : [grafiekFilter];
   var kleuren = {Jesper:'#2A7FD4', Riva:'#C4526A'};
 
+  var vanVal = document.getElementById('g-van').value || null;
+  var totVal = document.getElementById('g-tot').value || null;
+
   function maakDataset(persoon, field) {
-    var data = metingen.filter(function(m){return m.persoon===persoon;}).map(function(m){
+    var data = metingen.filter(function(m){
+      if (m.persoon !== persoon) return false;
+      if (vanVal && m.datum < vanVal) return false;
+      if (totVal && m.datum > totVal) return false;
+      return true;
+    }).map(function(m){
       return {x: m.datum, y: m[field]};
     });
     return {
