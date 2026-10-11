@@ -42,12 +42,6 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
   .app { max-width: 480px; margin: 0 auto; padding: 0 12px 80px; }
-  @media (orientation: landscape) and (max-width: 900px) {
-    .app { max-width: 100%; padding: 0 16px 60px; }
-  }
-  @media (min-width: 600px) {
-    .app { max-width: 640px; }
-  }
 
   /* ── Header ── */
   .topbar {
@@ -138,12 +132,20 @@
     background: var(--card-bg);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; position: relative; overflow: hidden;
+    flex-direction: column;
   }
   .cell.empty { background: transparent; border-color: transparent; cursor: default; }
   .cell.today { border-color: var(--olive); border-width: 2px; }
   .cell-bg { position: absolute; inset: 0; opacity: 0.55; }
-  .cell-num { font-size: 13px; color: var(--text-muted); position: relative; z-index: 1; line-height: 1.4; }
+  .cell-num { font-size: 13px; color: var(--text-muted); position: relative; z-index: 1; }
   .cell.today .cell-num { font-weight: 600; color: var(--olive); }
+  .cell-icons { font-size: 9px; position: relative; z-index: 1; line-height: 1; margin-top: 1px; }
+  .cell-dot {
+    position: absolute; top: 4px; width: 7px; height: 7px;
+    border-radius: 50%; z-index: 2;
+  }
+  .cell-dot.toilet { left: 4px;  background: #2e8b57; }
+  .cell-dot.bad    { right: 4px; background: #c03030; }
 
   /* ── Sheet ── */
   .overlay {
@@ -157,14 +159,11 @@
     background: var(--card-bg);
     border-radius: 20px 20px 0 0;
     padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
-    width: 100%; max-width: 540px;
+    width: 100%; max-width: 480px;
     animation: up .2s ease;
     border-top: 1px solid var(--sand-dark);
   }
   @keyframes up { from{transform:translateY(100%)}to{transform:translateY(0)} }
-  @media (orientation: landscape) {
-    .sheet { max-height: 90vh; overflow-y: auto; }
-  }
   .handle {
     width: 36px; height: 4px; background: var(--sand-dark);
     border-radius: 2px; margin: 0 auto 16px;
@@ -175,7 +174,7 @@
     color: var(--olive); margin-bottom: 16px;
     text-transform: capitalize;
   }
-  .sheet-opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .sheet-opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
   .sopt {
     display: flex; align-items: center; gap: 12px;
     padding: 13px 16px; border-radius: var(--radius);
@@ -185,6 +184,31 @@
   }
   .sopt.sel { border-color: var(--olive); background: var(--rol-admin-bg); }
   .sopt-dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Toggles voor toilet/bad ── */
+  .toggle-section {
+    margin-bottom: 16px;
+    border: 1px solid var(--sand-dark);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    background: var(--sand-light);
+  }
+  .toggle-label {
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.07em;
+    margin-bottom: 10px;
+  }
+  .toggle-row { display: flex; gap: 8px; }
+  .tbtn {
+    flex: 1; padding: 10px 8px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--sand-dark);
+    background: var(--card-bg); color: var(--text-muted);
+    font-size: 14px; font-family: var(--sans); font-weight: 500;
+    cursor: pointer; text-align: center;
+  }
+  .tbtn.sel-ja  { border-color: var(--green-dark); background: #e8f4e8; color: var(--green-dark); }
+  .tbtn.sel-nee { border-color: var(--sand-dark);  background: var(--sand); color: var(--text-muted); }
+
   .sheet-btns { display: flex; gap: 8px; }
   .sbtn {
     flex: 1; padding: 12px; border-radius: var(--radius-sm);
@@ -211,6 +235,7 @@
   .chart-box {
     background: var(--card-bg); border-radius: var(--radius);
     border: 1px solid var(--sand-dark); padding: 16px;
+    margin-bottom: 12px;
   }
   .chart-box h3 {
     font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
@@ -222,18 +247,18 @@
   .bf { height: 100%; position: absolute; }
   .bn { font-size: 11px; color: var(--text-muted); width: 20px; flex-shrink: 0; }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --sand: #1e1c14; --sand-light: #2a2720; --sand-dark: #3a3728;
-      --olive: #c8c89a; --olive-mid: #a8a870; --olive-light: #6a6840;
-      --text: #e8e4d9; --text-muted: #a8a488; --card-bg: #252318;
-      --gold: #c8a040; --red-light: #2a1818; --red: #c06060;
-      --blue: #6aaae0; --blue-light: #1a2a3a; --teal: #6aaaa8;
-    }
+  /* ── Extra stats toilet/bad ── */
+  .extra-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;
   }
+  .esc {
+    background: var(--card-bg); border-radius: var(--radius);
+    padding: 14px 10px; text-align: center; border: 1px solid var(--sand-dark);
+  }
+  .esc-icon { font-size: 20px; margin-bottom: 4px; }
+  .esc-l { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .esc-v { font-size: 22px; font-weight: 600; color: var(--olive); }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/auth-guard.js" data-access="familie"></script>
 </head>
 <body>
 <div class="app">
@@ -256,43 +281,29 @@
   </div>
 
   <div class="tabs">
-    <button class="tab active" id="tCal"     onclick="setView('cal')">Kalender</button>
-    <button class="tab"        id="tChart"   onclick="setView('chart')">Grafiek</button>
-    <button class="tab"        id="tPattern" onclick="setView('pattern')">Patroon</button>
+    <button class="tab active" id="tCal"   onclick="setView('cal')">Kalender</button>
+    <button class="tab"        id="tChart" onclick="setView('chart')">Grafiek</button>
   </div>
 
   <div class="legend">
     <span class="leg"><span class="ldot" style="background:var(--green-dark)"></span>Droog</span>
     <span class="leg"><span class="ldot" style="background:var(--yellow-dark)"></span>Minimaal</span>
     <span class="leg"><span class="ldot" style="background:var(--red-dark)"></span>Niet droog</span>
+    <span class="leg"><span class="ldot" style="background:#2e8b57"></span>Toilet</span>
+    <span class="leg"><span class="ldot" style="background:#c03030"></span>Bad</span>
   </div>
 
   <div id="calView">
     <div class="cal-grid" id="calGrid"></div>
   </div>
 
-  <div class="chart-view" id="patternView" style="display:none;padding-top:8px">
-    <div class="chart-box">
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="patternFilters">
-        <button class="tab active" id="pf-jaar" onclick="setPatternFilter('jaar')">Dit jaar</button>
-        <button class="tab" id="pf-alles" onclick="setPatternFilter('alles')">Alle jaren</button>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;overflow-x:auto" id="patternMaanden"></div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px"><div style="width:10px;height:10px;border-radius:50%;background:#a8d4a8"></div>Droog</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px"><div style="width:10px;height:10px;border-radius:50%;background:#e6c84a"></div>Minimaal</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px"><div style="width:10px;height:10px;border-radius:50%;background:#e08080"></div>Niet droog</div>
-      </div>
-      <canvas id="patternCanvas"></canvas>
-      <div id="patternStats" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center"></div>
-    </div>
-  </div>
   <div class="chart-view" id="chartView">
     <div class="stats" id="stats"></div>
     <div class="chart-box">
       <h3 id="chartTitle"></h3>
       <div id="bars"></div>
     </div>
+    <div class="extra-stats" id="extraStats"></div>
   </div>
 </div>
 
@@ -301,6 +312,20 @@
     <div class="handle"></div>
     <div class="sheet-date" id="sheetDate"></div>
     <div class="sheet-opts" id="sheetOpts"></div>
+    <div class="toggle-section">
+      <div class="toggle-label">🚽 Toilet</div>
+      <div class="toggle-row">
+        <button class="tbtn" id="tToiletJa"  onclick="setToggle('toilet',true)">✓ Ja</button>
+        <button class="tbtn" id="tToiletNee" onclick="setToggle('toilet',false)">— Niet ingevuld</button>
+      </div>
+    </div>
+    <div class="toggle-section">
+      <div class="toggle-label">🛁 Bad</div>
+      <div class="toggle-row">
+        <button class="tbtn" id="tBadJa"  onclick="setToggle('bad',true)">✓ Ja</button>
+        <button class="tbtn" id="tBadNee" onclick="setToggle('bad',false)">— Niet ingevuld</button>
+      </div>
+    </div>
     <div class="sheet-btns">
       <button class="sbtn danger" id="btnWis">Wissen</button>
       <button class="sbtn" onclick="closeSheet()">Annuleer</button>
@@ -323,8 +348,9 @@ const ST = [
 const MONTHS = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
 const DAYS   = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
 
+// cache: { 'YYYY-MM-DD': { status, toilet, bad } }
 let cache = {};
-let selDay = null, selKey = null;
+let selDay = null, selStatus = null, selToilet = null, selBad = null;
 const now = new Date();
 let cy = now.getFullYear(), cm = now.getMonth();
 
@@ -341,10 +367,12 @@ function sync(state, msg) {
 window.loadAll = async function() {
   sync('busy','Laden...');
   try {
-    const { data, error } = await sbClient.from('dagboek').select('datum, status, bedtijd');
+    const { data, error } = await sbClient.from('dagboek').select('datum, status, toilet, bad');
     if (error) throw error;
     cache = {};
-    data.forEach(function(row){ cache[row.datum]={status:row.status, bedtijd:row.bedtijd||null}; });
+    data.forEach(function(row){
+      cache[row.datum] = { status: row.status, toilet: row.toilet, bad: row.bad };
+    });
     sync('ok','Gesynchroniseerd');
     renderCal();
     if (document.getElementById('chartView').style.display==='block') renderChart();
@@ -354,15 +382,20 @@ window.loadAll = async function() {
   }
 };
 
-async function saveDay(key, val, bedtijd) {
+async function saveDay(key, status, toilet, bad) {
   sync('busy','Opslaan...');
   try {
-    if (val) {
-      const row = { datum:key, status:val };
-      if (bedtijd) row.bedtijd = bedtijd;
-      const { error } = await sbClient.from('dagboek').upsert(row, { onConflict:'datum' });
+    const hasData = status || toilet !== null || bad !== null;
+    if (hasData) {
+      const payload = { datum: key, status: status };
+      if (toilet !== null) payload.toilet = toilet;
+      if (bad    !== null) payload.bad    = bad;
+      const { error } = await sbClient.from('dagboek').upsert(payload, { onConflict:'datum' });
       if (error) throw error;
-      cache[key] = { status:val, bedtijd:bedtijd||null };
+      if (!cache[key]) cache[key] = {};
+      cache[key].status = status;
+      if (toilet !== null) cache[key].toilet = toilet;
+      if (bad    !== null) cache[key].bad    = bad;
     } else {
       const { error } = await sbClient.from('dagboek').delete().eq('datum',key);
       if (error) throw error;
@@ -391,7 +424,8 @@ function renderCal() {
   for(let d=1;d<=days;d++){
     const cell=document.createElement('div'); cell.className='cell';
     if(d===now.getDate()&&cm===now.getMonth()&&cy===now.getFullYear()) cell.classList.add('today');
-    const entry=cache[dk(cy,cm,d)]; const st=entry?entry.status:null;
+    const entry = cache[dk(cy,cm,d)];
+    const st = entry ? entry.status : null;
     if(st){
       const s=ST.find(function(x){return x.key===st;});
       if(s){
@@ -399,62 +433,78 @@ function renderCal() {
         bg.style.background=s.fill; cell.appendChild(bg);
       }
     }
-    // Dagnummer volledig gecentreerd
     const num=document.createElement('div'); num.className='cell-num'; num.textContent=d;
     cell.appendChild(num);
-    // Bedtijd absoluut gecentreerd in onderste kwart
-    if(entry&&entry.bedtijd){
-      const bt=document.createElement('div');
-      bt.style.cssText='position:absolute;bottom:0;left:0;right:0;height:40%;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--text-muted);z-index:1;';
-      bt.textContent='🌙'+entry.bedtijd.slice(0,5);
-      cell.appendChild(bt);
+    // Toilet/bad bolletjes (linksboven groen, rechtsboven rood)
+    if(entry){
+      if(entry.toilet===true){
+        const dot=document.createElement('div'); dot.className='cell-dot toilet';
+        cell.appendChild(dot);
+      }
+      if(entry.bad===true){
+        const dot=document.createElement('div'); dot.className='cell-dot bad';
+        cell.appendChild(dot);
+      }
     }
     cell.addEventListener('click',(function(day){return function(){openSheet(day);};})(d));
     grid.appendChild(cell);
   }
 }
 
+// toggle state: null = niet ingevuld, true = ja
+function setToggle(field, val) {
+  if(field==='toilet'){
+    selToilet = val ? true : null;
+    document.getElementById('tToiletJa').className  = 'tbtn'+(selToilet===true?' sel-ja':'');
+    document.getElementById('tToiletNee').className = 'tbtn'+(selToilet===null?' sel-nee':'');
+  } else {
+    selBad = val ? true : null;
+    document.getElementById('tBadJa').className  = 'tbtn'+(selBad===true?' sel-ja':'');
+    document.getElementById('tBadNee').className = 'tbtn'+(selBad===null?' sel-nee':'');
+  }
+}
+
 function openSheet(d) {
-  selDay=d;
-  const entry=cache[dk(cy,cm,d)]||null;
-  selKey=entry?entry.status:null;
-  const selBedtijd=entry?entry.bedtijd||'':'';
+  selDay = d;
+  const entry = cache[dk(cy,cm,d)] || {};
+  selStatus  = entry.status  || null;
+  selToilet  = entry.toilet  != null ? entry.toilet  : null;
+  selBad     = entry.bad     != null ? entry.bad     : null;
+
   const dt=new Date(cy,cm,d);
   document.getElementById('sheetDate').textContent=dt.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+
   const opts=document.getElementById('sheetOpts');
   opts.innerHTML='';
   ST.forEach(function(s){
     const el=document.createElement('button');
-    el.className='sopt'+(selKey===s.key?' sel':'');
+    el.className='sopt'+(selStatus===s.key?' sel':'');
     el.innerHTML='<span class="sopt-dot" style="background:'+s.fill+';border:2px solid '+s.dark+'"></span>'+s.label;
     el.onclick=function(){
-      selKey=s.key;
+      selStatus=s.key;
       opts.querySelectorAll('.sopt').forEach(function(x){x.classList.remove('sel');});
       el.classList.add('sel');
     };
     opts.appendChild(el);
   });
-  // Bedtijd veld — verwijder eerder toegevoegde velden
-  var oudeVelden = document.querySelectorAll('.bedtijd-veld');
-  oudeVelden.forEach(function(el){ el.remove(); });
-  var bedtijdDiv=document.createElement('div');
-  bedtijdDiv.className='bedtijd-veld';
-  bedtijdDiv.style.cssText='margin-top:12px;display:flex;align-items:center;gap:10px';
-  bedtijdDiv.innerHTML='<label style="font-size:13px;color:var(--text-muted);white-space:nowrap">🌙 Bedtijd</label>'+
-    '<input type="time" id="inp-bedtijd" value="'+selBedtijd+'" style="flex:1;padding:8px 12px;border:1px solid var(--sand-dark);border-radius:9px;font-size:15px;background:var(--sand-light);color:var(--text);outline:none;font-family:var(--sans)">';
-  opts.after(bedtijdDiv);
-  // Reset waarde expliciet na DOM insert
-  setTimeout(function(){ 
-    var el=document.getElementById('inp-bedtijd');
-    if(el) el.value=selBedtijd||'';
-  }, 10);
+
+  // Zet toggle states
+  document.getElementById('tToiletJa').className  = 'tbtn'+(selToilet===true?' sel-ja':'');
+  document.getElementById('tToiletNee').className = 'tbtn'+(selToilet===null?' sel-nee':'');
+  document.getElementById('tBadJa').className     = 'tbtn'+(selBad===true?' sel-ja':'');
+  document.getElementById('tBadNee').className    = 'tbtn'+(selBad===null?' sel-nee':'');
+
   document.getElementById('overlay').classList.add('open');
+
   document.getElementById('btnSave').onclick=async function(){
-    const bt=document.getElementById('inp-bedtijd').value||null;
-    await saveDay(dk(cy,cm,selDay),selKey,bt); closeSheet(); renderCal();
+    await saveDay(dk(cy,cm,selDay), selStatus, selToilet, selBad);
+    closeSheet(); renderCal();
   };
   document.getElementById('btnWis').onclick=async function(){
-    await saveDay(dk(cy,cm,selDay),null,null); closeSheet(); renderCal();
+    // Alles wissen
+    selStatus=null; selToilet=null; selBad=null;
+    await saveDay(dk(cy,cm,selDay), null, null, null);
+    closeSheet(); renderCal();
   };
 }
 
@@ -470,19 +520,16 @@ document.getElementById('next').addEventListener('click',function(){
 });
 
 window.setView=function(v){
-  document.getElementById('calView').style.display     = v==='cal'     ?'block':'none';
-  document.getElementById('chartView').style.display   = v==='chart'   ?'block':'none';
-  document.getElementById('patternView').style.display = v==='pattern' ?'block':'none';
-  document.getElementById('tCal').classList.toggle('active',     v==='cal');
-  document.getElementById('tChart').classList.toggle('active',   v==='chart');
-  document.getElementById('tPattern').classList.toggle('active', v==='pattern');
-  if(v==='chart')   renderChart();
-  if(v==='pattern') renderPattern();
+  document.getElementById('calView').style.display   = v==='cal'   ?'block':'none';
+  document.getElementById('chartView').style.display = v==='chart' ?'block':'none';
+  document.getElementById('tCal').classList.toggle('active',   v==='cal');
+  document.getElementById('tChart').classList.toggle('active', v==='chart');
+  if(v==='chart') renderChart();
 };
 
 function renderChart() {
   document.getElementById('chartTitle').textContent='Dagen per maand — '+cy;
-  let tD=0,tM=0,tH=0;
+  let tD=0,tM=0,tH=0,tToilet=0,tBad=0;
   const pm=[];
   for(let m=0;m<12;m++){
     const days=new Date(cy,m+1,0).getDate();
@@ -493,6 +540,8 @@ function renderChart() {
       if(s==='droog') d++;
       else if(s==='minimaal') mi++;
       else if(s==='net-droog') h++;
+      if(entry&&entry.toilet===true) tToilet++;
+      if(entry&&entry.bad===true)    tBad++;
     }
     tD+=d;tM+=mi;tH+=h;pm.push({d:d,mi:mi,h:h});
   }
@@ -500,6 +549,11 @@ function renderChart() {
     '<div class="sc"><div class="sc-l">Droog</div><div class="sc-v vg">'+tD+'</div></div>'+
     '<div class="sc"><div class="sc-l">Minimaal</div><div class="sc-v vy">'+tM+'</div></div>'+
     '<div class="sc"><div class="sc-l">Niet droog</div><div class="sc-v vr">'+tH+'</div></div>';
+
+  document.getElementById('extraStats').innerHTML=
+    '<div class="esc"><div class="esc-icon">🚽</div><div class="esc-l">Toilet ('+cy+')</div><div class="esc-v">'+tToilet+'</div></div>'+
+    '<div class="esc"><div class="esc-icon">🛁</div><div class="esc-l">Bad ('+cy+')</div><div class="esc-v">'+tBad+'</div></div>';
+
   const max=Math.max(1,...pm.map(function(p){return p.d+p.mi+p.h;}));
   const bars=document.getElementById('bars');
   bars.innerHTML='';
@@ -520,161 +574,8 @@ function renderChart() {
   });
 }
 
-var patternFilterMode = 'jaar';
-var patternFilterMaand = null;
-var MONTHS_NL_KORT = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
-
-window.setPatternFilter = function(mode) {
-  patternFilterMode = mode;
-  patternFilterMaand = null;
-  document.getElementById('pf-jaar').classList.toggle('active', mode==='jaar');
-  document.getElementById('pf-alles').classList.toggle('active', mode==='alles');
-  renderPattern();
-};
-
-window.setPatternMaand = function(m) {
-  patternFilterMaand = (patternFilterMaand === m) ? null : m;
-  renderPattern();
-};
-
-function renderPattern() {
-  // Bepaal jaar voor filter
-  var nu = new Date();
-  var filterJaar = nu.getFullYear();
-
-  // Bouw maandfilter knoppen
-  var maandEl = document.getElementById('patternMaanden');
-  maandEl.innerHTML = '';
-  var maandKnop = document.createElement('button');
-  maandKnop.className = 'tab' + (patternFilterMaand===null?' active':'');
-  maandKnop.textContent = 'Alle maanden';
-  maandKnop.onclick = function(){ setPatternMaand(null); };
-  maandEl.appendChild(maandKnop);
-  MONTHS_NL_KORT.forEach(function(m, i) {
-    var k = document.createElement('button');
-    k.className = 'tab' + (patternFilterMaand===i?' active':'');
-    k.textContent = m;
-    k.onclick = function(){ setPatternMaand(i); };
-    maandEl.appendChild(k);
-  });
-
-  // Verzamel punten
-  var kleuren = { 'droog': '#a8d4a8', 'minimaal': '#e6c84a', 'net-droog': '#e08080' };
-  var punten = [];
-  Object.keys(cache).sort().forEach(function(key) {
-    var entry = cache[key];
-    if (!entry || !entry.bedtijd || !entry.status) return;
-    var datum = new Date(key + 'T12:00:00');
-    if (patternFilterMode === 'jaar' && datum.getFullYear() !== filterJaar) return;
-    if (patternFilterMaand !== null && datum.getMonth() !== patternFilterMaand) return;
-    var parts = entry.bedtijd.split(':');
-    if (parts.length < 2) return;
-    var uur = parseInt(parts[0]);
-    var min = parseInt(parts[1]);
-    var tijdMinuten = uur * 60 + min;
-    if (uur < 6) tijdMinuten += 24 * 60;
-    punten.push({ key: key, datum: datum, status: entry.status, tijd: tijdMinuten });
-  });
-
-  if (punten.length < 2) {
-    document.getElementById('patternStats').innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);padding:12px 0">Onvoldoende data voor deze selectie.</p>';
-    var c2 = document.getElementById('patternCanvas');
-    c2.width = 0; c2.height = 0;
-    return;
-  }
-
-  // Vaste schaal 21:00 (1260 min) t/m 03:00 (1620 min)
-  var tijdMin = 21 * 60;
-  var tijdMax = 27 * 60; // 03:00 = 24+3 uur
-
-  var canvas = document.getElementById('patternCanvas');
-  var W = canvas.parentElement.clientWidth - 4;
-  var H = 280;
-  canvas.style.width = '100%';
-  canvas.style.height = H + 'px';
-  canvas.width = W;
-  canvas.height = H;
-  var ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, W, H);
-
-  var ML = 44, MR = 12, MT = 12, MB = 28;
-  var PW = W - ML - MR;
-  var PH = H - MT - MB;
-
-  // Gridlijnen Y — elke 30 min van 21:00 t/m 03:00
-  ctx.strokeStyle = '#d8d4c6';
-  ctx.lineWidth = 0.5;
-  for (var t = tijdMin; t <= tijdMax; t += 30) {
-    var y = MT + PH - ((t - tijdMin) / (tijdMax - tijdMin)) * PH;
-    ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(ML + PW, y); ctx.stroke();
-    var uur2 = Math.floor(t / 60) % 24;
-    var min2 = t % 60;
-    ctx.fillStyle = '#a8a488';
-    ctx.font = '9px Inter, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(String(uur2).padStart(2,'0') + ':' + String(min2).padStart(2,'0'), ML - 4, y + 3);
-  }
-
-  // X-as labels (datum)
-  var labelStap = Math.max(1, Math.floor(punten.length / 6));
-  punten.forEach(function(p, i) {
-    if (i % labelStap === 0 || i === punten.length - 1) {
-      var x = ML + (i / (punten.length - 1)) * PW;
-      ctx.fillStyle = '#a8a488';
-      ctx.font = '8px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      var d = p.datum;
-      ctx.fillText(d.getDate() + ' ' + MONTHS_NL_KORT[d.getMonth()], x, H - 4);
-    }
-  });
-
-  // Punten
-  punten.forEach(function(p, i) {
-    var x = ML + (i / (punten.length - 1 || 1)) * PW;
-    var tijdGeklemd = Math.max(tijdMin, Math.min(tijdMax, p.tijd));
-    var y = MT + PH - ((tijdGeklemd - tijdMin) / (tijdMax - tijdMin)) * PH;
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, 2 * Math.PI);
-    ctx.fillStyle = kleuren[p.status] || '#ccc';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-  });
-
-  // Gemiddelde lijnen per status
-  var stGroepen = { 'droog': [], 'minimaal': [], 'net-droog': [] };
-  punten.forEach(function(p) { if (stGroepen[p.status]) stGroepen[p.status].push(p.tijd); });
-  ['droog', 'minimaal', 'net-droog'].forEach(function(st) {
-    var arr = stGroepen[st];
-    if (arr.length < 1) return;
-    var gem = arr.reduce(function(a, b) { return a + b; }, 0) / arr.length;
-    var gemY = MT + PH - ((Math.max(tijdMin, Math.min(tijdMax, gem)) - tijdMin) / (tijdMax - tijdMin)) * PH;
-    ctx.setLineDash([4, 3]);
-    ctx.strokeStyle = kleuren[st];
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(ML, gemY); ctx.lineTo(ML + PW, gemY); ctx.stroke();
-    ctx.setLineDash([]);
-  });
-
-  function gemTijdLabel(arr) {
-    if (!arr.length) return '–';
-    var gem = arr.reduce(function(a, b) { return a + b; }, 0) / arr.length;
-    var u = Math.floor(gem / 60) % 24;
-    var m = Math.round(gem % 60);
-    return String(u).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-  }
-  document.getElementById('patternStats').innerHTML =
-    '<div style="background:rgba(168,212,168,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. droog</div><div style="font-size:15px;font-weight:600;color:var(--green-dark)">'+gemTijdLabel(stGroepen['droog'])+'</div><div style="font-size:10px;color:var(--text-muted)">'+stGroepen['droog'].length+' nachten</div></div>'+
-    '<div style="background:rgba(230,200,74,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. minimaal</div><div style="font-size:15px;font-weight:600;color:var(--yellow-dark)">'+gemTijdLabel(stGroepen['minimaal'])+'</div><div style="font-size:10px;color:var(--text-muted)">'+stGroepen['minimaal'].length+' nachten</div></div>'+
-    '<div style="background:rgba(224,128,128,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. niet droog</div><div style="font-size:15px;font-weight:600;color:var(--red-dark)">'+gemTijdLabel(stGroepen['net-droog'])+'</div><div style="font-size:10px;color:var(--text-muted)">'+stGroepen['net-droog'].length+' nachten</div></div>';
-}
-
 loadAll();
 setInterval(loadAll,30000);
-window.addEventListener('resize', function() {
-  if (document.getElementById('patternView').style.display === 'block') renderPattern();
-});
 </script>
 </body>
 </html>
