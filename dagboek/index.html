@@ -42,6 +42,12 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
   .app { max-width: 480px; margin: 0 auto; padding: 0 12px 80px; }
+  @media (orientation: landscape) and (max-width: 900px) {
+    .app { max-width: 100%; padding: 0 16px 60px; }
+  }
+  @media (min-width: 600px) {
+    .app { max-width: 640px; }
+  }
 
   /* ── Header ── */
   .topbar {
@@ -132,14 +138,14 @@
     background: var(--card-bg);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; position: relative; overflow: hidden;
-    flex-direction: column;
   }
   .cell.empty { background: transparent; border-color: transparent; cursor: default; }
   .cell.today { border-color: var(--olive); border-width: 2px; }
   .cell-bg { position: absolute; inset: 0; opacity: 0.55; }
-  .cell-num { font-size: 13px; color: var(--text-muted); position: relative; z-index: 1; }
+  .cell-num { font-size: 13px; color: var(--text-muted); position: relative; z-index: 1; line-height: 1.4; }
   .cell.today .cell-num { font-weight: 600; color: var(--olive); }
-  .cell-icons { font-size: 9px; position: relative; z-index: 1; line-height: 1; margin-top: 1px; }
+
+  /* ── Toilet/bad bolletjes ── */
   .cell-dot {
     position: absolute; top: 4px; width: 7px; height: 7px;
     border-radius: 50%; z-index: 2;
@@ -159,11 +165,14 @@
     background: var(--card-bg);
     border-radius: 20px 20px 0 0;
     padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
-    width: 100%; max-width: 480px;
+    width: 100%; max-width: 540px;
     animation: up .2s ease;
     border-top: 1px solid var(--sand-dark);
   }
   @keyframes up { from{transform:translateY(100%)}to{transform:translateY(0)} }
+  @media (orientation: landscape) {
+    .sheet { max-height: 90vh; overflow-y: auto; }
+  }
   .handle {
     width: 36px; height: 4px; background: var(--sand-dark);
     border-radius: 2px; margin: 0 auto 16px;
@@ -187,29 +196,29 @@
 
   /* ── Toggles voor toilet/bad ── */
   .toggle-section {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     border: 1px solid var(--sand-dark);
     border-radius: var(--radius);
-    padding: 14px 16px;
+    padding: 12px 16px;
     background: var(--sand-light);
   }
   .toggle-label {
     font-size: 11px; font-weight: 600; color: var(--text-muted);
     text-transform: uppercase; letter-spacing: 0.07em;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .toggle-row { display: flex; gap: 8px; }
   .tbtn {
-    flex: 1; padding: 10px 8px; border-radius: var(--radius-sm);
+    flex: 1; padding: 9px 8px; border-radius: var(--radius-sm);
     border: 1.5px solid var(--sand-dark);
     background: var(--card-bg); color: var(--text-muted);
-    font-size: 14px; font-family: var(--sans); font-weight: 500;
+    font-size: 13px; font-family: var(--sans); font-weight: 500;
     cursor: pointer; text-align: center;
   }
-  .tbtn.sel-ja  { border-color: var(--green-dark); background: #e8f4e8; color: var(--green-dark); }
-  .tbtn.sel-nee { border-color: var(--sand-dark);  background: var(--sand); color: var(--text-muted); }
+  .tbtn.sel-ja  { border-color: #2e8b57; background: #e8f4e8; color: #2e8b57; }
+  .tbtn.sel-nee { border-color: var(--sand-dark); background: var(--sand); color: var(--text-muted); }
 
-  .sheet-btns { display: flex; gap: 8px; }
+  .sheet-btns { display: flex; gap: 8px; margin-top: 12px; }
   .sbtn {
     flex: 1; padding: 12px; border-radius: var(--radius-sm);
     border: 1px solid var(--sand-dark); background: var(--sand-light);
@@ -258,6 +267,16 @@
   .esc-icon { font-size: 20px; margin-bottom: 4px; }
   .esc-l { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
   .esc-v { font-size: 22px; font-weight: 600; color: var(--olive); }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sand: #1e1c14; --sand-light: #2a2720; --sand-dark: #3a3728;
+      --olive: #c8c89a; --olive-mid: #a8a870; --olive-light: #6a6840;
+      --text: #e8e4d9; --text-muted: #a8a488; --card-bg: #252318;
+      --gold: #c8a040; --red-light: #2a1818; --red: #c06060;
+      --blue: #6aaae0; --blue-light: #1a2a3a; --teal: #6aaaa8;
+    }
+  }
 </style>
 </head>
 <body>
@@ -281,8 +300,9 @@
   </div>
 
   <div class="tabs">
-    <button class="tab active" id="tCal"   onclick="setView('cal')">Kalender</button>
-    <button class="tab"        id="tChart" onclick="setView('chart')">Grafiek</button>
+    <button class="tab active" id="tCal"     onclick="setView('cal')">Kalender</button>
+    <button class="tab"        id="tChart"   onclick="setView('chart')">Grafiek</button>
+    <button class="tab"        id="tPattern" onclick="setView('pattern')">Patroon</button>
   </div>
 
   <div class="legend">
@@ -297,6 +317,22 @@
     <div class="cal-grid" id="calGrid"></div>
   </div>
 
+  <div class="chart-view" id="patternView" style="display:none;padding-top:8px">
+    <div class="chart-box">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="patternFilters">
+        <button class="tab active" id="pf-jaar" onclick="setPatternFilter('jaar')">Dit jaar</button>
+        <button class="tab" id="pf-alles" onclick="setPatternFilter('alles')">Alle jaren</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;overflow-x:auto" id="patternMaanden"></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px"><div style="width:10px;height:10px;border-radius:50%;background:#a8d4a8"></div>Droog</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px"><div style="width:10px;height:10px;border-radius:50%;background:#e6c84a"></div>Minimaal</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px"><div style="width:10px;height:10px;border-radius:50%;background:#e08080"></div>Niet droog</div>
+      </div>
+      <canvas id="patternCanvas"></canvas>
+      <div id="patternStats" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center"></div>
+    </div>
+  </div>
   <div class="chart-view" id="chartView">
     <div class="stats" id="stats"></div>
     <div class="chart-box">
@@ -312,6 +348,7 @@
     <div class="handle"></div>
     <div class="sheet-date" id="sheetDate"></div>
     <div class="sheet-opts" id="sheetOpts"></div>
+    <!-- Bedtijd veld wordt dynamisch ingevoegd door openSheet() -->
     <div class="toggle-section">
       <div class="toggle-label">🚽 Toilet</div>
       <div class="toggle-row">
@@ -348,9 +385,9 @@ const ST = [
 const MONTHS = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
 const DAYS   = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
 
-// cache: { 'YYYY-MM-DD': { status, toilet, bad } }
+// cache: { 'YYYY-MM-DD': { status, bedtijd, toilet, bad } }
 let cache = {};
-let selDay = null, selStatus = null, selToilet = null, selBad = null;
+let selDay = null, selKey = null, selToilet = null, selBad = null;
 const now = new Date();
 let cy = now.getFullYear(), cm = now.getMonth();
 
@@ -367,33 +404,36 @@ function sync(state, msg) {
 window.loadAll = async function() {
   sync('busy','Laden...');
   try {
-    const { data, error } = await sbClient.from('dagboek').select('datum, status, toilet, bad');
+    const { data, error } = await sbClient.from('dagboek').select('datum, status, bedtijd, toilet, bad');
     if (error) throw error;
     cache = {};
     data.forEach(function(row){
-      cache[row.datum] = { status: row.status, toilet: row.toilet, bad: row.bad };
+      cache[row.datum] = { status: row.status, bedtijd: row.bedtijd||null, toilet: row.toilet, bad: row.bad };
     });
     sync('ok','Gesynchroniseerd');
     renderCal();
     if (document.getElementById('chartView').style.display==='block') renderChart();
+    if (document.getElementById('patternView').style.display==='block') renderPattern();
   } catch(e) {
     console.error(e);
     sync('err','Verbinding mislukt');
   }
 };
 
-async function saveDay(key, status, toilet, bad) {
+async function saveDay(key, status, bedtijd, toilet, bad) {
   sync('busy','Opslaan...');
   try {
-    const hasData = status || toilet !== null || bad !== null;
+    const hasData = status || bedtijd || toilet !== null || bad !== null;
     if (hasData) {
-      const payload = { datum: key, status: status };
-      if (toilet !== null) payload.toilet = toilet;
-      if (bad    !== null) payload.bad    = bad;
-      const { error } = await sbClient.from('dagboek').upsert(payload, { onConflict:'datum' });
+      const row = { datum: key, status: status };
+      if (bedtijd) row.bedtijd = bedtijd;
+      if (toilet !== null) row.toilet = toilet;
+      if (bad    !== null) row.bad    = bad;
+      const { error } = await sbClient.from('dagboek').upsert(row, { onConflict:'datum' });
       if (error) throw error;
       if (!cache[key]) cache[key] = {};
-      cache[key].status = status;
+      cache[key].status  = status;
+      cache[key].bedtijd = bedtijd || null;
       if (toilet !== null) cache[key].toilet = toilet;
       if (bad    !== null) cache[key].bad    = bad;
     } else {
@@ -424,8 +464,7 @@ function renderCal() {
   for(let d=1;d<=days;d++){
     const cell=document.createElement('div'); cell.className='cell';
     if(d===now.getDate()&&cm===now.getMonth()&&cy===now.getFullYear()) cell.classList.add('today');
-    const entry = cache[dk(cy,cm,d)];
-    const st = entry ? entry.status : null;
+    const entry=cache[dk(cy,cm,d)]; const st=entry?entry.status:null;
     if(st){
       const s=ST.find(function(x){return x.key===st;});
       if(s){
@@ -435,6 +474,13 @@ function renderCal() {
     }
     const num=document.createElement('div'); num.className='cell-num'; num.textContent=d;
     cell.appendChild(num);
+    // Bedtijd onderaan
+    if(entry&&entry.bedtijd){
+      const bt=document.createElement('div');
+      bt.style.cssText='position:absolute;bottom:0;left:0;right:0;height:40%;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--text-muted);z-index:1;';
+      bt.textContent='🌙'+entry.bedtijd.slice(0,5);
+      cell.appendChild(bt);
+    }
     // Toilet/bad bolletjes (linksboven groen, rechtsboven rood)
     if(entry){
       if(entry.toilet===true){
@@ -451,7 +497,6 @@ function renderCal() {
   }
 }
 
-// toggle state: null = niet ingevuld, true = ja
 function setToggle(field, val) {
   if(field==='toilet'){
     selToilet = val ? true : null;
@@ -466,10 +511,11 @@ function setToggle(field, val) {
 
 function openSheet(d) {
   selDay = d;
-  const entry = cache[dk(cy,cm,d)] || {};
-  selStatus  = entry.status  || null;
-  selToilet  = entry.toilet  != null ? entry.toilet  : null;
-  selBad     = entry.bad     != null ? entry.bad     : null;
+  const entry = cache[dk(cy,cm,d)] || null;
+  selKey    = entry ? entry.status  || null : null;
+  selToilet = entry && entry.toilet !== null ? entry.toilet : null;
+  selBad    = entry && entry.bad    !== null ? entry.bad    : null;
+  const selBedtijd = entry ? entry.bedtijd || '' : '';
 
   const dt=new Date(cy,cm,d);
   document.getElementById('sheetDate').textContent=dt.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
@@ -478,15 +524,28 @@ function openSheet(d) {
   opts.innerHTML='';
   ST.forEach(function(s){
     const el=document.createElement('button');
-    el.className='sopt'+(selStatus===s.key?' sel':'');
+    el.className='sopt'+(selKey===s.key?' sel':'');
     el.innerHTML='<span class="sopt-dot" style="background:'+s.fill+';border:2px solid '+s.dark+'"></span>'+s.label;
     el.onclick=function(){
-      selStatus=s.key;
+      selKey=s.key;
       opts.querySelectorAll('.sopt').forEach(function(x){x.classList.remove('sel');});
       el.classList.add('sel');
     };
     opts.appendChild(el);
   });
+
+  // Bedtijd veld — verwijder eerder toegevoegde velden
+  document.querySelectorAll('.bedtijd-veld').forEach(function(el){ el.remove(); });
+  var bedtijdDiv=document.createElement('div');
+  bedtijdDiv.className='bedtijd-veld';
+  bedtijdDiv.style.cssText='margin-bottom:12px;display:flex;align-items:center;gap:10px';
+  bedtijdDiv.innerHTML='<label style="font-size:13px;color:var(--text-muted);white-space:nowrap">🌙 Bedtijd</label>'+
+    '<input type="time" id="inp-bedtijd" value="'+selBedtijd+'" style="flex:1;padding:8px 12px;border:1px solid var(--sand-dark);border-radius:9px;font-size:15px;background:var(--sand-light);color:var(--text);outline:none;font-family:var(--sans)">';
+  opts.after(bedtijdDiv);
+  setTimeout(function(){
+    var el=document.getElementById('inp-bedtijd');
+    if(el) el.value=selBedtijd||'';
+  }, 10);
 
   // Zet toggle states
   document.getElementById('tToiletJa').className  = 'tbtn'+(selToilet===true?' sel-ja':'');
@@ -497,13 +556,13 @@ function openSheet(d) {
   document.getElementById('overlay').classList.add('open');
 
   document.getElementById('btnSave').onclick=async function(){
-    await saveDay(dk(cy,cm,selDay), selStatus, selToilet, selBad);
+    const bt=document.getElementById('inp-bedtijd').value||null;
+    await saveDay(dk(cy,cm,selDay), selKey, bt, selToilet, selBad);
     closeSheet(); renderCal();
   };
   document.getElementById('btnWis').onclick=async function(){
-    // Alles wissen
-    selStatus=null; selToilet=null; selBad=null;
-    await saveDay(dk(cy,cm,selDay), null, null, null);
+    selKey=null; selToilet=null; selBad=null;
+    await saveDay(dk(cy,cm,selDay), null, null, null, null);
     closeSheet(); renderCal();
   };
 }
@@ -520,11 +579,14 @@ document.getElementById('next').addEventListener('click',function(){
 });
 
 window.setView=function(v){
-  document.getElementById('calView').style.display   = v==='cal'   ?'block':'none';
-  document.getElementById('chartView').style.display = v==='chart' ?'block':'none';
-  document.getElementById('tCal').classList.toggle('active',   v==='cal');
-  document.getElementById('tChart').classList.toggle('active', v==='chart');
-  if(v==='chart') renderChart();
+  document.getElementById('calView').style.display     = v==='cal'     ?'block':'none';
+  document.getElementById('chartView').style.display   = v==='chart'   ?'block':'none';
+  document.getElementById('patternView').style.display = v==='pattern' ?'block':'none';
+  document.getElementById('tCal').classList.toggle('active',     v==='cal');
+  document.getElementById('tChart').classList.toggle('active',   v==='chart');
+  document.getElementById('tPattern').classList.toggle('active', v==='pattern');
+  if(v==='chart')   renderChart();
+  if(v==='pattern') renderPattern();
 };
 
 function renderChart() {
@@ -574,8 +636,153 @@ function renderChart() {
   });
 }
 
+var patternFilterMode = 'jaar';
+var patternFilterMaand = null;
+var MONTHS_NL_KORT = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+
+window.setPatternFilter = function(mode) {
+  patternFilterMode = mode;
+  patternFilterMaand = null;
+  document.getElementById('pf-jaar').classList.toggle('active', mode==='jaar');
+  document.getElementById('pf-alles').classList.toggle('active', mode==='alles');
+  renderPattern();
+};
+
+window.setPatternMaand = function(m) {
+  patternFilterMaand = (patternFilterMaand === m) ? null : m;
+  renderPattern();
+};
+
+function renderPattern() {
+  var nu = new Date();
+  var filterJaar = nu.getFullYear();
+
+  var maandEl = document.getElementById('patternMaanden');
+  maandEl.innerHTML = '';
+  var maandKnop = document.createElement('button');
+  maandKnop.className = 'tab' + (patternFilterMaand===null?' active':'');
+  maandKnop.textContent = 'Alle maanden';
+  maandKnop.onclick = function(){ setPatternMaand(null); };
+  maandEl.appendChild(maandKnop);
+  MONTHS_NL_KORT.forEach(function(m, i) {
+    var k = document.createElement('button');
+    k.className = 'tab' + (patternFilterMaand===i?' active':'');
+    k.textContent = m;
+    k.onclick = function(){ setPatternMaand(i); };
+    maandEl.appendChild(k);
+  });
+
+  var kleuren = { 'droog': '#a8d4a8', 'minimaal': '#e6c84a', 'net-droog': '#e08080' };
+  var punten = [];
+  Object.keys(cache).sort().forEach(function(key) {
+    var entry = cache[key];
+    if (!entry || !entry.bedtijd || !entry.status) return;
+    var datum = new Date(key + 'T12:00:00');
+    if (patternFilterMode === 'jaar' && datum.getFullYear() !== filterJaar) return;
+    if (patternFilterMaand !== null && datum.getMonth() !== patternFilterMaand) return;
+    var parts = entry.bedtijd.split(':');
+    if (parts.length < 2) return;
+    var uur = parseInt(parts[0]);
+    var min = parseInt(parts[1]);
+    var tijdMinuten = uur * 60 + min;
+    if (uur < 6) tijdMinuten += 24 * 60;
+    punten.push({ key: key, datum: datum, status: entry.status, tijd: tijdMinuten });
+  });
+
+  if (punten.length < 2) {
+    document.getElementById('patternStats').innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);padding:12px 0">Onvoldoende data voor deze selectie.</p>';
+    var c2 = document.getElementById('patternCanvas');
+    c2.width = 0; c2.height = 0;
+    return;
+  }
+
+  var tijdMin = 21 * 60;
+  var tijdMax = 27 * 60;
+
+  var canvas = document.getElementById('patternCanvas');
+  var W = canvas.parentElement.clientWidth - 4;
+  var H = 280;
+  canvas.style.width = '100%';
+  canvas.style.height = H + 'px';
+  canvas.width = W;
+  canvas.height = H;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  var ML = 44, MR = 12, MT = 12, MB = 28;
+  var PW = W - ML - MR;
+  var PH = H - MT - MB;
+
+  ctx.strokeStyle = '#d8d4c6';
+  ctx.lineWidth = 0.5;
+  for (var t = tijdMin; t <= tijdMax; t += 30) {
+    var y = MT + PH - ((t - tijdMin) / (tijdMax - tijdMin)) * PH;
+    ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(ML + PW, y); ctx.stroke();
+    var uur2 = Math.floor(t / 60) % 24;
+    var min2 = t % 60;
+    ctx.fillStyle = '#a8a488';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(String(uur2).padStart(2,'0') + ':' + String(min2).padStart(2,'0'), ML - 4, y + 3);
+  }
+
+  var labelStap = Math.max(1, Math.floor(punten.length / 6));
+  punten.forEach(function(p, i) {
+    if (i % labelStap === 0 || i === punten.length - 1) {
+      var x = ML + (i / (punten.length - 1)) * PW;
+      ctx.fillStyle = '#a8a488';
+      ctx.font = '8px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      var d = p.datum;
+      ctx.fillText(d.getDate() + ' ' + MONTHS_NL_KORT[d.getMonth()], x, H - 4);
+    }
+  });
+
+  punten.forEach(function(p, i) {
+    var x = ML + (i / (punten.length - 1 || 1)) * PW;
+    var tijdGeklemd = Math.max(tijdMin, Math.min(tijdMax, p.tijd));
+    var y = MT + PH - ((tijdGeklemd - tijdMin) / (tijdMax - tijdMin)) * PH;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = kleuren[p.status] || '#ccc';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  });
+
+  var stGroepen = { 'droog': [], 'minimaal': [], 'net-droog': [] };
+  punten.forEach(function(p) { if (stGroepen[p.status]) stGroepen[p.status].push(p.tijd); });
+  ['droog', 'minimaal', 'net-droog'].forEach(function(st) {
+    var arr = stGroepen[st];
+    if (arr.length < 1) return;
+    var gem = arr.reduce(function(a, b) { return a + b; }, 0) / arr.length;
+    var gemY = MT + PH - ((Math.max(tijdMin, Math.min(tijdMax, gem)) - tijdMin) / (tijdMax - tijdMin)) * PH;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = kleuren[st];
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(ML, gemY); ctx.lineTo(ML + PW, gemY); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  function gemTijdLabel(arr) {
+    if (!arr.length) return '–';
+    var gem = arr.reduce(function(a, b) { return a + b; }, 0) / arr.length;
+    var u = Math.floor(gem / 60) % 24;
+    var m = Math.round(gem % 60);
+    return String(u).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  }
+  document.getElementById('patternStats').innerHTML =
+    '<div style="background:rgba(168,212,168,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. droog</div><div style="font-size:15px;font-weight:600;color:var(--green-dark)">'+gemTijdLabel(stGroepen['droog'])+'</div><div style="font-size:10px;color:var(--text-muted)">'+stGroepen['droog'].length+' nachten</div></div>'+
+    '<div style="background:rgba(230,200,74,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. minimaal</div><div style="font-size:15px;font-weight:600;color:var(--yellow-dark)">'+gemTijdLabel(stGroepen['minimaal'])+'</div><div style="font-size:10px;color:var(--text-muted)">'+stGroepen['minimaal'].length+' nachten</div></div>'+
+    '<div style="background:rgba(224,128,128,0.3);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-muted)">Gem. niet droog</div><div style="font-size:15px;font-weight:600;color:var(--red-dark)">'+gemTijdLabel(stGroepen['net-droog'])+'</div><div style="font-size:10px;color:var(--text-muted)">'+stGroepen['net-droog'].length+' nachten</div></div>';
+}
+
 loadAll();
 setInterval(loadAll,30000);
+window.addEventListener('resize', function() {
+  if (document.getElementById('patternView').style.display === 'block') renderPattern();
+});
 </script>
 </body>
 </html>
