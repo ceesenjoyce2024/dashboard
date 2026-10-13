@@ -152,6 +152,9 @@
   }
   .cell-dot.toilet { left: 4px;  background: #2e8b57; }
   .cell-dot.bad    { right: 4px; background: #c03030; }
+  .cell-dot.nee    { background: transparent; border: 1.5px solid; width: 5px; height: 5px; }
+  .cell-dot.toilet.nee { border-color: #2e8b57; }
+  .cell-dot.bad.nee    { border-color: #c03030; }
 
   /* ── Sheet ── */
   .overlay {
@@ -216,7 +219,9 @@
     cursor: pointer; text-align: center;
   }
   .tbtn.sel-ja  { border-color: #2e8b57; background: #e8f4e8; color: #2e8b57; }
-  .tbtn.sel-nee { border-color: var(--sand-dark); background: var(--sand); color: var(--text-muted); }
+  .tbtn.sel-nee { border-color: #c03030; background: #f8e8e8; color: #c03030; }
+  .tbtn.sel-leeg { border-color: var(--sand-dark); background: var(--sand); color: var(--text-muted); }
+  .esc-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
   .sheet-btns { display: flex; gap: 8px; margin-top: 12px; }
   .sbtn {
@@ -311,6 +316,7 @@
     <span class="leg"><span class="ldot" style="background:var(--red-dark)"></span>Niet droog</span>
     <span class="leg"><span class="ldot" style="background:#2e8b57"></span>Toilet</span>
     <span class="leg"><span class="ldot" style="background:#c03030"></span>Bad</span>
+    <span class="leg"><span class="ldot" style="border:1.5px solid var(--text-muted);width:7px;height:7px"></span>Nee</span>
   </div>
 
   <div id="calView">
@@ -353,14 +359,16 @@
       <div class="toggle-label">🚽 Toilet</div>
       <div class="toggle-row">
         <button class="tbtn" id="tToiletJa"  onclick="setToggle('toilet',true)">✓ Ja</button>
-        <button class="tbtn" id="tToiletNee" onclick="setToggle('toilet',false)">— Niet ingevuld</button>
+        <button class="tbtn" id="tToiletNee" onclick="setToggle('toilet',false)">✕ Nee</button>
+        <button class="tbtn" id="tToiletLeeg" onclick="setToggle('toilet',null)">— Niet ingevuld</button>
       </div>
     </div>
     <div class="toggle-section">
       <div class="toggle-label">🛁 Bad</div>
       <div class="toggle-row">
         <button class="tbtn" id="tBadJa"  onclick="setToggle('bad',true)">✓ Ja</button>
-        <button class="tbtn" id="tBadNee" onclick="setToggle('bad',false)">— Niet ingevuld</button>
+        <button class="tbtn" id="tBadNee" onclick="setToggle('bad',false)">✕ Nee</button>
+        <button class="tbtn" id="tBadLeeg" onclick="setToggle('bad',null)">— Niet ingevuld</button>
       </div>
     </div>
     <div class="sheet-btns">
@@ -427,15 +435,15 @@ async function saveDay(key, status, bedtijd, toilet, bad) {
     if (hasData) {
       const row = { datum: key, status: status };
       if (bedtijd) row.bedtijd = bedtijd;
-      if (toilet !== null) row.toilet = toilet;
-      if (bad    !== null) row.bad    = bad;
+      row.toilet = toilet;
+      row.bad    = bad;
       const { error } = await sbClient.from('dagboek').upsert(row, { onConflict:'datum' });
       if (error) throw error;
       if (!cache[key]) cache[key] = {};
       cache[key].status  = status;
       cache[key].bedtijd = bedtijd || null;
-      if (toilet !== null) cache[key].toilet = toilet;
-      if (bad    !== null) cache[key].bad    = bad;
+      cache[key].toilet = toilet;
+      cache[key].bad    = bad;
     } else {
       const { error } = await sbClient.from('dagboek').delete().eq('datum',key);
       if (error) throw error;
@@ -483,12 +491,12 @@ function renderCal() {
     }
     // Toilet/bad bolletjes (linksboven groen, rechtsboven rood)
     if(entry){
-      if(entry.toilet===true){
-        const dot=document.createElement('div'); dot.className='cell-dot toilet';
+      if(entry.toilet===true||entry.toilet===false){
+        const dot=document.createElement('div'); dot.className='cell-dot toilet'+(entry.toilet?'':' nee');
         cell.appendChild(dot);
       }
-      if(entry.bad===true){
-        const dot=document.createElement('div'); dot.className='cell-dot bad';
+      if(entry.bad===true||entry.bad===false){
+        const dot=document.createElement('div'); dot.className='cell-dot bad'+(entry.bad?'':' nee');
         cell.appendChild(dot);
       }
     }
@@ -497,24 +505,26 @@ function renderCal() {
   }
 }
 
+function renderToggles() {
+  [['Toilet',selToilet],['Bad',selBad]].forEach(function(p){
+    var n=p[0], v=p[1];
+    document.getElementById('t'+n+'Ja').className   = 'tbtn'+(v===true ?' sel-ja':'');
+    document.getElementById('t'+n+'Nee').className  = 'tbtn'+(v===false?' sel-nee':'');
+    document.getElementById('t'+n+'Leeg').className = 'tbtn'+(v===null ?' sel-leeg':'');
+  });
+}
+
 function setToggle(field, val) {
-  if(field==='toilet'){
-    selToilet = val ? true : null;
-    document.getElementById('tToiletJa').className  = 'tbtn'+(selToilet===true?' sel-ja':'');
-    document.getElementById('tToiletNee').className = 'tbtn'+(selToilet===null?' sel-nee':'');
-  } else {
-    selBad = val ? true : null;
-    document.getElementById('tBadJa').className  = 'tbtn'+(selBad===true?' sel-ja':'');
-    document.getElementById('tBadNee').className = 'tbtn'+(selBad===null?' sel-nee':'');
-  }
+  if(field==='toilet') selToilet = val; else selBad = val;
+  renderToggles();
 }
 
 function openSheet(d) {
   selDay = d;
   const entry = cache[dk(cy,cm,d)] || null;
   selKey    = entry ? entry.status  || null : null;
-  selToilet = entry && entry.toilet !== null ? entry.toilet : null;
-  selBad    = entry && entry.bad    !== null ? entry.bad    : null;
+  selToilet = entry && (entry.toilet === true || entry.toilet === false) ? entry.toilet : null;
+  selBad    = entry && (entry.bad    === true || entry.bad    === false) ? entry.bad    : null;
   const selBedtijd = entry ? entry.bedtijd || '' : '';
 
   const dt=new Date(cy,cm,d);
@@ -548,10 +558,7 @@ function openSheet(d) {
   }, 10);
 
   // Zet toggle states
-  document.getElementById('tToiletJa').className  = 'tbtn'+(selToilet===true?' sel-ja':'');
-  document.getElementById('tToiletNee').className = 'tbtn'+(selToilet===null?' sel-nee':'');
-  document.getElementById('tBadJa').className     = 'tbtn'+(selBad===true?' sel-ja':'');
-  document.getElementById('tBadNee').className    = 'tbtn'+(selBad===null?' sel-nee':'');
+  renderToggles();
 
   document.getElementById('overlay').classList.add('open');
 
@@ -591,7 +598,7 @@ window.setView=function(v){
 
 function renderChart() {
   document.getElementById('chartTitle').textContent='Dagen per maand — '+cy;
-  let tD=0,tM=0,tH=0,tToilet=0,tBad=0;
+  let tD=0,tM=0,tH=0,tToilet=0,tBad=0,nToilet=0,nBad=0;
   const pm=[];
   for(let m=0;m<12;m++){
     const days=new Date(cy,m+1,0).getDate();
@@ -604,6 +611,8 @@ function renderChart() {
       else if(s==='net-droog') h++;
       if(entry&&entry.toilet===true) tToilet++;
       if(entry&&entry.bad===true)    tBad++;
+      if(entry&&entry.toilet===false) nToilet++;
+      if(entry&&entry.bad===false)    nBad++;
     }
     tD+=d;tM+=mi;tH+=h;pm.push({d:d,mi:mi,h:h});
   }
@@ -613,8 +622,8 @@ function renderChart() {
     '<div class="sc"><div class="sc-l">Niet droog</div><div class="sc-v vr">'+tH+'</div></div>';
 
   document.getElementById('extraStats').innerHTML=
-    '<div class="esc"><div class="esc-icon">🚽</div><div class="esc-l">Toilet ('+cy+')</div><div class="esc-v">'+tToilet+'</div></div>'+
-    '<div class="esc"><div class="esc-icon">🛁</div><div class="esc-l">Bad ('+cy+')</div><div class="esc-v">'+tBad+'</div></div>';
+    '<div class="esc"><div class="esc-icon">🚽</div><div class="esc-l">Toilet ('+cy+')</div><div class="esc-v">'+tToilet+'</div><div class="esc-sub">Nee: '+nToilet+'</div></div>'+
+    '<div class="esc"><div class="esc-icon">🛁</div><div class="esc-l">Bad ('+cy+')</div><div class="esc-v">'+tBad+'</div><div class="esc-sub">Nee: '+nBad+'</div></div>';
 
   const max=Math.max(1,...pm.map(function(p){return p.d+p.mi+p.h;}));
   const bars=document.getElementById('bars');
