@@ -9,6 +9,8 @@
 <meta name="theme-color" content="#7B1E34">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Riva's Rekmomenten</title>
+<meta name="app-version" content="2026-11-03.2">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="rekken"></script>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -176,6 +178,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
     <div class="times" id="timeInputs"></div>
     <p>Deze app kan zelf geen meldingen sturen als hij dicht is. Zet deze tijden als herhalende wekker op je telefoon.</p>
     <button class="big alt" id="btnSaveTimes">Opslaan</button>
+    <p>Versie 2026-11-03.2</p>
   </section>
 
   <!-- HOME -->
@@ -563,6 +566,18 @@ $('btnStatsBack').onclick=()=>{show('viewHome');renderHome()};
 $('rng14').onclick=()=>{range=14;$('rng14').classList.add('on');$('rng30').classList.remove('on');renderStats()};
 $('rng30').onclick=()=>{range=30;$('rng30').classList.add('on');$('rng14').classList.remove('on');renderStats()};
 const _rh=renderHome;renderHome=function(){_rh();weekLine()};
+
+/* versiecheck: haalt de pagina vers op en herlaadt als er een nieuwere versie staat (niet tijdens het rekken) */
+const MY_V=document.querySelector('meta[name=app-version]').content;
+async function checkVersion(){
+  try{
+    const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});
+    const t=await r.text();const m=t.match(/name="app-version" content="([^"]+)"/);
+    if(m&&m[1]!==MY_V&&$('viewSession').hidden)location.replace(location.pathname+'?v='+m[1]);
+  }catch(e){}
+}
+checkVersion();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVersion()});
 
 renderMusic();renderHome();show('viewHome');setSync(syncState==='laden'?'Gegevens laden…':syncState);initSync();
 setInterval(()=>{if(!$('viewHome').hidden)renderHome()},60000);
