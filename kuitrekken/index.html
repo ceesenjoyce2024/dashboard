@@ -393,7 +393,7 @@ function chime(){if(!$('beeps').checked||!audio())return;[880,1109,1319].forEach
 const WORK=30,SWITCH=3;
 const M={boven:{name:'Bovenste kuitspieren',tip:'Knie gestrekt, hak op de grond, leun naar voren.'},
          onder:{name:'Onderste kuitspier',tip:'Knie gebogen, hak blijft op de grond.'}};
-let mode='all',blocksDone=0,startedAt=0,logged=false;
+let waiting=false,mode='all',blocksDone=0,startedAt=0,logged=false;
 let plan=[],idx=0,phase='work',remain=WORK,endAt=0,paused=false,tick=null,wake=null,lastSec=null;
 function build(mode){
   const ms=mode==='all'?['boven','onder']:['onder'],p=[];
@@ -409,7 +409,11 @@ function start(m){
   $('progress').innerHTML=plan.map(()=>'<i></i>').join('');
   show('viewSession');keepAwake();
   if(musicOn&&!sched)startMusic();
-  beginPhase('work');loop();
+  // klaarzetten: timer staat stil op 30 tot Riva op Start drukt
+  phase='work';remain=WORK;lastSec=null;paused=true;waiting=true;paint();
+  $('countLbl').textContent='druk op start';
+  $('btnPause').textContent='Start';$('btnPause').classList.remove('alt');
+  loop();
 }
 function beginPhase(p){phase=p;remain=p==='work'?WORK:SWITCH;endAt=performance.now()+remain*1000;lastSec=null;paint();if(p==='work')beep(1046,.25,.4)}
 function paint(){
@@ -452,6 +456,7 @@ function finish(){
 }
 function stop(){clearInterval(tick);if(blocksDone>0)logSession();try{wake&&wake.release()}catch(e){}show('viewHome');renderHome()}
 $('btnPause').onclick=()=>{
+  if(waiting){waiting=false;paused=false;audio();if(ctx&&ctx.state==='suspended')ctx.resume();beginPhase('work');$('btnPause').textContent='Pauze';return}
   if(!paused){paused=true;remain=(endAt-performance.now())/1000;$('btnPause').textContent='Verder';$('btnPause').classList.add('alt')}
   else{paused=false;endAt=performance.now()+remain*1000;$('btnPause').textContent='Pauze';$('btnPause').classList.remove('alt')}
 };
