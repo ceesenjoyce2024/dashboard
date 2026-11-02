@@ -9,6 +9,8 @@
 <meta name="theme-color" content="#7B1E34">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Riva's Rekmomenten</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="/auth-guard.js" data-access="rekken"></script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
@@ -165,7 +167,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand"><h1>Rekmomenten</h1><span id="today">Vandaag</span></div>
+    <div class="brand"><a id="dashLink" href="/" hidden style="color:var(--muted);font-weight:700;font-size:13px;text-decoration:none">‹ Dashboard</a><h1>Rekmomenten</h1><span id="today">Vandaag</span></div>
     <div style="display:flex;gap:8px"><button class="iconbtn" id="btnStats" aria-label="Overzicht"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button><button class="iconbtn" id="btnSettings" aria-label="Tijden aanpassen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
   </header>
 
@@ -253,6 +255,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <span class="label">Minuten gerekt per dag</span>
       <div id="chartMin"></div>
     </div>
+    <p class="empty" id="syncLbl">Gegevens laden…</p>
     <div class="history">
       <span class="label">Laatste keren</span>
       <div id="histList"></div>
@@ -292,15 +295,16 @@ let times=store.get('rv_times',['07:30','16:00','18:00','20:00']);
 const dkey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
 const toMin=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
 const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
-function doneToday(){return store.get('rv_done_'+dkey(),[])}
-function markDone(){
-  const done=doneToday(), n=nowMin();
-  // best slot: closest not-yet-done moment to now
-  let best=-1,bd=1e9;
-  times.forEach((t,i)=>{if(done.includes(i))return;const d=Math.abs(toMin(t)-n);if(d<bd){bd=d;best=i}});
-  if(best>=0){done.push(best);store.set('rv_done_'+dkey(),done)}
-  return done.length;
+// afgeronde sessies van vandaag koppelen aan het dichtstbijzijnde vrije moment
+function doneToday(){
+  const k=dkey(),done=[];
+  getLog().filter(e=>e.blocks>=e.total&&dayKey(e.t)===k).sort((a,b)=>a.t-b.t).forEach(e=>{
+    const d=new Date(e.t),n=d.getHours()*60+d.getMinutes();let best=-1,bd=1e9;
+    times.forEach((t,i)=>{if(done.includes(i))return;const x=Math.abs(toMin(t)-n);if(x<bd){bd=x;best=i}});
+    if(best>=0)done.push(best)});
+  return done;
 }
+function markDone(){return doneToday().length}
 function renderHome(){
   const done=doneToday(), n=nowMin();
   const d=new Date();
@@ -457,12 +461,50 @@ document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>start(b.dataset.mo
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('viewSession').hidden)keepAwake()});
 
 /* ---------- log & overzicht ---------- */
-function getLog(){return store.get('rv_log',[])}
+/* opslag: Supabase is leidend; lokaal alleen cache + wachtrij voor als er geen verbinding is */
+const SB_URL='https://hvpooifxqhovskwgzpbr.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g';
+let sb=null,me=null,rol=null,LOG=store.get('rv_cache',[]),pending=store.get('rv_pending',[]),syncState='laden';
+function getLog(){return LOG}
+function saveLocal(){store.set('rv_cache',LOG.slice(-2000));store.set('rv_pending',pending)}
+function setSync(t){syncState=t;const el=$('syncLbl');if(el)el.textContent=t}
+async function flushPending(){
+  if(!sb||!pending.length)return;
+  const rows=pending.map(e=>({started_at:new Date(e.t).toISOString(),mode:e.mode,blocks:e.blocks,total:e.total,sec:e.sec}));
+  const{error}=await sb.from('kuitrek_log').insert(rows);
+  if(error){setSync('Niet opgeslagen: geen verbinding. Wordt later verstuurd.');return}
+  pending=[];saveLocal();
+}
+async function fetchLog(){
+  if(!sb)return;
+  const{data,error}=await sb.from('kuitrek_log').select('started_at,mode,blocks,total,sec,user_email').order('started_at',{ascending:true}).limit(3000);
+  if(error){setSync('Kon gegevens niet ophalen. Je ziet de laatst bekende stand.');return}
+  const ouder=rol==='admin'||rol==='eikenlaan';
+  let rows=data.map(r=>({t:new Date(r.started_at).getTime(),mode:r.mode,blocks:r.blocks,total:r.total,sec:r.sec,email:r.user_email}));
+  if(ouder&&rows.some(r=>r.email!==me))rows=rows.filter(r=>r.email!==me);
+  LOG=rows.concat(pending);saveLocal();
+  setSync('Bijgewerkt om '+new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'}));
+  renderHome();if(!$('viewStats').hidden)renderStats();
+}
+async function initSync(){
+  try{
+    if(!window.authReady||!window.supabase)return;
+    const a=await window.authReady;me=a.session.user.email;rol=a.rol;
+    sb=window.supabase.createClient(SB_URL,SB_KEY);
+    // oude lokale sessies (van vóór de login) eenmalig meesturen
+    const old=store.get('rv_log',null);
+    if(old&&old.length&&!store.get('rv_migrated',false)){pending=pending.concat(old);store.set('rv_migrated',true);saveLocal()}
+    if(rol==='admin'||rol==='eikenlaan')$('dashLink').hidden=false;
+    await flushPending();await fetchLog();
+  }catch(e){setSync('Kon niet verbinden. Je ziet de laatst bekende stand.')}
+}
+window.addEventListener('online',()=>{flushPending().then(fetchLog)});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&sb)flushPending().then(fetchLog)});
 function logSession(){
   if(logged)return; logged=true;
-  const l=getLog();
-  l.push({t:startedAt,mode,blocks:blocksDone,total:plan.length,sec:blocksDone*WORK});
-  store.set('rv_log',l.slice(-1500));
+  const e={t:startedAt,mode,blocks:blocksDone,total:plan.length,sec:blocksDone*WORK};
+  LOG.push(e);pending.push(e);saveLocal();
+  flushPending().then(fetchLog);
 }
 const dayKey=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
 function byDay(){const m={};getLog().forEach(e=>{const k=dayKey(e.t);(m[k]=m[k]||[]).push(e)});return m}
@@ -492,7 +534,7 @@ function renderStats(){
   barChart($('chartMin'),days,d=>{const m=Math.round(d.e.reduce((a,x)=>a+x.sec,0)/6)/10;return{total:m,parts:[[m,wine]]}},5,0,null,v=>v+' min');
   // tiles
   const today=bd[dayKey(Date.now())]||[];
-  $('stToday').textContent=today.length+'/'+times.length;
+  $('stToday').textContent=doneToday().length+'/'+times.length;
   const wkStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()-((now.getDay()+6)%7)).getTime();
   const wk=getLog().filter(e=>e.t>=wkStart);
   $('stWeek').textContent=Math.round(wk.reduce((a,x)=>a+x.sec,0)/60);
@@ -517,7 +559,7 @@ $('rng14').onclick=()=>{range=14;$('rng14').classList.add('on');$('rng30').class
 $('rng30').onclick=()=>{range=30;$('rng30').classList.add('on');$('rng14').classList.remove('on');renderStats()};
 const _rh=renderHome;renderHome=function(){_rh();weekLine()};
 
-renderMusic();renderHome();show('viewHome');
+renderMusic();renderHome();show('viewHome');setSync(syncState==='laden'?'Gegevens laden…':syncState);initSync();
 setInterval(()=>{if(!$('viewHome').hidden)renderHome()},60000);
 })();
 </script>

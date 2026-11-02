@@ -2,6 +2,7 @@
    Gebruik in <head>, direct na de Supabase-library:
      <script src="/auth-guard.js" data-access="familie"></script>   → alleen rol admin of eikenlaan
      <script src="/auth-guard.js" data-access="team"></script>      → iedereen op de whitelist
+     <script src="/auth-guard.js" data-access="rekken"></script>    → rol admin, eikenlaan of kind
    Zonder geldige sessie gaat de bezoeker naar het inlogscherm en na inloggen terug naar deze pagina.
    De echte afscherming zit in de Supabase-regels (RLS); dit script zorgt voor de juiste doorverwijzing. */
 (function () {
@@ -28,7 +29,9 @@
       if (!session) { naarLogin(); return nooit; }
       var r = await client.rpc('mijn_rol');
       var rol = r.data || null;
-      var ok = access === 'team' ? !!rol : (rol === 'admin' || rol === 'eikenlaan');
+      var ok = access === 'team' ? !!rol
+             : access === 'rekken' ? (rol === 'admin' || rol === 'eikenlaan' || rol === 'kind')
+             : (rol === 'admin' || rol === 'eikenlaan');
       if (!ok) { geenToegang(); return nooit; }
       root.style.visibility = '';
       return { session: session, rol: rol };
