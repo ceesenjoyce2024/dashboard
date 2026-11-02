@@ -15,38 +15,49 @@
 <style>
 /* Layout: overzicht met wedstrijdkaarten → tik → schermvullend zaalhockeyveld (houten vloer, cirkels, middenlijn), Team 1/Team 2 onderin */
 :root{
-  --bg:#0d1424; --surface:#16203a; --fg:#e8edf7; --muted:#9aa7c2; --line:#26324f;
-  --t1:#4f8fe6; --t2:#e57a38;
-  --floor:#1f5aa6; --floor-2:#1f5aa6; --mark:#ffffff; --board:#c9d6ee; --keeper:#3fa96f;
-  --extra:#d8b54a; --extra-soft:#3a3218;
+  --bg:#e3eefc; --surface:#ffffff; --fg:#0b2a5b; --muted:#5a6f94; --line:#c8d8f2;
+  --navy:#0b4a9e; --navy-2:#083a7e; --orange:#f06a28; --sky:#5aa2f0;
+  --t1:#1458c8; --t2:#f06a28;
+  --floor:#2b74d0; --floor-2:#2b74d0; --mark:#ffffff; --board:#0b4a9e; --keeper:#2f9a5c;
+  --extra:#b5560f; --extra-soft:#fde6d8;
   --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --body:"Barlow",system-ui,-apple-system,Segoe UI,Arial,sans-serif;
-  color-scheme:dark;
+  --tri:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='104' viewBox='0 0 120 104'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M0 0L60 0L30 52Z' fill-opacity='.35'/%3E%3Cpath d='M60 0L120 0L90 52Z' fill-opacity='.12'/%3E%3Cpath d='M30 52L90 52L60 0Z' fill-opacity='.22'/%3E%3Cpath d='M0 104L30 52L60 104Z' fill-opacity='.18'/%3E%3Cpath d='M60 104L90 52L120 104Z' fill-opacity='.3'/%3E%3Cpath d='M30 52L90 52L60 104Z' fill-opacity='.08'/%3E%3C/g%3E%3C/svg%3E");
+  color-scheme:light;
 }
 
 html,body{height:100%}
-body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg) var(--tri);color:var(--fg);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit}
-button:focus-visible{outline:3px solid var(--t1);outline-offset:2px}
+button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
 
 /* ---------- overzicht ---------- */
 #list{max-width:560px;margin:0 auto;padding:20px 16px 32px}
 .eyebrow{font-family:var(--display);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--muted)}
 h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margin:4px 0 6px;text-wrap:balance}
 .sub{color:var(--muted);font-size:14px;margin:0 0 20px}
+.hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 100%);border-radius:18px;padding:18px 20px 20px;margin-bottom:16px;
+  color:#fff;position:relative;overflow:hidden;box-shadow:0 6px 18px rgba(11,74,158,.25)}
+.hero::after{content:"";position:absolute;inset:0;background:var(--tri);opacity:.35;pointer-events:none}
+.hero>*{position:relative}
+.hero .eyebrow{color:#ffd2bb}
+.hero h1{color:#fff;text-transform:uppercase;font-size:44px;letter-spacing:.01em;margin:6px 0 2px}
+.hero .accent{display:block;color:var(--orange);font-size:30px}
+.hero .sub{color:#d6e4fa;margin:8px 0 0}
 .grid{display:flex;flex-direction:column;gap:10px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-align:left;cursor:pointer;
+.card{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--orange);border-radius:14px;box-shadow:0 2px 8px rgba(11,42,91,.08);padding:16px 18px;text-align:left;cursor:pointer;
   display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;width:100%}
 .card:active{transform:scale(.98)}
 .card .txt{display:flex;flex-direction:column;gap:4px;min-width:0}
-.card .meta{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.card .meta{font-size:13px;color:var(--navy);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .card .num{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.1;overflow-wrap:anywhere}
-.card .vs{color:var(--muted);font-weight:600}
-.poule{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:18px}
-.poule h2{margin:0 0 8px;font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.card .vs{color:var(--orange);font-weight:800}
+.poule{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--navy);border-radius:14px;box-shadow:0 2px 8px rgba(11,42,91,.08);padding:14px 18px;margin-bottom:18px}
+.poule h2{margin:0 0 8px;font-family:var(--display);font-weight:800;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--navy)}
 .poule ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px;font-size:16px}
-.poule li.wij{font-weight:700;color:var(--t1)}
-.editbtn{align-self:flex-start;margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600}
+.poule li.wij{font-weight:800;color:var(--orange)}
+.poule li::marker{color:var(--muted);font-weight:600}
+.editbtn{align-self:flex-start;margin-top:22px;background:var(--surface);border:1px solid var(--line);color:var(--navy);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600}
 #edit{max-width:560px;margin:0 auto;padding:20px 16px 40px}
 #edit h1{font-size:32px}
 .efs{display:flex;flex-direction:column;gap:14px;margin-top:14px}
@@ -55,38 +66,38 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
 .erow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .eblock label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:0}
 .eblock input{font:inherit;font-size:16px;padding:10px 12px;width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);min-width:0}
-.eblock input:focus{outline:none;border-color:var(--t1)}
-.eact{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:0;background:var(--bg);padding:12px 0}
-.eact .save{border:0;border-radius:10px;padding:12px 20px;background:var(--t1);color:#fff;font-weight:700;cursor:pointer}
+.eblock input:focus{outline:none;border-color:var(--orange)}
+.eact{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:0;background:var(--bg) var(--tri);padding:12px 0}
+.eact .save{border:0;border-radius:10px;padding:12px 20px;background:var(--orange);color:#fff;font-weight:700;cursor:pointer}
 .eact .cancel{border:1px solid var(--line);border-radius:10px;padding:12px 16px;background:var(--surface);cursor:pointer}
 .emsg{font-size:14px;color:var(--muted)}
-.card .go{font-size:28px;color:var(--muted);line-height:1}
+.card .go{font-size:30px;color:var(--orange);line-height:1;font-weight:700}
 .card .state{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
-.card.locked{background:var(--bg);border-style:dashed;color:var(--muted);opacity:.7}
-.card.locked .num{color:var(--muted)}
+.card.locked{background:rgba(255,255,255,.55);border-style:dashed;border-left:5px solid var(--line);color:var(--muted);box-shadow:none;opacity:.8}
+.card.locked .num,.card.locked .meta,.card.locked .vs{color:var(--muted)}
 .card.blocked{opacity:.45}
 .unlock{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
 .unlock label{font-size:14px;color:var(--muted)}
 .unlock .row{display:flex;gap:8px}
 .unlock input{flex:1;min-width:0;font:inherit;font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:.4em;text-align:center;padding:8px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg)}
-.unlock input:focus{outline:none;border-color:var(--t1)}
-.unlock button{border:0;border-radius:10px;padding:0 18px;background:var(--t1);color:#fff;font-weight:600;cursor:pointer}
+.unlock input:focus{outline:none;border-color:var(--orange)}
+.unlock button{border:0;border-radius:10px;padding:0 18px;background:var(--orange);color:#fff;font-weight:600;cursor:pointer}
 .unlock .err{color:#c0392b;font-size:14px;min-height:1em}
-.relock{align-self:flex-start;margin-top:14px;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:14px;padding:0}
+.relock{align-self:flex-start;margin-top:14px;background:none;border:0;color:var(--navy);text-decoration:underline;cursor:pointer;font-size:14px;padding:0}
 @media (prefers-reduced-motion:no-preference){.shake{animation:shake .3s}@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}}
 .tag{align-self:flex-start;font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
   padding:2px 8px;border-radius:99px;background:var(--extra-soft);color:var(--extra);margin-top:4px}
-.sect{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px}
+.sect{font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);margin:22px 0 10px}
 
 /* ---------- wedstrijdscherm ---------- */
-#match{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;
+#match{position:fixed;inset:0;background:var(--bg) var(--tri);display:flex;flex-direction:column;align-items:center;
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 #match>*{width:min(100%,600px);box-sizing:border-box}
 .top{display:flex;align-items:center;gap:10px;padding:10px 16px 6px}
-.back{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600;white-space:nowrap;flex-shrink:0;align-self:flex-start}
+.back{background:var(--navy);color:#fff;border:1px solid var(--navy);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600;white-space:nowrap;flex-shrink:0;align-self:flex-start}
 .top .tt{display:flex;flex-direction:column;gap:2px;min-width:0}
-.top .tmeta{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
-.top h2{font-family:var(--display);font-weight:800;font-size:21px;margin:0;line-height:1.05;overflow-wrap:anywhere}
+.top .tmeta{font-size:13px;color:var(--orange);font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.top h2{color:var(--navy);font-family:var(--display);font-weight:800;font-size:21px;margin:0;line-height:1.05;overflow-wrap:anywhere}
 .top .tag{margin:0 0 0 auto}
 .blocks{padding:0 16px;font-size:14px;color:var(--muted);display:flex;gap:6px;align-items:center}
 .blocks b{color:var(--fg);font-variant-numeric:tabular-nums}
@@ -95,7 +106,7 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
 .stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:10px 16px}
 .courtwrap{flex:1;min-height:0;display:flex;justify-content:center;align-items:center}
 /* veld 2:3 zoals de schets; groeit tot de beschikbare hoogte of breedte */
-.court{position:relative;aspect-ratio:200/324;height:100%;max-width:100%;max-height:100%}
+.court{filter:drop-shadow(0 6px 14px rgba(11,42,91,.25));position:relative;aspect-ratio:200/324;height:100%;max-width:100%;max-height:100%}
 .court svg{position:absolute;inset:0;width:100%;height:100%}
 .p{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px}
 .dot{width:46px;height:46px;border-radius:50%;background:var(--active);border:3px solid #fff;display:grid;place-items:center;
@@ -106,8 +117,8 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
 .name.k{border-color:var(--keeper)}
 
 .side{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
-.box h3{margin:0 0 4px;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 2px 6px rgba(11,42,91,.06);padding:10px 12px;min-width:0}
+.box h3{margin:0 0 4px;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy)}
 .box p{margin:0;font-size:15px;line-height:1.35}
 
 .switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 16px 12px}
@@ -125,9 +136,11 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
 <body>
 
 <section id="list" aria-label="Wedstrijden">
-  <div class="eyebrow">Zaalhockey · 29 november 2026</div>
-  <h1>Level Up toernooi MO12-1</h1>
-  <p class="sub">Tik op een wedstrijd voor de opstelling.</p>
+  <header class="hero">
+    <div class="eyebrow">Zaalhockey · 29 november 2026</div>
+    <h1>Level Up <span class="accent">Toernooi MO12-1</span></h1>
+    <p class="sub">Tik op een wedstrijd voor de opstelling.</p>
+  </header>
   <div class="poule" id="poule"><h2 id="pouleNaam">Poule</h2><ol id="pouleLijst"></ol></div>
   <div class="grid" id="main"></div>
   <div class="sect">Alleen bij extra wedstrijden</div>
