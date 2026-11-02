@@ -101,6 +101,20 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
 .top .tag{margin:0 0 0 auto}
 .blocks{padding:0 16px;font-size:14px;color:var(--muted);display:flex;gap:6px;align-items:center}
 .blocks b{color:var(--fg);font-variant-numeric:tabular-nums}
+.note{margin:6px 16px 0;padding:8px 12px;border-radius:10px;background:var(--extra-soft);color:var(--extra);font-size:14px;font-weight:600}
+.afw{background:var(--extra-soft);border:1px solid #f6c3a5;border-radius:14px;padding:12px 16px;margin-bottom:16px;color:var(--extra);font-size:14px;line-height:1.45}
+.afw b{color:#8a3d06}
+.name.inv{border-style:dashed}
+.plist{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center}
+.plist span{font-size:16px}
+.plist select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg)}
+.plist select.uit{border-color:var(--orange);background:var(--extra-soft)}
+.mins{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.mins th,.mins td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:right}
+.mins th:first-child,.mins td:first-child{text-align:left}
+.mins th{font-family:var(--display);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.mins tr.weg td{color:var(--muted);text-decoration:line-through}
+.ehint{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
 .chip{width:10px;height:10px;border-radius:3px;background:var(--active)}
 
 .stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:10px 16px}
@@ -141,6 +155,7 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
     <h1>Level Up <span class="accent">Toernooi MO12-1</span></h1>
     <p class="sub">Tik op een wedstrijd voor de opstelling.</p>
   </header>
+  <div class="afw" id="afwBox" hidden></div>
   <div class="poule" id="poule"><h2 id="pouleNaam">Poule</h2><ol id="pouleLijst"></ol></div>
   <div class="grid" id="main"></div>
   <div class="sect">Alleen bij extra wedstrijden</div>
@@ -169,6 +184,7 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
     <span class="tag" id="mExtra" hidden></span>
   </div>
   <div class="blocks" id="mBlocks"></div>
+  <div class="note" id="mNote" hidden></div>
   <div class="stage">
     <div class="courtwrap">
       <div class="court" id="court">
@@ -230,6 +246,57 @@ M.forEach((m,i)=>INFO[m.id]={naam:`Tegenstander ${i+1} MO12-1`,tijd:"",veld:""})
 let sb=null; try{sb=window.supabase.createClient(SB_URL,SB_KEY)}catch(e){}
 const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const metaVan=(i,inf)=>[`Wedstrijd ${i+1}`,inf.tijd,inf.veld].filter(Boolean).join(" · ");
+// ---------- afwezigheid en herverdeling ----------
+// AFW: [{n:"Bo",vanaf:3}] — speelster doet niet meer mee vanaf die wedstrijd (eerdere wedstrijden blijven zoals gespeeld)
+let AFW=[];
+const VERD=["Veerle","Ella","Elise","June","Jinte"];
+const SPEELSTERS=[...new Set(M.flatMap(m=>[...m.t1,...m.t2,...m.tr]))];
+const groep=n=>VERD.includes(n)?"V":"M";
+const afwezigIn=(n,k)=>AFW.some(a=>a.n===n&&k+1>=a.vanaf);
+// oorspronkelijk aantal wedstrijden (1–4) per speelster, als tiebreaker
+const ORIG=Object.fromEntries(SPEELSTERS.map(n=>[n,M.slice(0,4).reduce((c,m)=>c+[...m.t1,...m.t2].filter(x=>x===n).length,0)]));
+function maakPlan(){
+  const P=M.map(m=>({...m,t1:[...m.t1],t2:[...m.t2],tr:[...m.tr],inv:[],weg:[]}));
+  if(!AFW.length) return P;
+  const blokken=Object.fromEntries(SPEELSTERS.map(n=>[n,0]));   // gespeelde teambeurten tot nu toe
+  P.forEach((m,k)=>{
+    m.weg=SPEELSTERS.filter(n=>afwezigIn(n,k));
+    let trib=m.tr.filter(n=>!afwezigIn(n,k));
+    ["t1","t2"].forEach(t=>{
+      m[t].forEach((n,pos)=>{
+        if(!afwezigIn(n,k)) return;
+        const kies=lijst=>lijst.slice().sort((a,b)=>
+          (groep(a)===groep(n)?0:1)-(groep(b)===groep(n)?0:1) || blokken[a]-blokken[b] || ORIG[a]-ORIG[b] || SPEELSTERS.indexOf(a)-SPEELSTERS.indexOf(b))[0];
+        let r=kies(trib);
+        if(r){ trib=trib.filter(x=>x!==r); }
+        else { // geen tribune meer: iemand van het andere team speelt dubbel
+          const ander=m[t==="t1"?"t2":"t1"].filter(x=>!afwezigIn(x,k)&&!m[t].includes(x));
+          r=kies(ander);
+        }
+        m[t][pos]=r||"—"; if(r) m.inv.push(r);
+      });
+    });
+    m.tr=trib;
+    [...m.t1,...m.t2].forEach(n=>{ if(n in blokken) blokken[n]++; });
+  });
+  return P;
+}
+let PLAN=maakPlan();
+function minutenTabel(){
+  const P=PLAN, rows=SPEELSTERS.map(n=>{
+    const c=k=>P.slice(0,k).reduce((s,m)=>s+[...m.t1,...m.t2].filter(x=>x===n).length*12,0);
+    return {n,w4:c(4),w5:c(5),w6:c(6),weg:AFW.some(a=>a.n===n)};
+  });
+  return `<table class="mins"><thead><tr><th>Speelster</th><th>t/m W4</th><th>t/m W5</th><th>t/m W6</th></tr></thead><tbody>${
+    rows.map(r=>`<tr${r.weg?' class="weg"':''}><td>${esc(r.n)}</td><td>${r.w4}'</td><td>${r.w5}'</td><td>${r.w6}'</td></tr>`).join("")}</tbody></table>`;
+}
+function renderAfw(){
+  const box=$("afwBox");
+  if(!AFW.length){ box.hidden=true; return; }
+  box.hidden=false;
+  box.innerHTML="<b>Opstelling aangepast.</b> "+AFW.map(a=>`${esc(a.n)} doet niet mee${a.vanaf>1?` vanaf wedstrijd ${a.vanaf}`:""}`).join(", ")+".";
+}
+
 function renderPoule(){
   $("pouleNaam").textContent=INFO.poule.naam||"Poule";
   const teams=[WIJ,...M.filter(m=>!LOCK_IDS.includes(m.id)).map(m=>INFO[m.id].naam)];
@@ -240,6 +307,8 @@ async function laadInfo(){
   try{
     const r=await sb.from("levelup_wedstrijden").select("id,naam,tijd,veld");
     if(r.error||!r.data) return;
+    r.data.forEach(row=>{ if(row.id==="afwezig"){ try{ AFW=(JSON.parse(row.naam)||[]).filter(a=>SPEELSTERS.includes(a.n)); }catch(e){ AFW=[]; } } });
+    PLAN=maakPlan(); renderAfw();
     r.data.forEach(row=>{ if(INFO[row.id]) INFO[row.id]={naam:row.naam||INFO[row.id].naam,tijd:row.tijd||"",veld:row.veld||""}; });
     renderPoule(); renderList(); if(cur) render();
   }catch(e){}
@@ -288,21 +357,24 @@ $("relock").onclick=()=>{unlocked=0;asking=null;saveUnlocked();renderList()};
 renderPoule(); renderList(); laadInfo();
 
 function render(){
-  const m=M.find(x=>x.id===cur); if(!m) return;
+  const m=PLAN.find(x=>x.id===cur); if(!m) return;
   const on=team===1?m.t1:m.t2, off=team===1?m.t2:m.t1;
   document.documentElement.style.setProperty("--active",team===1?"var(--t1)":"var(--t2)");
   const inf=INFO[m.id];
-  $("mMeta").textContent=metaVan(M.indexOf(m),inf);
+  $("mMeta").textContent=metaVan(PLAN.indexOf(m),inf);
   $("mTitle").textContent=`${WIJ} – ${inf.naam}`;
   $("mExtra").hidden=true;
   $("mBlocks").innerHTML=`<span class="chip"></span> Team ${team} speelt <b>${team===1?"0'–6' en 12'–18'":"6'–12' en 18'–25'"}</b>`;
   let h=`<div class="p" style="left:50%;top:86%"><div class="name k">Charlotte</div></div>`;
   on.forEach((n,i)=>{const p=POS[i];
-    h+=`<div class="p" style="left:${p.x}%;top:${p.y}%"><div class="name">${n}</div></div>`});
+    h+=`<div class="p" style="left:${p.x}%;top:${p.y}%"><div class="name${m.inv.includes(n)?" inv":""}">${esc(n)}</div></div>`});
+  const note=$("mNote");
+  if(m.weg.length){ note.hidden=false; note.textContent=`Niet aanwezig: ${m.weg.join(", ")}. Invallers staan met een stippelrand.`; }
+  else note.hidden=true;
   $("players").innerHTML=h;
   $("benchTitle").textContent=`Bank · Team ${team===1?2:1}`;
   $("bench").textContent=off.join(", ");
-  $("trib").textContent=m.tr.join(", ");
+  $("trib").textContent=m.tr.length?m.tr.join(", "):"Niemand";
   $("tb1").setAttribute("aria-pressed",team===1); $("tb2").setAttribute("aria-pressed",team===2);
 }
 async function keepAwake(){try{if("wakeLock" in navigator&&!lock){lock=await navigator.wakeLock.request("screen");lock.addEventListener("release",()=>lock=null)}}catch(e){}}
@@ -336,15 +408,28 @@ const h=(location.hash||"").slice(1); if(M.some(m=>m.id===h)&&isOpen(h)) open_(h
 })();
 const field=(id,key,label,ph)=>`<label>${label}<input id="e_${id}_${key}" value="${esc(INFO[id][key])}" placeholder="${esc(ph)}"></label>`;
 function openEdit(){
-  let h=`<div class="eblock"><h3>Poule</h3>${field("poule","naam","Naam van de poule","Poule A")}</div>`;
+  const opts=n=>{const a=AFW.find(x=>x.n===n);const v=a?a.vanaf:0;
+    return `<select id="afw_${n}" class="${v?"uit":""}" aria-label="${esc(n)}"><option value="0"${v?"":" selected"}>Doet mee</option>${
+      M.map((m,i)=>`<option value="${i+1}"${v===i+1?" selected":""}>Weg vanaf wedstrijd ${i+1}</option>`).join("")}</select>`;};
+  let h=`<div class="eblock"><h3>Afwezig</h3>
+    <p class="ehint">Valt iemand uit? Kies vanaf welke wedstrijd. Eerdere wedstrijden blijven zoals gespeeld; in de wedstrijden daarna nemen tribunespeelsters haar plek over, zo eerlijk mogelijk verdeeld.</p>
+    <div class="plist">${SPEELSTERS.map(n=>`<span>${esc(n)}</span>${opts(n)}`).join("")}</div></div>
+    <div class="eblock"><h3>Speeltijd met deze indeling</h3><div id="minsBox">${minutenTabel()}</div></div>
+    <div class="eblock"><h3>Poule</h3>${field("poule","naam","Naam van de poule","Poule A")}</div>`;
   M.forEach((m,i)=>{
     h+=`<div class="eblock"><h3>Wedstrijd ${i+1}${LOCK_IDS.includes(m.id)?" (extra)":""}</h3>
       ${field(m.id,"naam","Tegenstander",`Tegenstander ${i+1} MO12-1`)}
       <div class="erow">${field(m.id,"tijd","Tijd","10:30")}${field(m.id,"veld","Veld","Veld 1")}</div></div>`;
   });
   $("efields").innerHTML=h; $("emsg").textContent="";
+  // live voorbeeld van de speeltijd bij wijzigen
+  SPEELSTERS.forEach(n=>$(`afw_${n}`).addEventListener("change",e=>{
+    e.target.classList.toggle("uit",e.target.value!=="0");
+    const bewaar=AFW; AFW=leesAfw(); PLAN=maakPlan(); $("minsBox").innerHTML=minutenTabel(); AFW=bewaar; PLAN=maakPlan();
+  }));
   $("list").hidden=true; $("edit").hidden=false; window.scrollTo(0,0);
 }
+function leesAfw(){ return SPEELSTERS.map(n=>({n,vanaf:parseInt($(`afw_${n}`).value,10)||0})).filter(a=>a.vanaf>0); }
 function closeEdit(){ $("edit").hidden=true; $("list").hidden=false; }
 $("editbtn").onclick=openEdit;
 $("ecancel").onclick=closeEdit;
@@ -356,10 +441,14 @@ $("eform").onsubmit=async e=>{
     tijd:id==="poule"?"":$(`e_${id}_tijd`).value.trim(),
     veld:id==="poule"?"":$(`e_${id}_veld`).value.trim(),
     bijgewerkt:new Date().toISOString()}));
+  const nieuwAfw=leesAfw();
+  if(SPEELSTERS.length-nieuwAfw.filter(a=>a.vanaf<=1).length<5){ $("emsg").textContent="Te weinig speelsters over voor een team."; return; }
+  rows.push({id:"afwezig",naam:JSON.stringify(nieuwAfw),tijd:"",veld:"",bijgewerkt:new Date().toISOString()});
   $("emsg").textContent="Opslaan…";
   const r=await sb.from("levelup_wedstrijden").upsert(rows,{onConflict:"id"});
   if(r.error){ $("emsg").textContent="Opslaan mislukt: "+r.error.message; return; }
-  rows.forEach(x=>INFO[x.id]={naam:x.naam,tijd:x.tijd,veld:x.veld});
+  rows.forEach(x=>{ if(INFO[x.id]) INFO[x.id]={naam:x.naam,tijd:x.tijd,veld:x.veld}; });
+  AFW=nieuwAfw; PLAN=maakPlan(); renderAfw();
   renderPoule(); renderList(); closeEdit();
 };
 </script>
