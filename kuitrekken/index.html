@@ -129,6 +129,35 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 .times{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .times input{width:100%;font:inherit;font-weight:700;padding:10px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg)}
 .settings p{margin:0;font-size:14px;color:var(--muted)}
+.statlink{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1.5px solid var(--line);background:var(--bg);border-radius:14px;padding:12px 14px;font-weight:700;font-size:14px;text-align:left}
+.statlink span:last-child{color:var(--wine);white-space:nowrap}
+.stats{display:flex;flex-direction:column;gap:16px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{border-radius:16px;background:var(--wine-soft);padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:2px}
+.tile b{font-family:var(--display);font-size:28px;color:var(--wine);font-variant-numeric:tabular-nums;line-height:1.1}
+.tile span{font-size:12px;font-weight:700;color:var(--muted)}
+.chartcard{border:1.5px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.chead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.seg{display:flex;background:var(--wine-soft);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;border-radius:999px;padding:5px 10px;font-weight:700;font-size:13px;color:var(--muted)}
+.seg button.on{background:var(--wine);color:var(--on-wine)}
+#chart svg,#chartMin svg{width:100%;height:auto;display:block}
+.ax{fill:var(--muted);font:700 9px var(--body)}
+.ax.today{fill:var(--wine)}
+.grid-l{stroke:var(--line);stroke-width:1}
+.goal{stroke:var(--wine);stroke-width:1.2;stroke-dasharray:4 3;opacity:.6}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.legend i.dash{height:0;width:14px;border-top:2px dashed var(--wine);border-radius:0;opacity:.6}
+.history{display:flex;flex-direction:column;gap:8px}
+.hday{font-weight:800;font-size:13px;color:var(--muted);margin-top:6px}
+.hrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--card);font-size:14px}
+.hrow time{font-family:var(--display);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;width:46px}
+.hrow .what{flex:1;min-width:0}
+.hrow .st{font-weight:800;font-size:12px;padding:3px 8px;border-radius:999px;background:var(--wine);color:var(--on-wine);white-space:nowrap}
+.hrow .st.part{background:var(--wine-soft);color:var(--wine)}
+.empty{color:var(--muted);font-size:14px;margin:0}
 @media (prefers-reduced-motion:reduce){.ring-fg{transition:none}}
 </style>
 
@@ -137,7 +166,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 <div class="app">
   <header class="top">
     <div class="brand"><h1>Rekmomenten</h1><span id="today">Vandaag</span></div>
-    <button class="iconbtn" id="btnSettings" aria-label="Tijden aanpassen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+    <div style="display:flex;gap:8px"><button class="iconbtn" id="btnStats" aria-label="Overzicht"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button><button class="iconbtn" id="btnSettings" aria-label="Tijden aanpassen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
   </header>
 
   <section id="settings" class="settings" hidden>
@@ -159,6 +188,8 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <span class="label">Vandaag</span>
       <div class="moments" id="moments"></div>
     </div>
+
+    <button class="statlink" id="btnStats2"><span id="weekLine">Deze week: 0 keer gerekt</span><span>Bekijk overzicht ›</span></button>
 
     <div class="choices">
       <span class="label">Wat ga je rekken?</span>
@@ -202,6 +233,30 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <button class="big" id="btnPause">Pauze</button>
     </div>
     <div class="upnext" id="upNext"></div>
+  </main>
+
+  <!-- STATS -->
+  <main id="viewStats" class="stats" hidden>
+    <div class="sesshead"><h2 style="font-size:24px;color:var(--wine)">Overzicht</h2><button class="ghost" id="btnStatsBack">Terug</button></div>
+    <div class="tiles">
+      <div class="tile"><b id="stToday">0/4</b><span>vandaag</span></div>
+      <div class="tile"><b id="stWeek">0</b><span>min deze week</span></div>
+      <div class="tile"><b id="stStreak">0</b><span id="stStreakLbl">dagen op rij</span></div>
+    </div>
+    <div class="chartcard">
+      <div class="chead"><span class="label">Rekmomenten per dag</span>
+        <div class="seg" role="tablist"><button id="rng14" class="on">14 dagen</button><button id="rng30">30 dagen</button></div></div>
+      <div id="chart"></div>
+      <div class="legend"><span><i style="background:var(--wine)"></i>helemaal afgerond</span><span><i style="background:var(--rose)"></i>eerder gestopt</span><span><i class="dash"></i>doel</span></div>
+    </div>
+    <div class="chartcard">
+      <span class="label">Minuten gerekt per dag</span>
+      <div id="chartMin"></div>
+    </div>
+    <div class="history">
+      <span class="label">Laatste keren</span>
+      <div id="histList"></div>
+    </div>
   </main>
 
   <!-- DONE -->
@@ -334,6 +389,7 @@ function chime(){if(!$('beeps').checked||!audio())return;[880,1109,1319].forEach
 const WORK=30,SWITCH=3;
 const M={boven:{name:'Bovenste kuitspieren',tip:'Knie gestrekt, hak op de grond, leun naar voren.'},
          onder:{name:'Onderste kuitspier',tip:'Knie gebogen, hak blijft op de grond.'}};
+let mode='all',blocksDone=0,startedAt=0,logged=false;
 let plan=[],idx=0,phase='work',remain=WORK,endAt=0,paused=false,tick=null,wake=null,lastSec=null;
 function build(mode){
   const ms=mode==='all'?['boven','onder']:['onder'],p=[];
@@ -341,11 +397,11 @@ function build(mode){
   for(let r=1;r<=3;r++)['L','R'].forEach(s=>ms.forEach(m=>p.push({m,s,r})));
   return p;
 }
-function show(v){['viewHome','viewSession','viewDone'].forEach(id=>$(id).hidden=id!==v);$('viewHome').style.display=v==='viewHome'?'flex':'none'}
+function show(v){['viewHome','viewSession','viewDone','viewStats'].forEach(id=>$(id).hidden=id!==v);$('viewHome').style.display=v==='viewHome'?'flex':'none'}
 async function keepAwake(){try{if('wakeLock' in navigator)wake=await navigator.wakeLock.request('screen')}catch(e){}}
-function start(mode){
+function start(m){
   audio(); if(ctx&&ctx.state==='suspended')ctx.resume();
-  plan=build(mode);idx=0;phase='work';paused=false;
+  mode=m;plan=build(m);idx=0;blocksDone=0;startedAt=Date.now();logged=false;phase='work';paused=false;
   $('progress').innerHTML=plan.map(()=>'<i></i>').join('');
   show('viewSession');keepAwake();
   if(musicOn&&!sched)startMusic();
@@ -378,6 +434,7 @@ function loop(){
     if(s!==lastSec){lastSec=s;if(phase==='work'&&s<=3&&s>0)beep(660);}
     if(remain<=0){
       if(phase==='work'){
+        blocksDone++;
         if(idx>=plan.length-1)return finish();
         beep(523,.3,.4);beginPhase('switch');
       }else{idx++;beginPhase('work')}
@@ -385,11 +442,11 @@ function loop(){
   },100);
 }
 function finish(){
-  clearInterval(tick);chime();const n=markDone();
+  clearInterval(tick);chime();logSession();const n=markDone();
   $('doneMsg').textContent=n>=times.length?'Alle '+times.length+' momenten van vandaag gedaan. Super!':`Moment ${n} van ${times.length} van vandaag gedaan. Goed bezig!`;
   show('viewDone');try{wake&&wake.release()}catch(e){}
 }
-function stop(){clearInterval(tick);try{wake&&wake.release()}catch(e){}show('viewHome');renderHome()}
+function stop(){clearInterval(tick);if(blocksDone>0)logSession();try{wake&&wake.release()}catch(e){}show('viewHome');renderHome()}
 $('btnPause').onclick=()=>{
   if(!paused){paused=true;remain=(endAt-performance.now())/1000;$('btnPause').textContent='Verder';$('btnPause').classList.add('alt')}
   else{paused=false;endAt=performance.now()+remain*1000;$('btnPause').textContent='Pauze';$('btnPause').classList.remove('alt')}
@@ -398,6 +455,67 @@ $('btnStop').onclick=stop;
 $('btnHome').onclick=()=>{show('viewHome');renderHome()};
 document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>start(b.dataset.mode));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('viewSession').hidden)keepAwake()});
+
+/* ---------- log & overzicht ---------- */
+function getLog(){return store.get('rv_log',[])}
+function logSession(){
+  if(logged)return; logged=true;
+  const l=getLog();
+  l.push({t:startedAt,mode,blocks:blocksDone,total:plan.length,sec:blocksDone*WORK});
+  store.set('rv_log',l.slice(-1500));
+}
+const dayKey=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+function byDay(){const m={};getLog().forEach(e=>{const k=dayKey(e.t);(m[k]=m[k]||[]).push(e)});return m}
+let range=14;
+function barChart(el,days,valFn,maxMin,goal,colFn,fmt){
+  const W=340,H=150,L=22,B=24,T=10,cw=(W-L-4)/days.length,bw=Math.max(4,cw*.62);
+  const max=Math.max(maxMin,...days.map(d=>valFn(d).total));
+  const y=v=>T+(H-T-B)*(1-v/max);
+  const step=max<=6?1:max<=20?5:max<=60?10:20;
+  let g='';
+  for(let v=0;v<=max;v+=step)g+=`<line class="grid-l" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-5}" y="${y(v)+3}" text-anchor="end">${v}</text>`;
+  if(goal)g+=`<line class="goal" x1="${L}" x2="${W}" y1="${y(goal)}" y2="${y(goal)}"/>`;
+  days.forEach((d,i)=>{
+    const x=L+i*cw+(cw-bw)/2,v=valFn(d);let base=y(0);
+    v.parts.forEach(([val,col])=>{if(!val)return;const h=base-y(val);g+=`<rect x="${x}" y="${base-h}" width="${bw}" height="${Math.max(h-1,1)}" rx="2" fill="${col}"><title>${d.label}: ${fmt(v.total)}</title></rect>`;base-=h});
+    const show=days.length<=14||i%3===0||d.today;
+    if(show)g+=`<text class="ax ${d.today?'today':''}" x="${x+bw/2}" y="${H-12}" text-anchor="middle">${d.wd}</text><text class="ax ${d.today?'today':''}" x="${x+bw/2}" y="${H-2}" text-anchor="middle">${d.dom}</text>`;
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafiek">${g}</svg>`;
+}
+function renderStats(){
+  const bd=byDay(),wine=getComputedStyle(document.documentElement).getPropertyValue('--wine').trim(),rose=getComputedStyle(document.documentElement).getPropertyValue('--rose').trim();
+  const days=[];const now=new Date();
+  for(let i=range-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);const k=dayKey(d);const e=bd[k]||[];
+    days.push({e,today:i===0,dom:d.getDate(),wd:'zmdwdvz'[d.getDay()],label:d.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'})})}
+  barChart($('chart'),days,d=>{const f=d.e.filter(x=>x.blocks>=x.total).length,p=d.e.length-f;return{total:d.e.length,parts:[[f,wine],[p,rose]]}},times.length,times.length,null,v=>v+' keer');
+  barChart($('chartMin'),days,d=>{const m=Math.round(d.e.reduce((a,x)=>a+x.sec,0)/6)/10;return{total:m,parts:[[m,wine]]}},5,0,null,v=>v+' min');
+  // tiles
+  const today=bd[dayKey(Date.now())]||[];
+  $('stToday').textContent=today.length+'/'+times.length;
+  const wkStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()-((now.getDay()+6)%7)).getTime();
+  const wk=getLog().filter(e=>e.t>=wkStart);
+  $('stWeek').textContent=Math.round(wk.reduce((a,x)=>a+x.sec,0)/60);
+  let st=0;for(let i=0;i<400;i++){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);const n=(bd[dayKey(d)]||[]).length;if(n>0)st++;else if(i>0)break;}
+  $('stStreak').textContent=st;$('stStreakLbl').textContent=st===1?'dag op rij':'dagen op rij';
+  // history
+  const l=getLog().slice().reverse().slice(0,15);
+  if(!l.length){$('histList').innerHTML='<p class="empty">Nog niets gerekt. Na de eerste keer zie je hier wanneer en hoe lang.</p>';return}
+  let last='',h='';
+  l.forEach(e=>{const d=new Date(e.t),k=d.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+    if(k!==last){h+=`<div class="hday">${dayKey(e.t)===dayKey(Date.now())?'Vandaag':k}</div>`;last=k}
+    const full=e.blocks>=e.total,min=Math.floor(e.sec/60),sec=e.sec%60;
+    h+=`<div class="hrow"><time>${d.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}</time><span class="what">${e.mode==='all'?'Alle kuitspieren':'Alleen onderste'} · ${min}:${String(sec).padStart(2,'0')} min</span><span class="st ${full?'':'part'}">${full?'✓ afgerond':e.blocks+'/'+e.total}</span></div>`});
+  $('histList').innerHTML=h;
+}
+function weekLine(){const now=new Date();const wkStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()-((now.getDay()+6)%7)).getTime();
+  const wk=getLog().filter(e=>e.t>=wkStart);$('weekLine').textContent=`Deze week: ${wk.length} keer, ${Math.round(wk.reduce((a,x)=>a+x.sec,0)/60)} min`}
+const openStats=()=>{renderStats();show('viewStats');window.scrollTo(0,0)};
+$('btnStats').onclick=openStats;$('btnStats2').onclick=openStats;
+$('btnStatsBack').onclick=()=>{show('viewHome');renderHome()};
+$('rng14').onclick=()=>{range=14;$('rng14').classList.add('on');$('rng30').classList.remove('on');renderStats()};
+$('rng30').onclick=()=>{range=30;$('rng30').classList.add('on');$('rng14').classList.remove('on');renderStats()};
+const _rh=renderHome;renderHome=function(){_rh();weekLine()};
 
 renderMusic();renderHome();show('viewHome');
 setInterval(()=>{if(!$('viewHome').hidden)renderHome()},60000);
