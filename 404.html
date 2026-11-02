@@ -8,7 +8,7 @@
 // Adressen zijn op GitHub Pages hoofdlettergevoelig. Dit vangt /MO12-1, /Level-Up, /Dagboek enz. op
 // en stuurt door naar de juiste map. Ook /level-up zonder slash werkt.
 (function () {
-  var mappen = ['level-up', 'mo11-1', 'mo12-1', 'dagboek', 'gewicht-joyce', 'groei', 'hartslag', 'spelletjes'];
+  var mappen = ['level-up', 'level-up-test', 'mo11-1', 'mo12-1', 'dagboek', 'gewicht-joyce', 'groei', 'hartslag', 'spelletjes'];
   var pad = location.pathname.toLowerCase();
   var delen = pad.split('/').filter(Boolean);
   if (delen.length && mappen.indexOf(delen[0]) >= 0) {
