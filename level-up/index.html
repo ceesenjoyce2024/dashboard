@@ -294,7 +294,7 @@ function renderAfw(){
   const box=$("afwBox");
   if(!AFW.length){ box.hidden=true; return; }
   box.hidden=false;
-  box.innerHTML="<b>Opstelling aangepast.</b> "+AFW.map(a=>`${esc(a.n)} doet niet mee${a.vanaf>1?` vanaf wedstrijd ${a.vanaf}`:""}`).join(", ")+".";
+  box.innerHTML="<b>Opstelling aangepast.</b> "+AFW.map(a=>`${esc(a.n)} ${a.vanaf>1?`doet niet mee vanaf wedstrijd ${a.vanaf}`:"is het hele toernooi afwezig"}`).join(", ")+".";
 }
 
 function renderPoule(){
@@ -410,9 +410,9 @@ const field=(id,key,label,ph)=>`<label>${label}<input id="e_${id}_${key}" value=
 function openEdit(){
   const opts=n=>{const a=AFW.find(x=>x.n===n);const v=a?a.vanaf:0;
     return `<select id="afw_${n}" class="${v?"uit":""}" aria-label="${esc(n)}"><option value="0"${v?"":" selected"}>Doet mee</option>${
-      M.map((m,i)=>`<option value="${i+1}"${v===i+1?" selected":""}>Weg vanaf wedstrijd ${i+1}</option>`).join("")}</select>`;};
+      M.map((m,i)=>`<option value="${i+1}"${v===i+1?" selected":""}>${i===0?"Hele toernooi afwezig":"Weg vanaf wedstrijd "+(i+1)}</option>`).join("")}</select>`;};
   let h=`<div class="eblock"><h3>Afwezig</h3>
-    <p class="ehint">Valt iemand uit? Kies vanaf welke wedstrijd. Eerdere wedstrijden blijven zoals gespeeld; in de wedstrijden daarna nemen tribunespeelsters haar plek over, zo eerlijk mogelijk verdeeld.</p>
+    <p class="ehint">Doet iemand niet mee? Kies <b>Hele toernooi afwezig</b>, of bij uitval tijdens het toernooi vanaf welke wedstrijd. Eerdere wedstrijden blijven zoals gespeeld; in de wedstrijden daarna nemen tribunespeelsters haar plek over, zo eerlijk mogelijk verdeeld.</p>
     <div class="plist">${SPEELSTERS.map(n=>`<span>${esc(n)}</span>${opts(n)}`).join("")}</div></div>
     <div class="eblock"><h3>Speeltijd met deze indeling</h3><div id="minsBox">${minutenTabel()}</div></div>
     <div class="eblock"><h3>Poule</h3>${field("poule","naam","Naam van de poule","Poule A")}</div>`;
