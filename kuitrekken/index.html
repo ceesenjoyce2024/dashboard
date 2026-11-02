@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Rekken">
+<meta name="theme-color" content="#7B1E34">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Riva's Rekmomenten</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: one-column phone app — moments of the day, choose a routine, full-focus timer ring */
+:root{
+  --wine:#7B1E34; --wine-deep:#5A1426; --wine-soft:#F6E7EA; --rose:#E9B9C3;
+  --bg:#FFFFFF; --fg:#2A1015; --muted:#7D5E65; --line:#EEDCE0; --card:#FBF4F5;
+  --ok:#2E7D5B; --on-wine:#FFFFFF;
+  --display:"Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --wine:#C2415F; --wine-deep:#8E2340; --wine-soft:#3A1520; --rose:#7A3445;
+  --bg:#1C0B10; --fg:#FBEFF1; --muted:#C9A7AF; --line:#3D1D25; --card:#26111A;
+  --ok:#6BCB9C; --on-wine:#FFFFFF; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --wine:#C2415F; --wine-deep:#8E2340; --wine-soft:#3A1520; --rose:#7A3445;
+  --bg:#1C0B10; --fg:#FBEFF1; --muted:#C9A7AF; --line:#3D1D25; --card:#26111A;
+  --ok:#6BCB9C; --on-wine:#FFFFFF; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:460px;margin:0 auto;padding-block:18px 32px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--wine);outline-offset:2px}
+.label{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;flex-direction:column;gap:2px}
+.brand h1{font-size:28px;color:var(--wine)}
+.brand span{color:var(--muted);font-size:14px}
+.iconbtn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);display:grid;place-items:center;flex:none}
+.iconbtn svg{width:22px;height:22px;stroke:var(--wine);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* moments */
+.moments{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.moment{border-radius:14px;border:1.5px solid var(--line);padding:10px 4px;text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center}
+.moment b{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums}
+.moment small{font-size:12px;color:var(--muted);font-weight:700}
+.moment.next{border-color:var(--wine);background:var(--wine-soft)}
+.moment.next small{color:var(--wine)}
+.moment.done{background:var(--wine);border-color:var(--wine);color:var(--on-wine)}
+.moment.done small{color:var(--on-wine)}
+.hello{background:var(--wine);color:var(--on-wine);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.hello h2{font-size:24px}
+.hello p{margin:0;opacity:.92}
+.streak{display:flex;gap:6px;align-items:center;font-weight:800;font-size:14px}
+.dots{display:flex;gap:5px}
+.dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3)}
+.dots i.on{background:#fff}
+
+/* choice */
+.choices{display:flex;flex-direction:column;gap:10px}
+.choice{display:flex;gap:14px;align-items:center;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:18px;padding:16px}
+.choice:hover{border-color:var(--wine)}
+.choice .ico{width:52px;height:52px;border-radius:14px;background:var(--wine-soft);display:grid;place-items:center;flex:none}
+.choice .ico svg{width:30px;height:30px;stroke:var(--wine);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.choice h3{font-size:19px}
+.choice p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.choice .go{margin-left:auto;font-family:var(--display);font-weight:600;color:var(--wine);font-size:22px}
+.how{border-top:1.5px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:10px;font-size:15px}
+.how p{margin:0}
+.how b{color:var(--wine)}
+
+/* session */
+.session{display:flex;flex-direction:column;gap:18px;align-items:stretch}
+.sesshead{display:flex;justify-content:space-between;align-items:center}
+.ghost{background:none;border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px}
+.now{text-align:center;display:flex;flex-direction:column;gap:6px}
+.now h2{font-size:26px}
+.side{display:inline-flex;align-self:center;gap:6px;background:var(--wine-soft);border-radius:999px;padding:4px}
+.side span{padding:6px 16px;border-radius:999px;font-weight:800;font-size:15px;color:var(--muted)}
+.side span.on{background:var(--wine);color:var(--on-wine)}
+.ringwrap{position:relative;width:min(280px,72vw);aspect-ratio:1;max-width:100%;margin:0 auto}
+.ringwrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{stroke:var(--wine-soft);fill:none}
+.ring-fg{stroke:var(--wine);fill:none;stroke-linecap:round;transition:stroke .3s}
+.ring-fg.pause{stroke:var(--rose)}
+.count{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.count b{font-family:var(--display);font-size:88px;line-height:1;font-variant-numeric:tabular-nums;color:var(--wine)}
+.count span{font-weight:800;color:var(--muted);font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.tip{text-align:center;color:var(--muted);margin:0;font-size:15px;min-height:44px}
+.progress{display:flex;gap:4px}
+.progress i{flex:1;height:8px;border-radius:4px;background:var(--wine-soft)}
+.progress i.done{background:var(--wine)}
+.progress i.cur{background:var(--rose)}
+.ctrls{display:flex;gap:10px;justify-content:center}
+.big{background:var(--wine);color:var(--on-wine);border:0;border-radius:999px;padding:14px 28px;font-family:var(--display);font-weight:600;font-size:20px;min-width:150px}
+.big.alt{background:var(--wine-soft);color:var(--wine)}
+.upnext{text-align:center;font-size:14px;color:var(--muted)}
+.upnext b{color:var(--fg)}
+
+/* done */
+.done-card{text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;padding-top:20px}
+.done-card .badge{width:120px;height:120px;border-radius:50%;background:var(--wine);display:grid;place-items:center}
+.done-card .badge svg{width:64px;height:64px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.done-card h2{font-size:30px;color:var(--wine)}
+.done-card p{margin:0;color:var(--muted);max-width:30ch}
+
+/* music bar */
+.music{border:1.5px solid var(--line);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:var(--card)}
+.mrow{display:flex;align-items:center;gap:10px}
+.mrow .iconbtn{width:40px;height:40px}
+.tracks{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.track{border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;font-weight:700;font-size:14px}
+.track.on{background:var(--wine);border-color:var(--wine);color:var(--on-wine)}
+input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
+.vol{font-size:13px;color:var(--muted);font-weight:700;width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.toggle{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--muted)}
+.toggle input{accent-color:var(--wine);width:18px;height:18px}
+
+/* settings */
+.settings{border:1.5px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.times{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.times input{width:100%;font:inherit;font-weight:700;padding:10px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg)}
+.settings p{margin:0;font-size:14px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.ring-fg{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>Rekmomenten</h1><span id="today">Vandaag</span></div>
+    <button class="iconbtn" id="btnSettings" aria-label="Tijden aanpassen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+  </header>
+
+  <section id="settings" class="settings" hidden>
+    <span class="label">Herinnertijden</span>
+    <div class="times" id="timeInputs"></div>
+    <p>Deze app kan zelf geen meldingen sturen als hij dicht is. Zet deze tijden als herhalende wekker op je telefoon.</p>
+    <button class="big alt" id="btnSaveTimes">Opslaan</button>
+  </section>
+
+  <!-- HOME -->
+  <main id="viewHome" style="display:flex;flex-direction:column;gap:20px">
+    <section class="hello">
+      <h2 id="helloTitle">Hoi Riva! Tijd om te rekken</h2>
+      <p id="helloSub">Volgende moment om 16:00.</p>
+      <div class="streak"><div class="dots" id="dayDots"></div><span id="dayCount">0 van 4 vandaag</span></div>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="label">Vandaag</span>
+      <div class="moments" id="moments"></div>
+    </div>
+
+    <div class="choices">
+      <span class="label">Wat ga je rekken?</span>
+      <button class="choice" data-mode="all">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M9 3c0 5 1 8 1 11s-2 4-2 7h8c0-2-1-3-1-5"/><path d="M14 4c0 3 1 5 1 8"/></svg></span>
+        <span><h3>Alle kuitspieren</h3><p>Links boven + onder, dan rechts · 3 rondes · ± 7 min</p></span>
+        <span class="go">›</span>
+      </button>
+      <button class="choice" data-mode="low">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M10 13c0 3-2 4-2 8h8c0-2-1-3-1-6"/><path d="M8 21h10"/></svg></span>
+        <span><h3>Alleen onderste kuitspier</h3><p>Links, dan rechts · 3 rondes · ± 3,5 min</p></span>
+        <span class="go">›</span>
+      </button>
+    </div>
+
+    <section class="how">
+      <span class="label">Zo doe je het</span>
+      <p><b>Bovenste kuitspieren</b> — handen tegen de muur, één been naar achteren. Knie gestrekt, hak op de grond, leun rustig naar voren.</p>
+      <p><b>Onderste kuitspier</b> — zelfde houding, maar buig de knie van je achterste been. Hak blijft op de grond.</p>
+      <p>Rustig rekken, niet veren. Het mag trekken, niet pijn doen.</p>
+    </section>
+  </main>
+
+  <!-- SESSION -->
+  <main id="viewSession" class="session" hidden>
+    <div class="sesshead">
+      <span class="label" id="roundLbl">Ronde 1 van 3</span>
+      <button class="ghost" id="btnStop">Stoppen</button>
+    </div>
+    <div class="progress" id="progress"></div>
+    <div class="now">
+      <h2 id="muscleLbl">Bovenste kuitspieren</h2>
+      <div class="side"><span id="sideL">Links</span><span id="sideR">Rechts</span></div>
+    </div>
+    <div class="ringwrap">
+      <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="52" stroke-width="10"/><circle class="ring-fg" id="ring" cx="60" cy="60" r="52" stroke-width="10" stroke-dasharray="326.73" stroke-dashoffset="0"/></svg>
+      <div class="count"><b id="countNum">30</b><span id="countLbl">seconden</span></div>
+    </div>
+    <p class="tip" id="tipLbl">Knie gestrekt, hak op de grond.</p>
+    <div class="ctrls">
+      <button class="big" id="btnPause">Pauze</button>
+    </div>
+    <div class="upnext" id="upNext"></div>
+  </main>
+
+  <!-- DONE -->
+  <main id="viewDone" class="done-card" hidden>
+    <div class="badge"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+    <h2>Klaar, Riva!</h2>
+    <p id="doneMsg">Goed gedaan. Je hak is je dankbaar.</p>
+    <button class="big" id="btnHome">Terug</button>
+  </main>
+
+  <!-- MUSIC -->
+  <section class="music" aria-label="Muziek">
+    <div class="mrow">
+      <button class="iconbtn" id="btnMusic" aria-label="Muziek aan of uit"><svg viewBox="0 0 24 24" id="musicIco"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></button>
+      <div class="tracks" id="tracks"></div>
+    </div>
+    <div class="mrow">
+      <span class="label" style="width:56px">Volume</span>
+      <input type="range" id="vol" min="0" max="100" value="60" aria-label="Volume">
+      <span class="vol" id="volLbl">60</span>
+    </div>
+    <label class="toggle"><input type="checkbox" id="beeps" checked> Piepjes bij aftellen en wisselen</label>
+  </section>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- schedule ---------- */
+let times=store.get('rv_times',['07:30','16:00','18:00','20:00']);
+const dkey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+const toMin=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
+const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
+function doneToday(){return store.get('rv_done_'+dkey(),[])}
+function markDone(){
+  const done=doneToday(), n=nowMin();
+  // best slot: closest not-yet-done moment to now
+  let best=-1,bd=1e9;
+  times.forEach((t,i)=>{if(done.includes(i))return;const d=Math.abs(toMin(t)-n);if(d<bd){bd=d;best=i}});
+  if(best>=0){done.push(best);store.set('rv_done_'+dkey(),done)}
+  return done.length;
+}
+function renderHome(){
+  const done=doneToday(), n=nowMin();
+  const d=new Date();
+  $('today').textContent=d.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+  let next=times.findIndex((t,i)=>!done.includes(i)&&toMin(t)+90>=n);
+  $('moments').innerHTML=times.map((t,i)=>{
+    const st=done.includes(i)?'done':(i===next?'next':'');
+    const lbl=done.includes(i)?'✓ gedaan':(i===next?(toMin(t)<=n?'nu':'volgende'):(toMin(t)+90<n?'gemist':'straks'));
+    return `<div class="moment ${st}"><b>${t}</b><small>${lbl}</small></div>`}).join('');
+  $('dayDots').innerHTML=times.map((t,i)=>`<i class="${done.includes(i)?'on':''}"></i>`).join('');
+  $('dayCount').textContent=`${done.length} van ${times.length} vandaag`;
+  if(done.length>=times.length){$('helloTitle').textContent='Alles gedaan vandaag!';$('helloSub').textContent='Top Riva. Morgen om '+times[0]+' weer.'}
+  else if(next>=0&&toMin(times[next])<=n){$('helloTitle').textContent='Hoi Riva! Tijd om te rekken';$('helloSub').textContent='Het moment van '+times[next]+' staat klaar.'}
+  else if(next>=0){$('helloTitle').textContent='Hoi Riva!';$('helloSub').textContent='Volgende rekmoment om '+times[next]+'.'}
+  else{$('helloTitle').textContent='Hoi Riva!';$('helloSub').textContent='Morgen om '+times[0]+' weer.'}
+}
+function renderSettings(){$('timeInputs').innerHTML=times.map((t,i)=>`<input type="time" id="t${i}" value="${t}" aria-label="Moment ${i+1}">`).join('')}
+$('btnSettings').onclick=()=>{const s=$('settings');s.hidden=!s.hidden;if(!s.hidden)renderSettings()};
+$('btnSaveTimes').onclick=()=>{times=times.map((t,i)=>$('t'+i).value||t).sort();store.set('rv_times',times);$('settings').hidden=true;renderHome()};
+
+/* ---------- audio ---------- */
+let ctx=null,master=null,musicGain=null,fxGain=null;
+function audio(){
+  if(ctx)return ctx;
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return null;
+  ctx=new AC(); master=ctx.createGain(); master.connect(ctx.destination);
+  musicGain=ctx.createGain(); musicGain.connect(master);
+  fxGain=ctx.createGain(); fxGain.gain.value=.9; fxGain.connect(ctx.destination);
+  setVol(); return ctx;
+}
+function tone(dest,f,t,dur,type,vol,att=.01){
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.type=type;o.frequency.value=f;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+att);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+.05);
+}
+const N=n=>440*Math.pow(2,(n-69)/12);
+const TRACKS=[
+ {name:'Zonnig',bpm:104,
+  chords:[[60,64,67],[57,60,64],[53,57,60],[55,59,62]],
+  mel:[72,74,76,79,76,74,72,null, 69,72,74,76,74,72,69,null, 69,72,72,74,72,69,67,null, 67,71,74,76,74,71,67,null],
+  play(step,t,b){const bar=Math.floor(step/8)%4,s=step%8,c=this.chords[bar];
+   if(s===0||s===4){c.forEach(n=>tone(musicGain,N(n),t,b*3.5,'triangle',.05,.04));tone(musicGain,N(c[0]-24),t,b*1.8,'sine',.16)}
+   const m=this.mel[step%32]; if(m)tone(musicGain,N(m),t,b*1.4,'sine',.11,.005);
+   if(s%2===1)tone(musicGain,N(c[2]+12),t,b*.4,'triangle',.025);}},
+ {name:'Rustig',bpm:72,
+  chords:[[57,60,64,67],[53,57,60,64],[48,55,60,64],[55,59,62,67]],
+  mel:[76,null,74,null,72,null,null,null, 72,null,69,null,72,null,null,null, 67,null,72,null,74,null,null,null, 74,null,71,null,67,null,null,null],
+  play(step,t,b){const bar=Math.floor(step/8)%4,s=step%8,c=this.chords[bar];
+   if(s===0){c.forEach(n=>tone(musicGain,N(n),t,b*8.5,'sine',.045,.6));tone(musicGain,N(c[0]-12),t,b*8,'sine',.1,.3)}
+   const m=this.mel[step%32]; if(m)tone(musicGain,N(m+12),t,b*3,'sine',.06,.01);}},
+ {name:'Dansje',bpm:118,
+  chords:[[62,66,69],[59,62,66],[55,59,62],[57,61,64]],
+  mel:[74,null,78,76,74,null,71,null, 71,74,null,71,69,null,66,null, 67,null,71,74,76,74,71,null, 69,null,73,76,73,null,69,null],
+  play(step,t,b){const bar=Math.floor(step/8)%4,s=step%8,c=this.chords[bar];
+   if(s%2===0)tone(musicGain,N(c[0]-24+(s===4?7:0)),t,b*.9,'triangle',.18,.005);
+   if(s%2===1)c.forEach(n=>tone(musicGain,N(n),t,b*.5,'square',.012,.005));
+   const m=this.mel[step%32]; if(m)tone(musicGain,N(m),t,b*.8,'triangle',.09,.005);
+   if(s%2===0){const nb=ctx.createBufferSource(),buf=ctx.createBuffer(1,ctx.sampleRate*.05,ctx.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);nb.buffer=buf;const g=ctx.createGain();g.gain.value=.03;nb.connect(g);g.connect(musicGain);nb.start(t)}}}
+];
+let trackIdx=store.get('rv_track',0), musicOn=store.get('rv_music',true), vol=store.get('rv_vol',60);
+let sched=null,nextT=0,step=0;
+function startMusic(){
+  if(!audio()||!musicOn)return; if(ctx.state==='suspended')ctx.resume();
+  stopMusic(); musicGain.gain.value=1; nextT=ctx.currentTime+.1; step=0;
+  sched=setInterval(()=>{const tr=TRACKS[trackIdx],b=60/tr.bpm/2;
+    while(nextT<ctx.currentTime+.25){tr.play(step,nextT,b);nextT+=b;step++}},40);
+}
+function stopMusic(){if(sched){clearInterval(sched);sched=null}if(musicGain){const g=musicGain;g.gain.setTargetAtTime(0,ctx.currentTime,.05);musicGain=ctx.createGain();musicGain.connect(master)}}
+function setVol(){if(master)master.gain.value=(vol/100)*.8}
+function renderMusic(){
+  $('tracks').innerHTML=TRACKS.map((t,i)=>`<button class="track ${i===trackIdx?'on':''}" data-i="${i}">${t.name}</button>`).join('');
+  $('musicIco').innerHTML=musicOn?'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>':'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M3 3l18 18"/>';
+  $('vol').value=vol;$('volLbl').textContent=vol;
+}
+$('tracks').onclick=e=>{const b=e.target.closest('.track');if(!b)return;trackIdx=+b.dataset.i;store.set('rv_track',trackIdx);musicOn=true;store.set('rv_music',true);renderMusic();startMusic()};
+$('btnMusic').onclick=()=>{musicOn=!musicOn;store.set('rv_music',musicOn);renderMusic();musicOn?startMusic():stopMusic()};
+$('vol').oninput=e=>{vol=+e.target.value;store.set('rv_vol',vol);$('volLbl').textContent=vol;setVol()};
+$('beeps').checked=store.get('rv_beeps',true);
+$('beeps').onchange=e=>store.set('rv_beeps',e.target.checked);
+function beep(f,len=.12,v=.35){if(!$('beeps').checked||!audio())return;tone(fxGain,f,ctx.currentTime,len,'sine',v,.005)}
+function chime(){if(!$('beeps').checked||!audio())return;[880,1109,1319].forEach((f,i)=>tone(fxGain,f,ctx.currentTime+i*.09,.35,'sine',.3,.005))}
+
+/* ---------- routine ---------- */
+const WORK=30,SWITCH=3;
+const M={boven:{name:'Bovenste kuitspieren',tip:'Knie gestrekt, hak op de grond, leun naar voren.'},
+         onder:{name:'Onderste kuitspier',tip:'Knie gebogen, hak blijft op de grond.'}};
+let plan=[],idx=0,phase='work',remain=WORK,endAt=0,paused=false,tick=null,wake=null,lastSec=null;
+function build(mode){
+  const ms=mode==='all'?['boven','onder']:['onder'],p=[];
+  // per ronde: links (boven→onder), dan rechts (boven→onder); 3 rondes
+  for(let r=1;r<=3;r++)['L','R'].forEach(s=>ms.forEach(m=>p.push({m,s,r})));
+  return p;
+}
+function show(v){['viewHome','viewSession','viewDone'].forEach(id=>$(id).hidden=id!==v);$('viewHome').style.display=v==='viewHome'?'flex':'none'}
+async function keepAwake(){try{if('wakeLock' in navigator)wake=await navigator.wakeLock.request('screen')}catch(e){}}
+function start(mode){
+  audio(); if(ctx&&ctx.state==='suspended')ctx.resume();
+  plan=build(mode);idx=0;phase='work';paused=false;
+  $('progress').innerHTML=plan.map(()=>'<i></i>').join('');
+  show('viewSession');keepAwake();
+  if(musicOn&&!sched)startMusic();
+  beginPhase('work');loop();
+}
+function beginPhase(p){phase=p;remain=p==='work'?WORK:SWITCH;endAt=performance.now()+remain*1000;lastSec=null;paint();if(p==='work')beep(1046,.25,.4)}
+function paint(){
+  const it=plan[idx],nx=plan[idx+1];
+  const sec=Math.max(0,Math.ceil(remain));
+  $('countNum').textContent=sec;
+  $('countLbl').textContent=phase==='work'?'seconden':'wissel…';
+  const ring=$('ring'),C=326.73,total=phase==='work'?WORK:SWITCH;
+  ring.style.strokeDashoffset=C*(1-remain/total);
+  ring.classList.toggle('pause',phase!=='work');
+  const show=phase==='work'?it:nx;
+  $('muscleLbl').textContent=M[show.m].name;
+  $('sideL').classList.toggle('on',show.s==='L');$('sideR').classList.toggle('on',show.s==='R');
+  $('roundLbl').textContent=`Ronde ${show.r} van 3 · ${idx+1+(phase==='work'?0:1)}/${plan.length}`;
+  $('tipLbl').textContent=phase==='work'?M[it.m].tip:`Maak je klaar: ${M[nx.m].name.toLowerCase()}, ${nx.s==='L'?'linker':'rechter'} been${nx.s!==it.s?' (wissel van been)':''}.`;
+  const after=phase==='work'?nx:plan[idx+2];
+  $('upNext').innerHTML=after?`Hierna: <b>${M[after.m].name.toLowerCase()} · ${after.s==='L'?'links':'rechts'}</b>`:'Laatste! Bijna klaar.';
+  [...$('progress').children].forEach((el,i)=>{el.className=i<idx||(i===idx&&phase!=='work')?'done':(i===idx?'cur':'')});
+}
+function loop(){
+  clearInterval(tick);
+  tick=setInterval(()=>{
+    if(paused)return;
+    remain=(endAt-performance.now())/1000;
+    const s=Math.ceil(remain);
+    if(s!==lastSec){lastSec=s;if(phase==='work'&&s<=3&&s>0)beep(660);}
+    if(remain<=0){
+      if(phase==='work'){
+        if(idx>=plan.length-1)return finish();
+        beep(523,.3,.4);beginPhase('switch');
+      }else{idx++;beginPhase('work')}
+    }else paint();
+  },100);
+}
+function finish(){
+  clearInterval(tick);chime();const n=markDone();
+  $('doneMsg').textContent=n>=times.length?'Alle '+times.length+' momenten van vandaag gedaan. Super!':`Moment ${n} van ${times.length} van vandaag gedaan. Goed bezig!`;
+  show('viewDone');try{wake&&wake.release()}catch(e){}
+}
+function stop(){clearInterval(tick);try{wake&&wake.release()}catch(e){}show('viewHome');renderHome()}
+$('btnPause').onclick=()=>{
+  if(!paused){paused=true;remain=(endAt-performance.now())/1000;$('btnPause').textContent='Verder';$('btnPause').classList.add('alt')}
+  else{paused=false;endAt=performance.now()+remain*1000;$('btnPause').textContent='Pauze';$('btnPause').classList.remove('alt')}
+};
+$('btnStop').onclick=stop;
+$('btnHome').onclick=()=>{show('viewHome');renderHome()};
+document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>start(b.dataset.mode));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('viewSession').hidden)keepAwake()});
+
+renderMusic();renderHome();show('viewHome');
+setInterval(()=>{if(!$('viewHome').hidden)renderHome()},60000);
+})();
+</script>
+
+</body>
+</html>
