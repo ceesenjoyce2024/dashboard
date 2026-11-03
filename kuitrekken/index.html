@@ -508,13 +508,13 @@ async function flushPending(){
   if(!sb||!pending.length)return;
   const rows=pending.map(e=>({started_at:new Date(e.t).toISOString(),mode:e.mode,blocks:e.blocks,total:e.total,sec:e.sec}));
   const{error}=await sb.from('kuitrek_log').insert(rows);
-  if(error){setSync('Niet opgeslagen: geen verbinding. Wordt later verstuurd.');return}
+  if(error){setSync('Nog niet opgeslagen ('+(error.code||'')+' '+(error.message||'')+'). Wordt later opnieuw verstuurd.');return}
   pending=[];saveLocal();
 }
 async function fetchLog(){
   if(!sb)return;
   const{data,error}=await sb.from('kuitrek_log').select('started_at,mode,blocks,total,sec,user_email').order('started_at',{ascending:true}).limit(3000);
-  if(error){setSync('Kon gegevens niet ophalen. Je ziet de laatst bekende stand.');return}
+  if(error){setSync('Kon gegevens niet ophalen ('+(error.code||'')+' '+(error.message||'')+'). Je ziet de laatst bekende stand.');return}
   const ouder=rol==='admin'||rol==='eikenlaan';
   let rows=data.map(r=>({t:new Date(r.started_at).getTime(),mode:r.mode,blocks:r.blocks,total:r.total,sec:r.sec,email:r.user_email}));
   if(ouder&&rows.some(r=>r.email!==me))rows=rows.filter(r=>r.email!==me);
