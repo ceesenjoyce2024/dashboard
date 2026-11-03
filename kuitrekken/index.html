@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#7B1E34">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Riva's Rekmomenten</title>
-<meta name="app-version" content="2026-11-03.4">
+<meta name="app-version" content="2026-11-03.5">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="rekken"></script>
@@ -83,13 +83,13 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .side{display:inline-flex;align-self:center;gap:6px;background:var(--wine-soft);border-radius:999px;padding:4px}
 .side span{padding:6px 16px;border-radius:999px;font-weight:800;font-size:15px;color:var(--muted)}
 .side span.on{background:var(--wine);color:var(--on-wine)}
-.ringwrap{position:relative;width:min(280px,72vw);aspect-ratio:1;max-width:100%;margin:0 auto}
+.ringwrap{position:relative;width:min(240px,56vw);aspect-ratio:1;max-width:100%;margin:0 auto}
 .ringwrap svg{width:100%;height:100%;transform:rotate(-90deg)}
 .ring-bg{stroke:var(--wine-soft);fill:none}
 .ring-fg{stroke:var(--wine);fill:none;stroke-linecap:round;transition:stroke .3s}
 .ring-fg.pause{stroke:var(--rose)}
 .count{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.count b{font-family:var(--display);font-size:88px;line-height:1;font-variant-numeric:tabular-nums;color:var(--wine)}
+.count b{font-family:var(--display);font-size:72px;line-height:1;font-variant-numeric:tabular-nums;color:var(--wine)}
 .count span{font-weight:800;color:var(--muted);font-size:14px;letter-spacing:.06em;text-transform:uppercase}
 .tip{text-align:center;color:var(--muted);margin:0;font-size:15px;min-height:44px}
 .progress{display:flex;gap:4px}
@@ -173,6 +173,11 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 .reward .big{position:relative}
 .starcount{font-family:var(--display);font-size:20px;color:var(--wine);position:relative}
 @keyframes pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+.ex{display:flex;gap:14px;align-items:flex-start}
+.ex img{width:96px;height:auto;border-radius:12px;border:1.5px solid var(--line);flex:none;background:#fff}
+.ex p{margin:0;min-width:0}
+.stage{display:flex;align-items:center;justify-content:center;gap:12px}
+.eximg{width:min(120px,28vw);height:auto;border-radius:14px;border:1.5px solid var(--line);background:#fff;flex:none}
 @media (prefers-reduced-motion:reduce){.trophy{animation:none}}
 @media (prefers-reduced-motion:reduce){.ring-fg{transition:none}}
 </style>
@@ -218,8 +223,8 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 
     <section class="how">
       <span class="label">Zo doe je het</span>
-      <p><b>Bovenste kuitspieren</b> — handen tegen de muur, één been naar achteren. Knie gestrekt, hak op de grond, leun rustig naar voren.</p>
-      <p><b>Onderste kuitspier</b> — zelfde houding, maar buig de knie van je achterste been. Hak blijft op de grond.</p>
+      <div class="ex"><img src="/kuitrekken/img/boven.jpg" alt="Kuitrek met gestrekt achterste been" width="96" height="133"><p><b>Bovenste kuitspieren</b><br>Grote stap naar voren, handen op je voorste knie. Achterste been gestrekt, hak op de grond. Leun rustig naar voren tot je trek voelt in je kuit.</p></div>
+      <div class="ex"><img src="/kuitrekken/img/onder.jpg" alt="Kuitrek met beide knieën gebogen" width="96" height="154"><p><b>Onderste kuitspier</b><br>Kleine stap, voeten achter elkaar. Buig beide knieën en zak rustig door. Hakken blijven op de grond.</p></div>
       <p>Rustig rekken, niet veren. Het mag trekken, niet pijn doen.</p>
     </section>
   </main>
@@ -235,9 +240,12 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <h2 id="muscleLbl">Bovenste kuitspieren</h2>
       <div class="side"><span id="sideL">Links</span><span id="sideR">Rechts</span></div>
     </div>
+    <div class="stage">
+    <img id="exImg" class="eximg" src="/kuitrekken/img/boven.jpg" alt="">
     <div class="ringwrap">
       <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="52" stroke-width="10"/><circle class="ring-fg" id="ring" cx="60" cy="60" r="52" stroke-width="10" stroke-dasharray="326.73" stroke-dashoffset="0"/></svg>
       <div class="count"><b id="countNum">30</b><span id="countLbl">seconden</span></div>
+    </div>
     </div>
     <p class="tip" id="tipLbl">Knie gestrekt, hak op de grond.</p>
     <div class="ctrls">
@@ -265,7 +273,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <div id="chartMin"></div>
     </div>
     <p class="empty" id="syncLbl">Gegevens laden…</p>
-    <p class="empty">Versie 2026-11-03.4</p>
+    <p class="empty">Versie 2026-11-03.5</p>
     <div class="history">
       <span class="label">Laatste keren</span>
       <div id="histList"></div>
@@ -402,8 +410,8 @@ function chime(){if(!$('beeps').checked||!audio())return;[880,1109,1319].forEach
 
 /* ---------- routine ---------- */
 const WORK=30,SWITCH=3;
-const M={boven:{name:'Bovenste kuitspieren',tip:'Knie gestrekt, hak op de grond, leun naar voren.'},
-         onder:{name:'Onderste kuitspier',tip:'Knie gebogen, hak blijft op de grond.'}};
+const M={boven:{name:'Bovenste kuitspieren',tip:'Achterste been gestrekt, hak op de grond, leun naar voren.',img:'/kuitrekken/img/boven.jpg'},
+         onder:{name:'Onderste kuitspier',tip:'Beide knieën buigen, zak door, hakken op de grond.',img:'/kuitrekken/img/onder.jpg'}};
 let waiting=false,mode='all',blocksDone=0,startedAt=0,logged=false;
 let plan=[],idx=0,phase='work',remain=WORK,endAt=0,paused=false,tick=null,wake=null,lastSec=null;
 function build(mode){
@@ -437,6 +445,7 @@ function paint(){
   ring.classList.toggle('pause',phase!=='work');
   const show=phase==='work'?it:nx;
   $('muscleLbl').textContent=M[show.m].name;
+  if(!$('exImg').src.endsWith(M[show.m].img)){$('exImg').src=M[show.m].img;$('exImg').alt=M[show.m].name}
   $('sideL').classList.toggle('on',show.s==='L');$('sideR').classList.toggle('on',show.s==='R');
   $('roundLbl').textContent=`Ronde ${show.r} van 3 · ${idx+1+(phase==='work'?0:1)}/${plan.length}`;
   $('tipLbl').textContent=phase==='work'?M[it.m].tip:`Maak je klaar: ${M[nx.m].name.toLowerCase()}, ${nx.s==='L'?'linker':'rechter'} been${nx.s!==it.s?' (wissel van been)':''}.`;
