@@ -10,7 +10,7 @@
 <script>try{if(localStorage.getItem("hm_mode")==="dark")document.documentElement.dataset.mode="dark"}catch(e){}</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Hockeymat</title>
-<meta name="app-version" content="2026-11-03.3">
+<meta name="app-version" content="2026-11-03.4">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="hockeymat"></script>
@@ -153,6 +153,11 @@ input[type=range]{width:100%;accent-color:var(--yellow-deep)}
 .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;background:var(--mark)}
 .legend i.dash{height:0;width:16px;border-top:2px dashed var(--goal);border-radius:0;background:none}
 .tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;padding:6px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-110%);z-index:5}
+.doelrow{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:18px;padding:12px 14px;background:var(--card)}
+.doelrow > span:first-child{display:flex;flex-direction:column}
+.doelrow small{color:var(--muted);font-size:13px}
+.doelrow .step{width:40px;height:40px;font-size:22px;border-radius:12px}
+.doelrow b#doelVal{font-family:var(--display);font-weight:800;font-size:30px;min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
 .hbar{display:grid;grid-template-columns:minmax(0,1fr) 120px 34px;align-items:center;gap:8px;font-size:14px}
 .hbar .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hbar .t{height:12px;border-radius:0 4px 4px 0;background:var(--soft);position:relative}
@@ -272,10 +277,15 @@ input[type=range]{width:100%;accent-color:var(--yellow-deep)}
       <div class="tile"><b id="tBest">–</b><span>beste score</span></div>
     </div>
 
+    <div class="doelrow" id="doelRow" hidden>
+      <span><b id="doelNaam">Weekdoel</b><small>aantal oefeningen per week</small></span>
+      <span class="scorer"><button class="step" id="doelMin" aria-label="Weekdoel lager">−</button><b id="doelVal">10</b><button class="step" id="doelPlus" aria-label="Weekdoel hoger">+</button></span>
+    </div>
+
     <section class="chartcard">
       <div class="chead"><h3>Oefeningen per week</h3></div>
       <div class="chart" id="chWeeks"></div>
-      <div class="legend"><span><i></i>aantal keer</span><span><i class="dash"></i>doel 10</span></div>
+      <div class="legend"><span><i></i>aantal keer</span><span><i class="dash"></i><span id="lgDoel">doel 10</span></span></div>
     </section>
 
     <section class="chartcard">
@@ -332,7 +342,7 @@ input[type=range]{width:100%;accent-color:var(--yellow-deep)}
 
 <script>
 const $=id=>document.getElementById(id);
-const GOAL=10;
+const doelVan=e=>{const sp=(SPELERS||[]).find(x=>x.email===e);return sp&&sp.weekdoel?sp.weekdoel:10};
 const SB_URL='https://hvpooifxqhovskwgzpbr.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g';
 const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -352,7 +362,7 @@ function toLocalInput(t){const d=new Date(t);return d.getFullYear()+'-'+pad(d.ge
 const oefById=id=>OEF.find(o=>o.id===id);
 const activeOef=()=>OEF.filter(o=>o.actief).sort((a,b)=>a.volgorde-b.volgorde||a.naam.localeCompare(b.naam));
 function thisWeek(){const s=weekStart(new Date()).getTime();return RES.filter(r=>r.t>=s)}
-function weeksHit(){const m={};RES.forEach(r=>{const k=weekStart(r.t).getTime();m[k]=(m[k]||0)+1});return Object.values(m).filter(n=>n>=GOAL).length}
+function weeksHit(){const m={};RES.forEach(r=>{const k=weekStart(r.t).getTime();m[k]=(m[k]||0)+1});return Object.values(m).filter(n=>n>=doelVan(who)).length}
 
 /* ---------- views ---------- */
 const VIEWS=['viewHome','viewEntry','viewStats','viewBeheer'];
@@ -373,23 +383,23 @@ $('btnMode').onclick=()=>{const dark=document.documentElement.dataset.mode==='da
 /* ---------- home ---------- */
 function renderWho(){
   if(!ouder||!kids.length){$('who').innerHTML='';return}
-  $('who').innerHTML=kids.map(e=>`<button class="chip ${e===who?'on':''}" data-e="${esc(e)}">${esc(naamVan(e))}${WEEKN[e]!=null?` · ${WEEKN[e]}/${GOAL}`:''}</button>`).join('');
+  $('who').innerHTML=kids.map(e=>`<button class="chip ${e===who?'on':''}" data-e="${esc(e)}">${esc(naamVan(e))}${WEEKN[e]!=null?` · ${WEEKN[e]}/${doelVan(e)}`:''}</button>`).join('');
 }
 $('who').onclick=async e=>{const b=e.target.closest('.chip');if(!b||b.dataset.e===who)return;who=b.dataset.e;store.set('hm_who',who);renderWho();RES=[];renderAll();await fetchRes()};
 
 function renderHome(){
   const d=new Date();
   $('today').textContent=d.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
-  const naam=naamVan(who),wk=thisWeek(),n=wk.length,left=Math.max(0,GOAL-n);
+  const naam=naamVan(who),wk=thisWeek(),n=wk.length,left=Math.max(0,doelVan(who)-n);
   const daysLeft=7-((d.getDay()+6)%7);
   if(left===0){$('heroTitle').textContent=ouder?`${naam} heeft het weekdoel gehaald 🏆`:`Weekdoel gehaald, ${naam}! 🏆`;
-    $('heroBig').textContent=n;$('heroSub').textContent=n===GOAL?'oefeningen gedaan deze week':`oefeningen — ${n-GOAL} extra`;}
+    $('heroBig').textContent=n;$('heroSub').textContent=n===doelVan(who)?'oefeningen gedaan deze week':`oefeningen — ${n-doelVan(who)} extra`;}
   else{$('heroTitle').textContent=ouder?`${naam} deze week`:(n===0?`Hoi ${naam}!`:`Goed bezig, ${naam}!`);
     $('heroBig').textContent=left;$('heroSub').textContent=(left===1?'oefening':'oefeningen')+' te gaan deze week';}
-  $('weekDots').innerHTML=Array.from({length:GOAL},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('');
-  $('heroCount').textContent=`${Math.min(n,GOAL)} van ${GOAL} deze week`;
+  $('weekDots').innerHTML=Array.from({length:doelVan(who)},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('');
+  $('heroCount').textContent=`${Math.min(n,doelVan(who))} van ${doelVan(who)} deze week`;
   $('heroDays').textContent=left===0?'':(daysLeft===1?'Laatste dag: vandaag':`Nog ${daysLeft} dagen, t/m zondag`);
-  const wh=weeksHit();$('heroWeeks').textContent=wh?`🏆 ${wh} ${wh===1?'week':'weken'} gehaald`:'Doe er 10 per week en verdien een beker';
+  const wh=weeksHit();$('heroWeeks').textContent=wh?`🏆 ${wh} ${wh===1?'week':'weken'} gehaald`:'';$('heroWeeks').parentElement.hidden=!wh;
   const tk=dayKey(Date.now()),td=RES.filter(r=>dayKey(r.t)===tk).sort((a,b)=>b.t-a.t);
   $('todayList').innerHTML=td.length?td.map(resRow).join(''):`<p class="empty">${ouder?'Vandaag nog niets ingevuld.':'Nog niets gedaan vandaag. Kies hieronder een oefening.'}</p>`;
   const avg=wk.length?Math.round(wk.reduce((s,r)=>s+r.score,0)/wk.length):null;
@@ -486,7 +496,7 @@ $('btnSave').onclick=async()=>{
   fetchWeekAll();
   const after=thisWeek().length;
   show(backTo);renderAll();
-  if(!editing&&!ouder&&before<GOAL&&after>=GOAL)celebrate();else toast((editing?'Gewijzigd ✓':'Opgeslagen ✓')+(sp?` · ook bij ${sp.naam}`:''));
+  if(!editing&&!ouder&&before<doelVan(who)&&after>=doelVan(who))celebrate();else toast((editing?'Gewijzigd ✓':'Opgeslagen ✓')+(sp?` · ook bij ${sp.naam}`:''));
 };
 $('btnDel').onclick=async()=>{if(!editing)return;
   const duel=editing.duel_id,tn=editing.tegenstander||'de tegenstander';
@@ -497,7 +507,7 @@ $('btnDel').onclick=async()=>{if(!editing)return;
 
 /* ---------- feest ---------- */
 function celebrate(){const el=$('reward');el.hidden=false;
-  $('rewardTxt').textContent=`${GOAL} oefeningen deze week, ${naamVan(who)}. Alles wat je nu nog doet is extra.`;
+  $('rewardTxt').textContent=`${doelVan(who)} oefeningen deze week, ${naamVan(who)}. Alles wat je nu nog doet is extra.`;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const c=$('confetti'),x=c.getContext('2d'),W=c.width=innerWidth*devicePixelRatio,H=c.height=innerHeight*devicePixelRatio;
   const cols=['#FFD21F','#141414','#E5B800','#FFFFFF','#9A7400'];
@@ -525,7 +535,7 @@ function tipLayer(card,svg){
 
 function renderStats(){
   const naam=naamVan(who);$('statsLbl').textContent=ouder?`Overzicht ${naam}`:'Jouw overzicht';
-  const wk=thisWeek().length;$('tWeek').textContent=`${wk}/${GOAL}`;
+  const wk=thisWeek().length;$('tWeek').textContent=`${wk}/${doelVan(who)}`;
   const since=Date.now()-30*864e5,r30=RES.filter(r=>r.t>=since);
   $('tAvg').textContent=r30.length?Math.round(r30.reduce((s,r)=>s+r.score,0)/r30.length):'–';
   $('tBest').textContent=RES.length?Math.max(...RES.map(r=>r.score)):'–';
@@ -533,6 +543,8 @@ function renderStats(){
   if(selOef!=='all'&&!used.some(o=>o.id===selOef))selOef='all';
   $('selOef').innerHTML='<option value="all">Alle oefeningen (gemiddelde per dag)</option>'+used.map(o=>`<option value="${o.id}">${esc(o.naam)}</option>`).join('');
   $('selOef').value=selOef;
+  $('lgDoel').textContent='doel '+doelVan(who);
+  $('doelRow').hidden=!ouder;$('doelNaam').textContent='Weekdoel '+naam;$('doelVal').textContent=doelVan(who);
   renderWeekChart();renderScoreChart();renderPerOef();renderDuo();renderHistory();
   $('btnBeheer').hidden=!ouder;
 }
@@ -541,7 +553,7 @@ function renderWeekChart(){
   const N=8,W=340,H=170,L=26,R=6,T=14,B=26,cur=weekStart(new Date());
   const weeks=Array.from({length:N},(_,i)=>{const s=new Date(cur);s.setDate(s.getDate()-(N-1-i)*7);return s});
   const counts=weeks.map(s=>{const a=s.getTime(),b=a+7*864e5;return RES.filter(r=>r.t>=a&&r.t<b).length});
-  const max=Math.max(GOAL+2,...counts),y=v=>T+(H-T-B)*(1-v/max),bw=(W-L-R)/N;
+  const max=Math.max(doelVan(who)+2,...counts),y=v=>T+(H-T-B)*(1-v/max),bw=(W-L-R)/N;
   let g='';
   const ticks=max<=15?[0,5,10,15].filter(v=>v<=max):[0,Math.round(max/2),max];
   ticks.forEach(v=>{g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-6}" y="${y(v)+3}" text-anchor="end">${v}</text>`});
@@ -549,8 +561,8 @@ function renderWeekChart(){
     if(c>0)g+=`<path d="M${x},${H-B}V${y(c)+Math.min(4,h)}q0,-4 4,-4h${w-8}q4,0 4,4V${H-B}Z" fill="var(--mark)"/>`;
     const lbl=weeks[i].toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
     g+=`<text class="ax ${isCur?'cur':''}" x="${x+w/2}" y="${H-B+14}" text-anchor="middle">${isCur?'nu':'wk '+isoWeek(weeks[i])}</text>`;
-    g+=`<rect x="${L+i*bw}" y="${T}" width="${bw}" height="${H-T-B}" fill="transparent" data-tip="Week van ${lbl}: ${c} keer${c>=GOAL?' 🏆':''}" data-dy="${y(c)-T}"/>`});
-  g+=`<line class="goal" x1="${L}" x2="${W-R}" y1="${y(GOAL)}" y2="${y(GOAL)}"/>`;
+    g+=`<rect x="${L+i*bw}" y="${T}" width="${bw}" height="${H-T-B}" fill="transparent" data-tip="Week van ${lbl}: ${c} keer${c>=doelVan(who)?' 🏆':''}" data-dy="${y(c)-T}"/>`});
+  g+=`<line class="goal" x1="${L}" x2="${W-R}" y1="${y(doelVan(who))}" y2="${y(doelVan(who))}"/>`;
   $('chWeeks').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Aantal oefeningen per week, laatste 8 weken">${g}</svg>`;
   tipLayer($('chWeeks').parentElement,$('chWeeks').querySelector('svg'));
 }
@@ -592,6 +604,14 @@ function renderHistory(){
   sh.forEach(r=>{const k=dayKey(r.t);if(k!==last){last=k;h+=`<div class="hday">${new Date(r.t).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'})}</div>`}h+=resRow(r)});
   $('histList').innerHTML=h||'<p class="empty">Nog geen scores.</p>';$('btnMore').hidden=rs.length<=histN;
 }
+
+let doelTimer=null;
+function stelDoel(d){const sp=SPELERS.find(x=>x.email===who);if(!sp)return toast('Speler niet gevonden');
+  const v=Math.max(1,Math.min(100,sp.weekdoel+d));if(v===sp.weekdoel)return;sp.weekdoel=v;
+  $('doelVal').textContent=v;renderWho();renderHome();renderStats();
+  clearTimeout(doelTimer);doelTimer=setTimeout(async()=>{const{error}=await sb.rpc('hockeymat_weekdoel_zetten',{p_email:who,p_doel:v});
+    if(error){toast('Weekdoel opslaan lukte niet');await fetchSpelers();renderAll()}else{store.set('hm_spelers',SPELERS);toast(`Weekdoel ${naamVan(who)}: ${v} ✓`)}},700)}
+$('doelMin').onclick=()=>stelDoel(-1);$('doelPlus').onclick=()=>stelDoel(1);
 
 /* ---------- beheer oefeningen ---------- */
 $('btnBeheer').onclick=()=>{renderBeheer();show('viewBeheer')};
