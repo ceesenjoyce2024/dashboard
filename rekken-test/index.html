@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Rekken test">
+<meta name="theme-color" content="#7B1E34">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Rekken test</title>
+<meta name="app-version" content="test-2026-11-03.1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="/auth-guard.js" data-access="rekken"></script>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: one-column phone app — moments of the day, choose a routine, full-focus timer ring */
+:root{
+  --wine:#7B1E34; --wine-deep:#5A1426; --wine-soft:#FCE4EB; --rose:#F29CB4;
+  --pink:#F8C8D5; --bg:#FFFFFF; --fg:#3A0F1B; --muted:#8A5A68; --line:#F6D3DD; --card:#FFF5F8;
+  --ok:#2E7D5B; --on-wine:#FFFFFF;
+  --display:"Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --wine:#E0607F; --wine-deep:#8E2340; --wine-soft:#3F1724; --rose:#F29CB4;
+  --pink:#5A2233; --bg:#1E0C12; --fg:#FFF0F4; --muted:#D7A9B6; --line:#45202C; --card:#2A121B;
+  --ok:#6BCB9C; --on-wine:#FFFFFF; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --wine:#E0607F; --wine-deep:#8E2340; --wine-soft:#3F1724; --rose:#F29CB4;
+  --pink:#5A2233; --bg:#1E0C12; --fg:#FFF0F4; --muted:#D7A9B6; --line:#45202C; --card:#2A121B;
+  --ok:#6BCB9C; --on-wine:#FFFFFF; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:460px;margin:0 auto;padding-block:18px 32px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--wine);outline-offset:2px}
+.label{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;flex-direction:column;gap:2px}
+.brand h1{font-size:28px;color:var(--wine);display:flex;align-items:center;gap:8px}
+.testtag{font-family:var(--body);font-size:11px;font-weight:800;letter-spacing:.08em;background:var(--rose);color:var(--wine-deep);border-radius:999px;padding:3px 8px}
+.brand span{color:var(--muted);font-size:14px}
+.iconbtn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);display:grid;place-items:center;flex:none}
+.iconbtn svg{width:22px;height:22px;stroke:var(--wine);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* moments */
+.moments{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.moment{border-radius:14px;border:1.5px solid var(--line);padding:10px 4px;text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center}
+.moment b{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums}
+.moment small{font-size:12px;color:var(--muted);font-weight:700}
+.moment.next{border-color:var(--wine);background:var(--wine-soft)}
+.moment.next small{color:var(--wine)}
+.moment.done{background:var(--wine);border-color:var(--wine);color:var(--on-wine)}
+.moment.done small{color:var(--on-wine)}
+.hello{background:linear-gradient(135deg,var(--pink),var(--wine-soft));color:var(--wine);border:1.5px solid var(--rose);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.hello h2{font-size:24px}
+.hello p{margin:0;opacity:.92}
+.streak{display:flex;gap:6px;align-items:center;font-weight:800;font-size:14px}
+.dots{display:flex;gap:5px}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--bg);border:1.5px solid var(--rose)}
+.dots i.on{background:var(--wine);border-color:var(--wine)}
+
+/* choice */
+.choices{display:flex;flex-direction:column;gap:10px}
+.choice{display:flex;gap:14px;align-items:center;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:18px;padding:16px}
+.choice:hover{border-color:var(--wine)}
+.choice .ico{width:52px;height:52px;border-radius:14px;background:var(--pink);display:grid;place-items:center;flex:none}
+.choice .ico svg{width:30px;height:30px;stroke:var(--wine);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.choice h3{font-size:19px}
+.choice p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.choice .go{margin-left:auto;font-family:var(--display);font-weight:600;color:var(--wine);font-size:22px}
+.how{border-top:1.5px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:10px;font-size:15px}
+.how p{margin:0}
+.how b{color:var(--wine)}
+
+/* session */
+.session{display:flex;flex-direction:column;gap:18px;align-items:stretch}
+.sesshead{display:flex;justify-content:space-between;align-items:center}
+.ghost{background:none;border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px}
+.now{text-align:center;display:flex;flex-direction:column;gap:6px}
+.now h2{font-size:26px}
+.side{display:inline-flex;align-self:center;gap:6px;background:var(--wine-soft);border-radius:999px;padding:4px}
+.side span{padding:6px 16px;border-radius:999px;font-weight:800;font-size:15px;color:var(--muted)}
+.side span.on{background:var(--wine);color:var(--on-wine)}
+.ringwrap{position:relative;width:min(280px,72vw);aspect-ratio:1;max-width:100%;margin:0 auto}
+.ringwrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{stroke:var(--wine-soft);fill:none}
+.ring-fg{stroke:var(--wine);fill:none;stroke-linecap:round;transition:stroke .3s}
+.ring-fg.pause{stroke:var(--rose)}
+.count{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.count b{font-family:var(--display);font-size:88px;line-height:1;font-variant-numeric:tabular-nums;color:var(--wine)}
+.count span{font-weight:800;color:var(--muted);font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.tip{text-align:center;color:var(--muted);margin:0;font-size:15px;min-height:44px}
+.progress{display:flex;gap:4px}
+.progress i{flex:1;height:8px;border-radius:4px;background:var(--wine-soft)}
+.progress i.done{background:var(--wine)}
+.progress i.cur{background:var(--rose)}
+.ctrls{display:flex;gap:10px;justify-content:center}
+.big{background:var(--wine);color:var(--on-wine);border:0;border-radius:999px;padding:14px 28px;font-family:var(--display);font-weight:600;font-size:20px;min-width:150px}
+.big.alt{background:var(--wine-soft);color:var(--wine)}
+.upnext{text-align:center;font-size:14px;color:var(--muted)}
+.upnext b{color:var(--fg)}
+
+/* done */
+.done-card{text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;padding-top:20px}
+.done-card .badge{width:120px;height:120px;border-radius:50%;background:var(--wine);display:grid;place-items:center}
+.done-card .badge svg{width:64px;height:64px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.done-card h2{font-size:30px;color:var(--wine)}
+.done-card p{margin:0;color:var(--muted);max-width:30ch}
+
+/* music bar */
+.music{border:1.5px solid var(--line);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:var(--card)}
+.mrow{display:flex;align-items:center;gap:10px}
+.mrow .iconbtn{width:40px;height:40px}
+.tracks{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.track{border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;font-weight:700;font-size:14px}
+.track.on{background:var(--wine);border-color:var(--wine);color:var(--on-wine)}
+input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
+.vol{font-size:13px;color:var(--muted);font-weight:700;width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.toggle{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--muted)}
+.toggle input{accent-color:var(--wine);width:18px;height:18px}
+
+/* settings */
+.settings{border:1.5px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.times{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.times input{width:100%;font:inherit;font-weight:700;padding:10px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg)}
+.settings p{margin:0;font-size:14px;color:var(--muted)}
+.statlink{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1.5px solid var(--line);background:var(--bg);border-radius:14px;padding:12px 14px;font-weight:700;font-size:14px;text-align:left}
+.statlink span:last-child{color:var(--wine);white-space:nowrap}
+.stats{display:flex;flex-direction:column;gap:16px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{border-radius:16px;background:var(--pink);padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:2px}
+.tile b{font-family:var(--display);font-size:28px;color:var(--wine);font-variant-numeric:tabular-nums;line-height:1.1}
+.tile span{font-size:12px;font-weight:700;color:var(--muted)}
+.chartcard{border:1.5px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.chead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.seg{display:flex;background:var(--wine-soft);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;border-radius:999px;padding:5px 10px;font-weight:700;font-size:13px;color:var(--muted)}
+.seg button.on{background:var(--wine);color:var(--on-wine)}
+#chart svg,#chartMin svg{width:100%;height:auto;display:block}
+.ax{fill:var(--muted);font:700 9px var(--body)}
+.ax.today{fill:var(--wine)}
+.grid-l{stroke:var(--line);stroke-width:1}
+.goal{stroke:var(--wine);stroke-width:1.2;stroke-dasharray:4 3;opacity:.6}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.legend i.dash{height:0;width:14px;border-top:2px dashed var(--wine);border-radius:0;opacity:.6}
+.history{display:flex;flex-direction:column;gap:8px}
+.hday{font-weight:800;font-size:13px;color:var(--muted);margin-top:6px}
+.hrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--card);font-size:14px}
+.hrow time{font-family:var(--display);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;width:46px}
+.hrow .what{flex:1;min-width:0}
+.hrow .st{font-weight:800;font-size:12px;padding:3px 8px;border-radius:999px;background:var(--wine);color:var(--on-wine);white-space:nowrap}
+.hrow .st.part{background:var(--wine-soft);color:var(--wine)}
+.empty{color:var(--muted);font-size:14px;margin:0}
+@media (prefers-reduced-motion:reduce){.ring-fg{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><a id="dashLink" href="/" hidden style="color:var(--muted);font-weight:700;font-size:13px;text-decoration:none">‹ Dashboard</a><h1>Rekken <span class="testtag">TEST</span></h1><span id="today">Vandaag</span></div>
+    <div style="display:flex;gap:8px"><button class="iconbtn" id="btnStats" aria-label="Overzicht"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button><button class="iconbtn" id="btnSettings" aria-label="Tijden aanpassen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
+  </header>
+
+  <section id="settings" class="settings" hidden>
+    <span class="label">Herinnertijden</span>
+    <div class="times" id="timeInputs"></div>
+    <p>Deze app kan zelf geen meldingen sturen als hij dicht is. Zet deze tijden als herhalende wekker op je telefoon.</p>
+    <button class="big alt" id="btnSaveTimes">Opslaan</button>
+    <p>Versie test-2026-11-03.1 · testversie, gegevens blijven op dit toestel</p>
+  </section>
+
+  <!-- HOME -->
+  <main id="viewHome" style="display:flex;flex-direction:column;gap:20px">
+    <section class="hello">
+      <h2 id="helloTitle">Hoi Riva! Tijd om te rekken</h2>
+      <p id="helloSub">Volgende moment om 16:00.</p>
+      <div class="streak"><div class="dots" id="dayDots"></div><span id="dayCount">0 van 4 vandaag</span></div>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="label">Vandaag</span>
+      <div class="moments" id="moments"></div>
+    </div>
+
+    <button class="statlink" id="btnStats2"><span id="weekLine">Deze week: 0 keer gerekt</span><span>Bekijk overzicht ›</span></button>
+
+    <div class="choices">
+      <span class="label">Wat ga je rekken?</span>
+      <button class="choice" data-mode="all">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M9 3c0 5 1 8 1 11s-2 4-2 7h8c0-2-1-3-1-5"/><path d="M14 4c0 3 1 5 1 8"/></svg></span>
+        <span><h3>Alle kuitspieren</h3><p>Links boven + onder, dan rechts · 3 rondes · ± 7 min</p></span>
+        <span class="go">›</span>
+      </button>
+      <button class="choice" data-mode="low">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M10 13c0 3-2 4-2 8h8c0-2-1-3-1-6"/><path d="M8 21h10"/></svg></span>
+        <span><h3>Alleen onderste kuitspier</h3><p>Links, dan rechts · 3 rondes · ± 3,5 min</p></span>
+        <span class="go">›</span>
+      </button>
+    </div>
+
+    <section class="how">
+      <span class="label">Zo doe je het</span>
+      <p><b>Bovenste kuitspieren</b> — handen tegen de muur, één been naar achteren. Knie gestrekt, hak op de grond, leun rustig naar voren.</p>
+      <p><b>Onderste kuitspier</b> — zelfde houding, maar buig de knie van je achterste been. Hak blijft op de grond.</p>
+      <p>Rustig rekken, niet veren. Het mag trekken, niet pijn doen.</p>
+    </section>
+  </main>
+
+  <!-- SESSION -->
+  <main id="viewSession" class="session" hidden>
+    <div class="sesshead">
+      <span class="label" id="roundLbl">Ronde 1 van 3</span>
+      <button class="ghost" id="btnStop">Stoppen</button>
+    </div>
+    <div class="progress" id="progress"></div>
+    <div class="now">
+      <h2 id="muscleLbl">Bovenste kuitspieren</h2>
+      <div class="side"><span id="sideL">Links</span><span id="sideR">Rechts</span></div>
+    </div>
+    <div class="ringwrap">
+      <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="52" stroke-width="10"/><circle class="ring-fg" id="ring" cx="60" cy="60" r="52" stroke-width="10" stroke-dasharray="326.73" stroke-dashoffset="0"/></svg>
+      <div class="count"><b id="countNum">30</b><span id="countLbl">seconden</span></div>
+    </div>
+    <p class="tip" id="tipLbl">Knie gestrekt, hak op de grond.</p>
+    <div class="ctrls">
+      <button class="big" id="btnPause">Pauze</button>
+    </div>
+    <div class="upnext" id="upNext"></div>
+  </main>
+
+  <!-- STATS -->
+  <main id="viewStats" class="stats" hidden>
+    <div class="sesshead"><h2 style="font-size:24px;color:var(--wine)">Overzicht</h2><button class="ghost" id="btnStatsBack">Terug</button></div>
+    <div class="tiles">
+      <div class="tile"><b id="stToday">0/4</b><span>vandaag</span></div>
+      <div class="tile"><b id="stWeek">0</b><span>min deze week</span></div>
+      <div class="tile"><b id="stStreak">0</b><span id="stStreakLbl">dagen op rij</span></div>
+    </div>
+    <div class="chartcard">
+      <div class="chead"><span class="label">Rekmomenten per dag</span>
+        <div class="seg" role="tablist"><button id="rng14" class="on">14 dagen</button><button id="rng30">30 dagen</button></div></div>
+      <div id="chart"></div>
+      <div class="legend"><span><i style="background:var(--wine)"></i>helemaal afgerond</span><span><i style="background:var(--rose)"></i>eerder gestopt</span><span><i class="dash"></i>doel</span></div>
+    </div>
+    <div class="chartcard">
+      <span class="label">Minuten gerekt per dag</span>
+      <div id="chartMin"></div>
+    </div>
+    <p class="empty" id="syncLbl">Gegevens laden…</p>
+    <div class="history">
+      <span class="label">Laatste keren</span>
+      <div id="histList"></div>
+    </div>
+  </main>
+
+  <!-- DONE -->
+  <main id="viewDone" class="done-card" hidden>
+    <div class="badge"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+    <h2>Klaar, Riva!</h2>
+    <p id="doneMsg">Goed gedaan. Je hak is je dankbaar.</p>
+    <button class="big" id="btnHome">Terug</button>
+  </main>
+
+  <!-- MUSIC -->
+  <section class="music" aria-label="Muziek">
+    <div class="mrow">
+      <button class="iconbtn" id="btnMusic" aria-label="Muziek aan of uit"><svg viewBox="0 0 24 24" id="musicIco"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></button>
+      <div class="tracks" id="tracks"></div>
+    </div>
+    <div class="mrow">
+      <span class="label" style="width:56px">Volume</span>
+      <input type="range" id="vol" min="0" max="100" value="60" aria-label="Volume">
+      <span class="vol" id="volLbl">60</span>
+    </div>
+    <label class="toggle"><input type="checkbox" id="beeps" checked> Piepjes bij aftellen en wisselen</label>
+  </section>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- schedule ---------- */
+let times=store.get('rt_times',['07:30','16:00','18:00','20:00']);
+const dkey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+const toMin=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
+const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
+// afgeronde sessies van vandaag koppelen aan het dichtstbijzijnde vrije moment
+function doneToday(){
+  const k=dkey(),done=[];
+  getLog().filter(e=>e.blocks>=e.total&&dayKey(e.t)===k).sort((a,b)=>a.t-b.t).forEach(e=>{
+    const d=new Date(e.t),n=d.getHours()*60+d.getMinutes();let best=-1,bd=1e9;
+    times.forEach((t,i)=>{if(done.includes(i))return;const x=Math.abs(toMin(t)-n);if(x<bd){bd=x;best=i}});
+    if(best>=0)done.push(best)});
+  return done;
+}
+function markDone(){return doneToday().length}
+function renderHome(){
+  const done=doneToday(), n=nowMin();
+  const d=new Date();
+  $('today').textContent=d.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+  let next=times.findIndex((t,i)=>!done.includes(i)&&toMin(t)+90>=n);
+  $('moments').innerHTML=times.map((t,i)=>{
+    const st=done.includes(i)?'done':(i===next?'next':'');
+    const lbl=done.includes(i)?'✓ gedaan':(i===next?(toMin(t)<=n?'nu':'volgende'):(toMin(t)+90<n?'gemist':'straks'));
+    return `<div class="moment ${st}"><b>${t}</b><small>${lbl}</small></div>`}).join('');
+  $('dayDots').innerHTML=times.map((t,i)=>`<i class="${done.includes(i)?'on':''}"></i>`).join('');
+  $('dayCount').textContent=`${done.length} van ${times.length} vandaag`;
+  if(done.length>=times.length){$('helloTitle').textContent='Alles gedaan vandaag!';$('helloSub').textContent='Top Riva. Morgen om '+times[0]+' weer.'}
+  else if(next>=0&&toMin(times[next])<=n){$('helloTitle').textContent='Hoi Riva! Tijd om te rekken';$('helloSub').textContent='Het moment van '+times[next]+' staat klaar.'}
+  else if(next>=0){$('helloTitle').textContent='Hoi Riva!';$('helloSub').textContent='Volgende rekmoment om '+times[next]+'.'}
+  else{$('helloTitle').textContent='Hoi Riva!';$('helloSub').textContent='Morgen om '+times[0]+' weer.'}
+}
+function renderSettings(){$('timeInputs').innerHTML=times.map((t,i)=>`<input type="time" id="t${i}" value="${t}" aria-label="Moment ${i+1}">`).join('')}
+$('btnSettings').onclick=()=>{const s=$('settings');s.hidden=!s.hidden;if(!s.hidden)renderSettings()};
+$('btnSaveTimes').onclick=()=>{times=times.map((t,i)=>$('t'+i).value||t).sort();store.set('rt_times',times);$('settings').hidden=true;renderHome()};
+
+/* ---------- audio ---------- */
+let ctx=null,master=null,musicGain=null,fxGain=null;
+function audio(){
+  if(ctx)return ctx;
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return null;
+  ctx=new AC(); master=ctx.createGain(); master.connect(ctx.destination);
+  musicGain=ctx.createGain(); musicGain.connect(master);
+  fxGain=ctx.createGain(); fxGain.gain.value=.9; fxGain.connect(ctx.destination);
+  setVol(); return ctx;
+}
+function tone(dest,f,t,dur,type,vol,att=.01){
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.type=type;o.frequency.value=f;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+att);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+.05);
+}
+const N=n=>440*Math.pow(2,(n-69)/12);
+const TRACKS=[
+ {name:'Zonnig',bpm:104,
+  chords:[[60,64,67],[57,60,64],[53,57,60],[55,59,62]],
+  mel:[72,74,76,79,76,74,72,null, 69,72,74,76,74,72,69,null, 69,72,72,74,72,69,67,null, 67,71,74,76,74,71,67,null],
+  play(step,t,b){const bar=Math.floor(step/8)%4,s=step%8,c=this.chords[bar];
+   if(s===0||s===4){c.forEach(n=>tone(musicGain,N(n),t,b*3.5,'triangle',.05,.04));tone(musicGain,N(c[0]-24),t,b*1.8,'sine',.16)}
+   const m=this.mel[step%32]; if(m)tone(musicGain,N(m),t,b*1.4,'sine',.11,.005);
+   if(s%2===1)tone(musicGain,N(c[2]+12),t,b*.4,'triangle',.025);}},
+ {name:'Rustig',bpm:72,
+  chords:[[57,60,64,67],[53,57,60,64],[48,55,60,64],[55,59,62,67]],
+  mel:[76,null,74,null,72,null,null,null, 72,null,69,null,72,null,null,null, 67,null,72,null,74,null,null,null, 74,null,71,null,67,null,null,null],
+  play(step,t,b){const bar=Math.floor(step/8)%4,s=step%8,c=this.chords[bar];
+   if(s===0){c.forEach(n=>tone(musicGain,N(n),t,b*8.5,'sine',.045,.6));tone(musicGain,N(c[0]-12),t,b*8,'sine',.1,.3)}
+   const m=this.mel[step%32]; if(m)tone(musicGain,N(m+12),t,b*3,'sine',.06,.01);}},
+ {name:'Dansje',bpm:118,
+  chords:[[62,66,69],[59,62,66],[55,59,62],[57,61,64]],
+  mel:[74,null,78,76,74,null,71,null, 71,74,null,71,69,null,66,null, 67,null,71,74,76,74,71,null, 69,null,73,76,73,null,69,null],
+  play(step,t,b){const bar=Math.floor(step/8)%4,s=step%8,c=this.chords[bar];
+   if(s%2===0)tone(musicGain,N(c[0]-24+(s===4?7:0)),t,b*.9,'triangle',.18,.005);
+   if(s%2===1)c.forEach(n=>tone(musicGain,N(n),t,b*.5,'square',.012,.005));
+   const m=this.mel[step%32]; if(m)tone(musicGain,N(m),t,b*.8,'triangle',.09,.005);
+   if(s%2===0){const nb=ctx.createBufferSource(),buf=ctx.createBuffer(1,ctx.sampleRate*.05,ctx.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);nb.buffer=buf;const g=ctx.createGain();g.gain.value=.03;nb.connect(g);g.connect(musicGain);nb.start(t)}}}
+];
+let trackIdx=store.get('rt_track',0), musicOn=store.get('rt_music',true), vol=store.get('rt_vol',60);
+let sched=null,nextT=0,step=0;
+function startMusic(){
+  if(!audio()||!musicOn)return; if(ctx.state==='suspended')ctx.resume();
+  stopMusic(); musicGain.gain.value=1; nextT=ctx.currentTime+.1; step=0;
+  sched=setInterval(()=>{const tr=TRACKS[trackIdx],b=60/tr.bpm/2;
+    while(nextT<ctx.currentTime+.25){tr.play(step,nextT,b);nextT+=b;step++}},40);
+}
+function stopMusic(){if(sched){clearInterval(sched);sched=null}if(musicGain){const g=musicGain;g.gain.setTargetAtTime(0,ctx.currentTime,.05);musicGain=ctx.createGain();musicGain.connect(master)}}
+function setVol(){if(master)master.gain.value=(vol/100)*.8}
+function renderMusic(){
+  $('tracks').innerHTML=TRACKS.map((t,i)=>`<button class="track ${i===trackIdx?'on':''}" data-i="${i}">${t.name}</button>`).join('');
+  $('musicIco').innerHTML=musicOn?'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>':'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M3 3l18 18"/>';
+  $('vol').value=vol;$('volLbl').textContent=vol;
+}
+$('tracks').onclick=e=>{const b=e.target.closest('.track');if(!b)return;trackIdx=+b.dataset.i;store.set('rt_track',trackIdx);musicOn=true;store.set('rt_music',true);renderMusic();startMusic()};
+$('btnMusic').onclick=()=>{musicOn=!musicOn;store.set('rt_music',musicOn);renderMusic();musicOn?startMusic():stopMusic()};
+$('vol').oninput=e=>{vol=+e.target.value;store.set('rt_vol',vol);$('volLbl').textContent=vol;setVol()};
+$('beeps').checked=store.get('rt_beeps',true);
+$('beeps').onchange=e=>store.set('rt_beeps',e.target.checked);
+function beep(f,len=.12,v=.35){if(!$('beeps').checked||!audio())return;tone(fxGain,f,ctx.currentTime,len,'sine',v,.005)}
+function chime(){if(!$('beeps').checked||!audio())return;[880,1109,1319].forEach((f,i)=>tone(fxGain,f,ctx.currentTime+i*.09,.35,'sine',.3,.005))}
+
+/* ---------- routine ---------- */
+const WORK=30,SWITCH=3;
+const M={boven:{name:'Bovenste kuitspieren',tip:'Knie gestrekt, hak op de grond, leun naar voren.'},
+         onder:{name:'Onderste kuitspier',tip:'Knie gebogen, hak blijft op de grond.'}};
+let waiting=false,mode='all',blocksDone=0,startedAt=0,logged=false;
+let plan=[],idx=0,phase='work',remain=WORK,endAt=0,paused=false,tick=null,wake=null,lastSec=null;
+function build(mode){
+  const ms=mode==='all'?['boven','onder']:['onder'],p=[];
+  // per ronde: links (boven→onder), dan rechts (boven→onder); 3 rondes
+  for(let r=1;r<=3;r++)['L','R'].forEach(s=>ms.forEach(m=>p.push({m,s,r})));
+  return p;
+}
+function show(v){['viewHome','viewSession','viewDone','viewStats'].forEach(id=>$(id).hidden=id!==v);$('viewHome').style.display=v==='viewHome'?'flex':'none'}
+async function keepAwake(){try{if('wakeLock' in navigator)wake=await navigator.wakeLock.request('screen')}catch(e){}}
+function start(m){
+  audio(); if(ctx&&ctx.state==='suspended')ctx.resume();
+  mode=m;plan=build(m);idx=0;blocksDone=0;startedAt=Date.now();logged=false;phase='work';paused=false;
+  $('progress').innerHTML=plan.map(()=>'<i></i>').join('');
+  show('viewSession');keepAwake();
+  if(musicOn&&!sched)startMusic();
+  // klaarzetten: timer staat stil op 30 tot Riva op Start drukt
+  phase='work';remain=WORK;lastSec=null;paused=true;waiting=true;paint();
+  $('countLbl').textContent='druk op start';
+  $('btnPause').textContent='Start';$('btnPause').classList.remove('alt');
+  loop();
+}
+function beginPhase(p){phase=p;remain=p==='work'?WORK:SWITCH;endAt=performance.now()+remain*1000;lastSec=null;paint();if(p==='work')beep(1046,.25,.4)}
+function paint(){
+  const it=plan[idx],nx=plan[idx+1];
+  const sec=Math.max(0,Math.ceil(remain));
+  $('countNum').textContent=sec;
+  $('countLbl').textContent=phase==='work'?'seconden':'wissel…';
+  const ring=$('ring'),C=326.73,total=phase==='work'?WORK:SWITCH;
+  ring.style.strokeDashoffset=C*(1-remain/total);
+  ring.classList.toggle('pause',phase!=='work');
+  const show=phase==='work'?it:nx;
+  $('muscleLbl').textContent=M[show.m].name;
+  $('sideL').classList.toggle('on',show.s==='L');$('sideR').classList.toggle('on',show.s==='R');
+  $('roundLbl').textContent=`Ronde ${show.r} van 3 · ${idx+1+(phase==='work'?0:1)}/${plan.length}`;
+  $('tipLbl').textContent=phase==='work'?M[it.m].tip:`Maak je klaar: ${M[nx.m].name.toLowerCase()}, ${nx.s==='L'?'linker':'rechter'} been${nx.s!==it.s?' (wissel van been)':''}.`;
+  const after=phase==='work'?nx:plan[idx+2];
+  $('upNext').innerHTML=after?`Hierna: <b>${M[after.m].name.toLowerCase()} · ${after.s==='L'?'links':'rechts'}</b>`:'Laatste! Bijna klaar.';
+  [...$('progress').children].forEach((el,i)=>{el.className=i<idx||(i===idx&&phase!=='work')?'done':(i===idx?'cur':'')});
+}
+function loop(){
+  clearInterval(tick);
+  tick=setInterval(()=>{
+    if(paused)return;
+    remain=(endAt-performance.now())/1000;
+    const s=Math.ceil(remain);
+    if(s!==lastSec){lastSec=s;if(phase==='work'&&s<=3&&s>0)beep(660);}
+    if(remain<=0){
+      if(phase==='work'){
+        blocksDone++;
+        if(idx>=plan.length-1)return finish();
+        beep(523,.3,.4);beginPhase('switch');
+      }else{idx++;beginPhase('work')}
+    }else paint();
+  },100);
+}
+function finish(){
+  clearInterval(tick);chime();logSession();const n=markDone();
+  $('doneMsg').textContent=n>=times.length?'Alle '+times.length+' momenten van vandaag gedaan. Super!':`Moment ${n} van ${times.length} van vandaag gedaan. Goed bezig!`;
+  show('viewDone');try{wake&&wake.release()}catch(e){}
+}
+function stop(){clearInterval(tick);if(blocksDone>0)logSession();try{wake&&wake.release()}catch(e){}show('viewHome');renderHome()}
+$('btnPause').onclick=()=>{
+  if(waiting){waiting=false;paused=false;audio();if(ctx&&ctx.state==='suspended')ctx.resume();beginPhase('work');$('btnPause').textContent='Pauze';return}
+  if(!paused){paused=true;remain=(endAt-performance.now())/1000;$('btnPause').textContent='Verder';$('btnPause').classList.add('alt')}
+  else{paused=false;endAt=performance.now()+remain*1000;$('btnPause').textContent='Pauze';$('btnPause').classList.remove('alt')}
+};
+$('btnStop').onclick=stop;
+$('btnHome').onclick=()=>{show('viewHome');renderHome()};
+document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>start(b.dataset.mode));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('viewSession').hidden)keepAwake()});
+
+/* ---------- log & overzicht ---------- */
+/* opslag: Supabase is leidend; lokaal alleen cache + wachtrij voor als er geen verbinding is */
+const SB_URL='https://hvpooifxqhovskwgzpbr.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g';
+let sb=null,me=null,rol=null,LOG=store.get('rt_cache',[]),pending=store.get('rt_pending',[]),syncState='laden';
+function getLog(){return LOG}
+function saveLocal(){store.set('rt_cache',LOG.slice(-2000));store.set('rt_pending',pending)}
+function setSync(t){syncState=t;const el=$('syncLbl');if(el)el.textContent=t}
+async function flushPending(){
+  pending=[];saveLocal();return;
+  if(!sb||!pending.length)return;
+  const rows=pending.map(e=>({started_at:new Date(e.t).toISOString(),mode:e.mode,blocks:e.blocks,total:e.total,sec:e.sec}));
+  const{error}=await sb.from('kuitrek_log').insert(rows);
+  if(error){setSync('Niet opgeslagen: geen verbinding. Wordt later verstuurd.');return}
+  pending=[];saveLocal();
+}
+async function fetchLog(){
+  if(!sb)return;
+  const{data,error}=await sb.from('kuitrek_log').select('started_at,mode,blocks,total,sec,user_email').order('started_at',{ascending:true}).limit(3000);
+  if(error){setSync('Kon gegevens niet ophalen. Je ziet de laatst bekende stand.');return}
+  const ouder=rol==='admin'||rol==='eikenlaan';
+  let rows=data.map(r=>({t:new Date(r.started_at).getTime(),mode:r.mode,blocks:r.blocks,total:r.total,sec:r.sec,email:r.user_email}));
+  if(ouder&&rows.some(r=>r.email!==me))rows=rows.filter(r=>r.email!==me);
+  LOG=rows.concat(pending);saveLocal();
+  setSync('Bijgewerkt om '+new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'}));
+  renderHome();if(!$('viewStats').hidden)renderStats();
+}
+async function initSync(){
+  setSync('Testversie: gegevens blijven op dit toestel.');return;
+  try{
+    if(!window.authReady||!window.supabase)return;
+    const a=await window.authReady;me=a.session.user.email;rol=a.rol;
+    sb=window.supabase.createClient(SB_URL,SB_KEY);
+    // oude lokale sessies (van vóór de login) eenmalig meesturen
+    const old=store.get('rt_log',null);
+    if(old&&old.length&&!store.get('rt_migrated',false)){pending=pending.concat(old);store.set('rt_migrated',true);saveLocal()}
+    if(rol==='admin'||rol==='eikenlaan')$('dashLink').hidden=false;
+    await flushPending();await fetchLog();
+  }catch(e){setSync('Kon niet verbinden. Je ziet de laatst bekende stand.')}
+}
+window.addEventListener('online',()=>{flushPending().then(fetchLog)});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&sb)flushPending().then(fetchLog)});
+function logSession(){
+  if(logged)return; logged=true;
+  const e={t:startedAt,mode,blocks:blocksDone,total:plan.length,sec:blocksDone*WORK};
+  LOG.push(e);pending.push(e);saveLocal();
+  flushPending().then(fetchLog);
+}
+const dayKey=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+function byDay(){const m={};getLog().forEach(e=>{const k=dayKey(e.t);(m[k]=m[k]||[]).push(e)});return m}
+let range=14;
+function barChart(el,days,valFn,maxMin,goal,colFn,fmt){
+  const W=340,H=150,L=22,B=24,T=10,cw=(W-L-4)/days.length,bw=Math.max(4,cw*.62);
+  const max=Math.max(maxMin,...days.map(d=>valFn(d).total));
+  const y=v=>T+(H-T-B)*(1-v/max);
+  const step=max<=6?1:max<=20?5:max<=60?10:20;
+  let g='';
+  for(let v=0;v<=max;v+=step)g+=`<line class="grid-l" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-5}" y="${y(v)+3}" text-anchor="end">${v}</text>`;
+  if(goal)g+=`<line class="goal" x1="${L}" x2="${W}" y1="${y(goal)}" y2="${y(goal)}"/>`;
+  days.forEach((d,i)=>{
+    const x=L+i*cw+(cw-bw)/2,v=valFn(d);let base=y(0);
+    v.parts.forEach(([val,col])=>{if(!val)return;const h=base-y(val);g+=`<rect x="${x}" y="${base-h}" width="${bw}" height="${Math.max(h-1,1)}" rx="2" fill="${col}"><title>${d.label}: ${fmt(v.total)}</title></rect>`;base-=h});
+    const show=days.length<=14||i%3===0||d.today;
+    if(show)g+=`<text class="ax ${d.today?'today':''}" x="${x+bw/2}" y="${H-12}" text-anchor="middle">${d.wd}</text><text class="ax ${d.today?'today':''}" x="${x+bw/2}" y="${H-2}" text-anchor="middle">${d.dom}</text>`;
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafiek">${g}</svg>`;
+}
+function renderStats(){
+  const bd=byDay(),wine=getComputedStyle(document.documentElement).getPropertyValue('--wine').trim(),rose=getComputedStyle(document.documentElement).getPropertyValue('--rose').trim();
+  const days=[];const now=new Date();
+  for(let i=range-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);const k=dayKey(d);const e=bd[k]||[];
+    days.push({e,today:i===0,dom:d.getDate(),wd:'zmdwdvz'[d.getDay()],label:d.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'})})}
+  barChart($('chart'),days,d=>{const f=d.e.filter(x=>x.blocks>=x.total).length,p=d.e.length-f;return{total:d.e.length,parts:[[f,wine],[p,rose]]}},times.length,times.length,null,v=>v+' keer');
+  barChart($('chartMin'),days,d=>{const m=Math.round(d.e.reduce((a,x)=>a+x.sec,0)/6)/10;return{total:m,parts:[[m,wine]]}},5,0,null,v=>v+' min');
+  // tiles
+  const today=bd[dayKey(Date.now())]||[];
+  $('stToday').textContent=doneToday().length+'/'+times.length;
+  const wkStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()-((now.getDay()+6)%7)).getTime();
+  const wk=getLog().filter(e=>e.t>=wkStart);
+  $('stWeek').textContent=Math.round(wk.reduce((a,x)=>a+x.sec,0)/60);
+  let st=0;for(let i=0;i<400;i++){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);const n=(bd[dayKey(d)]||[]).length;if(n>0)st++;else if(i>0)break;}
+  $('stStreak').textContent=st;$('stStreakLbl').textContent=st===1?'dag op rij':'dagen op rij';
+  // history
+  const l=getLog().slice().reverse().slice(0,15);
+  if(!l.length){$('histList').innerHTML='<p class="empty">Nog niets gerekt. Na de eerste keer zie je hier wanneer en hoe lang.</p>';return}
+  let last='',h='';
+  l.forEach(e=>{const d=new Date(e.t),k=d.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+    if(k!==last){h+=`<div class="hday">${dayKey(e.t)===dayKey(Date.now())?'Vandaag':k}</div>`;last=k}
+    const full=e.blocks>=e.total,min=Math.floor(e.sec/60),sec=e.sec%60;
+    h+=`<div class="hrow"><time>${d.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}</time><span class="what">${e.mode==='all'?'Alle kuitspieren':'Alleen onderste'} · ${min}:${String(sec).padStart(2,'0')} min</span><span class="st ${full?'':'part'}">${full?'✓ afgerond':e.blocks+'/'+e.total}</span></div>`});
+  $('histList').innerHTML=h;
+}
+function weekLine(){const now=new Date();const wkStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()-((now.getDay()+6)%7)).getTime();
+  const wk=getLog().filter(e=>e.t>=wkStart);$('weekLine').textContent=`Deze week: ${wk.length} keer, ${Math.round(wk.reduce((a,x)=>a+x.sec,0)/60)} min`}
+const openStats=()=>{renderStats();show('viewStats');window.scrollTo(0,0)};
+$('btnStats').onclick=openStats;$('btnStats2').onclick=openStats;
+$('btnStatsBack').onclick=()=>{show('viewHome');renderHome()};
+$('rng14').onclick=()=>{range=14;$('rng14').classList.add('on');$('rng30').classList.remove('on');renderStats()};
+$('rng30').onclick=()=>{range=30;$('rng30').classList.add('on');$('rng14').classList.remove('on');renderStats()};
+const _rh=renderHome;renderHome=function(){_rh();weekLine()};
+
+/* versiecheck: haalt de pagina vers op en herlaadt als er een nieuwere versie staat (niet tijdens het rekken) */
+const MY_V=document.querySelector('meta[name=app-version]').content;
+async function checkVersion(){
+  try{
+    const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});
+    const t=await r.text();const m=t.match(/name="app-version" content="([^"]+)"/);
+    if(m&&m[1]!==MY_V&&$('viewSession').hidden)location.replace(location.pathname+'?v='+m[1]);
+  }catch(e){}
+}
+checkVersion();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVersion()});
+
+renderMusic();renderHome();show('viewHome');setSync(syncState==='laden'?'Gegevens laden…':syncState);initSync();
+setInterval(()=>{if(!$('viewHome').hidden)renderHome()},60000);
+})();
+</script>
+
+</body>
+</html>
