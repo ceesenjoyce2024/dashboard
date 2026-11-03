@@ -116,6 +116,7 @@
   .rol-kind{background:#f6e7ea;color:#7B1E34;}
   .kind-apps{display:flex;gap:14px;flex-wrap:wrap;padding:4px 0 10px 2px;font-size:13px;color:var(--text-muted);}
   .kind-apps label{display:flex;align-items:center;gap:5px;cursor:pointer;}
+  .kind-apps .doel-in{width:60px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;}
   .kind-apps .naam-in{width:120px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;}
   .btn-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:4px 8px;}
   .btn-del:hover{color:var(--red);}
@@ -173,7 +174,7 @@
       <a class="app-card" href="./spelletjes/"><div class="app-icon">🎲</div><div class="app-name">Spelletjes</div><div class="app-desc">Champions League bordspellen</div><span class="app-badge badge-private">Privé</span></a>
       <a class="app-card" href="./groei/"><div class="app-icon">📏</div><div class="app-name">Groei</div><div class="app-desc">Lengte & gewicht Jesper & Riva</div><span class="app-badge badge-private">Privé</span></a>
       <a class="app-card" href="./kuitrekken/?v=2026-11-03.9"><div class="app-icon">🦵</div><div class="app-name">Rekken Riva</div><div class="app-desc">Kuitspieren rekken met timer</div><span class="app-badge badge-private">Privé</span></a>
-      <a class="app-card" href="./hockeymat/"><div class="app-icon">🏑</div><div class="app-name">Hockeymat</div><div class="app-desc">Scores oefeningen Jesper & Riva</div><span class="app-badge badge-private">Privé</span></a>
+      <a class="app-card" href="./hockeymat/?v=2026-11-03.5"><div class="app-icon">🏑</div><div class="app-name">Hockeymat</div><div class="app-desc">Scores oefeningen Jesper & Riva</div><span class="app-badge badge-private">Privé</span></a>
       <a class="app-card" href="./rekken-test/"><div class="app-icon">🧪</div><div class="app-name">Rekken test</div><div class="app-desc">Proefversie rek-app (wit, bordeaux, roze)</div><span class="app-badge badge-private">Test</span></a>
       <a class="app-card" href="./gewicht-joyce/"><div class="app-icon">⚖️</div><div class="app-name">Gewicht Joyce</div><div class="app-desc">Dagelijks gewicht bijhouden</div><span class="app-badge badge-private">Privé</span></a>
     </div>
@@ -229,7 +230,7 @@
       <a class="app-card" href="./spelletjes/"><div class="app-icon">🎲</div><div class="app-name">Spelletjes</div><div class="app-desc">Champions League bordspellen</div><span class="app-badge badge-private">Privé</span></a>
       <a class="app-card" href="./groei/"><div class="app-icon">📏</div><div class="app-name">Groei</div><div class="app-desc">Lengte & gewicht Jesper & Riva</div><span class="app-badge badge-private">Privé</span></a>
       <a class="app-card" href="./kuitrekken/?v=2026-11-03.9"><div class="app-icon">🦵</div><div class="app-name">Rekken Riva</div><div class="app-desc">Kuitspieren rekken met timer</div><span class="app-badge badge-private">Privé</span></a>
-      <a class="app-card" href="./hockeymat/"><div class="app-icon">🏑</div><div class="app-name">Hockeymat</div><div class="app-desc">Scores oefeningen Jesper & Riva</div><span class="app-badge badge-private">Privé</span></a>
+      <a class="app-card" href="./hockeymat/?v=2026-11-03.5"><div class="app-icon">🏑</div><div class="app-name">Hockeymat</div><div class="app-desc">Scores oefeningen Jesper & Riva</div><span class="app-badge badge-private">Privé</span></a>
       <a class="app-card" href="./gewicht-joyce/"><div class="app-icon">⚖️</div><div class="app-name">Gewicht Joyce</div><div class="app-desc">Dagelijks gewicht bijhouden</div><span class="app-badge badge-private">Privé</span></a>
     </div>
   </div>
@@ -305,7 +306,7 @@ function bewaarNext() {
 // Apps die een kind kan krijgen (vinkjes in Gebruikersbeheer)
 const KIND_APPS = {
   kuitrekken: { naam: 'Rekken', icon: '🦵', desc: 'Kuitspieren rekken met timer', href: '/kuitrekken/' },
-  hockeymat:  { naam: 'Hockeymat', icon: '🏑', desc: 'Scores van je oefeningen', href: '/hockeymat/' }
+  hockeymat:  { naam: 'Hockeymat', icon: '🏑', desc: 'Scores van je oefeningen', href: '/hockeymat/?v=2026-11-03.5' }
 };
 
 // ── Dashboard tonen op basis van rol ──
@@ -545,7 +546,8 @@ async function laadGebruikers() {
     </div>
     ${(u.rol === 'kind' || u.rol === 'eikenlaan') ? `<div class="kind-apps">${Object.keys(KIND_APPS).filter(a => u.rol === 'kind' || a === 'hockeymat').map(a => `
       <label><input type="checkbox" ${(u.apps || []).includes(a) ? 'checked' : ''} onchange="wijzigKindApp('${u.email}','${a}',this.checked)"> ${KIND_APPS[a].naam}${u.rol === 'kind' ? '' : ' (doet zelf mee)'}</label>`).join('')}
-      ${(u.apps || []).includes('hockeymat') ? `<label>Naam in Hockeymat <input type="text" class="naam-in" maxlength="30" value="${(u.naam || '').replace(/"/g,'&quot;')}" placeholder="${formatNaam(u.email)}" onchange="wijzigNaam('${u.email}', this.value)"></label>` : ''}
+      ${(u.apps || []).includes('hockeymat') ? `<label>Naam in Hockeymat <input type="text" class="naam-in" maxlength="30" value="${(u.naam || '').replace(/"/g,'&quot;')}" placeholder="${formatNaam(u.email)}" onchange="wijzigNaam('${u.email}', this.value)"></label>
+      <label>Oefeningen per week <input type="number" class="doel-in" min="1" max="100" value="${u.weekdoel || 10}" onchange="wijzigWeekdoel('${u.email}', this.value, this)"></label>` : ''}
     </div>` : ''}
   `).join('');
 }
@@ -600,6 +602,19 @@ async function wijzigNaam(email, naam) {
   suc.textContent = email + ': naam ' + (naam.trim() || formatNaam(email)) + '.';
   suc.style.display = 'block';
   setTimeout(() => { suc.style.display='none'; }, 3000);
+}
+
+async function wijzigWeekdoel(email, waarde, el) {
+  const err = document.getElementById('b-error');
+  const suc = document.getElementById('b-success');
+  err.style.display='none'; suc.style.display='none';
+  const doel = parseInt(waarde, 10);
+  if (!(doel >= 1 && doel <= 100)) { toonErr(err, 'Weekdoel moet tussen 1 en 100 liggen.'); laadGebruikers(); return; }
+  const { error } = await sb.rpc('hockeymat_weekdoel_zetten', { p_email: email, p_doel: doel });
+  if (error) { toonErr(err, 'Fout bij weekdoel: ' + error.message); laadGebruikers(); return; }
+  suc.textContent = email + ': ' + doel + ' oefeningen per week, vanaf deze week. Eerdere weken houden hun oude doel.';
+  suc.style.display = 'block';
+  setTimeout(() => { suc.style.display='none'; }, 4000);
 }
 
 async function verwijderGebruiker(email) {

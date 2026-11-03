@@ -10,7 +10,7 @@
 <script>try{if(localStorage.getItem("hm_mode")==="dark")document.documentElement.dataset.mode="dark"}catch(e){}</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Hockeymat</title>
-<meta name="app-version" content="2026-11-03.4">
+<meta name="app-version" content="2026-11-03.5">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="hockeymat"></script>
@@ -342,7 +342,11 @@ input[type=range]{width:100%;accent-color:var(--yellow-deep)}
 
 <script>
 const $=id=>document.getElementById(id);
-const doelVan=e=>{const sp=(SPELERS||[]).find(x=>x.email===e);return sp&&sp.weekdoel?sp.weekdoel:10};
+const wsKey=ms=>dayKey(ms);
+function doelVoorWeek(e,ms){const l=DOELEN[e];const k=wsKey(ms);
+  if(l&&l.length){let d=null;for(const x of l){if(x.w<=k)d=x.doel;else break}if(d!=null)return d}
+  const sp=(SPELERS||[]).find(x=>x.email===e);return k>=wsKey(weekStart(new Date()).getTime())&&sp&&sp.weekdoel?sp.weekdoel:10}
+const doelVan=e=>doelVoorWeek(e,weekStart(new Date()).getTime());
 const SB_URL='https://hvpooifxqhovskwgzpbr.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g';
 const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -350,7 +354,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const naamVan=e=>{if(!e)return'';const sp=(typeof SPELERS!=='undefined'?SPELERS:[]).find(x=>x.email===e);if(sp&&sp.naam)return sp.naam;const n=e.split('@')[0].split(/[._-]/)[0];return n.charAt(0).toUpperCase()+n.slice(1)};
 
 let sb=null,me=null,rol=null,ouder=false,who=null,kids=[];
-let OEF=store.get('hm_oef',[]),RES=[],WEEKN={},SPELERS=store.get('hm_spelers',[]);
+let OEF=store.get('hm_oef',[]),RES=[],WEEKN={},SPELERS=store.get('hm_spelers',[]),DOELEN=store.get('hm_doelen',{});
 
 /* ---------- tijd ---------- */
 const pad=n=>String(n).padStart(2,'0');
@@ -362,7 +366,7 @@ function toLocalInput(t){const d=new Date(t);return d.getFullYear()+'-'+pad(d.ge
 const oefById=id=>OEF.find(o=>o.id===id);
 const activeOef=()=>OEF.filter(o=>o.actief).sort((a,b)=>a.volgorde-b.volgorde||a.naam.localeCompare(b.naam));
 function thisWeek(){const s=weekStart(new Date()).getTime();return RES.filter(r=>r.t>=s)}
-function weeksHit(){const m={};RES.forEach(r=>{const k=weekStart(r.t).getTime();m[k]=(m[k]||0)+1});return Object.values(m).filter(n=>n>=doelVan(who)).length}
+function weeksHit(){const m={};RES.forEach(r=>{const k=weekStart(r.t).getTime();m[k]=(m[k]||0)+1});return Object.entries(m).filter(([k,n])=>n>=doelVoorWeek(who,+k)).length}
 
 /* ---------- views ---------- */
 const VIEWS=['viewHome','viewEntry','viewStats','viewBeheer'];
@@ -543,7 +547,7 @@ function renderStats(){
   if(selOef!=='all'&&!used.some(o=>o.id===selOef))selOef='all';
   $('selOef').innerHTML='<option value="all">Alle oefeningen (gemiddelde per dag)</option>'+used.map(o=>`<option value="${o.id}">${esc(o.naam)}</option>`).join('');
   $('selOef').value=selOef;
-  $('lgDoel').textContent='doel '+doelVan(who);
+  $('lgDoel').textContent='weekdoel ('+doelVan(who)+' nu)';
   $('doelRow').hidden=!ouder;$('doelNaam').textContent='Weekdoel '+naam;$('doelVal').textContent=doelVan(who);
   renderWeekChart();renderScoreChart();renderPerOef();renderDuo();renderHistory();
   $('btnBeheer').hidden=!ouder;
@@ -553,16 +557,17 @@ function renderWeekChart(){
   const N=8,W=340,H=170,L=26,R=6,T=14,B=26,cur=weekStart(new Date());
   const weeks=Array.from({length:N},(_,i)=>{const s=new Date(cur);s.setDate(s.getDate()-(N-1-i)*7);return s});
   const counts=weeks.map(s=>{const a=s.getTime(),b=a+7*864e5;return RES.filter(r=>r.t>=a&&r.t<b).length});
-  const max=Math.max(doelVan(who)+2,...counts),y=v=>T+(H-T-B)*(1-v/max),bw=(W-L-R)/N;
+  const doelen=weeks.map(w=>doelVoorWeek(who,w.getTime()));
+  const max=Math.max(Math.max(...doelen)+2,...counts),y=v=>T+(H-T-B)*(1-v/max),bw=(W-L-R)/N;
   let g='';
-  const ticks=max<=15?[0,5,10,15].filter(v=>v<=max):[0,Math.round(max/2),max];
+  const stp=max<=25?5:max<=50?10:20,ticks=[];for(let v=0;v<=max;v+=stp)ticks.push(v);
   ticks.forEach(v=>{g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-6}" y="${y(v)+3}" text-anchor="end">${v}</text>`});
   counts.forEach((c,i)=>{const x=L+i*bw+bw*.18,w=bw*.64,h=H-B-y(c),isCur=i===N-1;
     if(c>0)g+=`<path d="M${x},${H-B}V${y(c)+Math.min(4,h)}q0,-4 4,-4h${w-8}q4,0 4,4V${H-B}Z" fill="var(--mark)"/>`;
     const lbl=weeks[i].toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
     g+=`<text class="ax ${isCur?'cur':''}" x="${x+w/2}" y="${H-B+14}" text-anchor="middle">${isCur?'nu':'wk '+isoWeek(weeks[i])}</text>`;
-    g+=`<rect x="${L+i*bw}" y="${T}" width="${bw}" height="${H-T-B}" fill="transparent" data-tip="Week van ${lbl}: ${c} keer${c>=doelVan(who)?' 🏆':''}" data-dy="${y(c)-T}"/>`});
-  g+=`<line class="goal" x1="${L}" x2="${W-R}" y1="${y(doelVan(who))}" y2="${y(doelVan(who))}"/>`;
+    g+=`<rect x="${L+i*bw}" y="${T}" width="${bw}" height="${H-T-B}" fill="transparent" data-tip="Week van ${lbl}: ${c} van ${doelen[i]}${c>=doelen[i]?' 🏆':''}" data-dy="${y(c)-T}"/>`});
+  g+=`<path class="goal" fill="none" d="${doelen.map((d,i)=>(i?'H'+(L+i*bw)+'V':'M'+L+',')+y(d)+(i?'':'')).join('')}H${W-R}"/>`;
   $('chWeeks').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Aantal oefeningen per week, laatste 8 weken">${g}</svg>`;
   tipLayer($('chWeeks').parentElement,$('chWeeks').querySelector('svg'));
 }
@@ -607,10 +612,12 @@ function renderHistory(){
 
 let doelTimer=null;
 function stelDoel(d){const sp=SPELERS.find(x=>x.email===who);if(!sp)return toast('Speler niet gevonden');
-  const v=Math.max(1,Math.min(100,sp.weekdoel+d));if(v===sp.weekdoel)return;sp.weekdoel=v;
+  const v=Math.max(1,Math.min(100,doelVan(who)+d));if(v===doelVan(who))return;sp.weekdoel=v;
+  const wk=wsKey(weekStart(new Date()).getTime()),l=DOELEN[who]=DOELEN[who]||[{w:'2000-01-03',doel:10}];
+  const ex=l.find(x=>x.w===wk);if(ex)ex.doel=v;else{l.push({w:wk,doel:v});l.sort((a,b)=>a.w<b.w?-1:1)}
   $('doelVal').textContent=v;renderWho();renderHome();renderStats();
   clearTimeout(doelTimer);doelTimer=setTimeout(async()=>{const{error}=await sb.rpc('hockeymat_weekdoel_zetten',{p_email:who,p_doel:v});
-    if(error){toast('Weekdoel opslaan lukte niet');await fetchSpelers();renderAll()}else{store.set('hm_spelers',SPELERS);toast(`Weekdoel ${naamVan(who)}: ${v} ✓`)}},700)}
+    if(error){toast('Weekdoel opslaan lukte niet');await fetchSpelers();renderAll()}else{store.set('hm_spelers',SPELERS);store.set('hm_doelen',DOELEN);toast(`Weekdoel ${naamVan(who)}: ${v} ✓ (vanaf deze week)`)}},700)}
 $('doelMin').onclick=()=>stelDoel(-1);$('doelPlus').onclick=()=>stelDoel(1);
 
 /* ---------- beheer oefeningen ---------- */
@@ -664,7 +671,9 @@ $('btnAdd').onclick=async()=>{const naam=$('newName').value.trim();const err=$('
 /* ---------- data ---------- */
 const mapRow=r=>({id:r.id,oefening_id:r.oefening_id,t:new Date(r.gedaan_op).getTime(),score:r.score,tegenstander:r.tegenstander,score_tegenstander:r.score_tegenstander,duel_id:r.duel_id||null,tegenstander_email:r.tegenstander_email||null});
 function cacheRes(){store.set('hm_res_'+who,RES.slice(-1500))}
-async function fetchSpelers(){const{data,error}=await sb.rpc('hockeymat_spelers');if(!error&&data){SPELERS=data;store.set('hm_spelers',SPELERS)}}
+async function fetchSpelers(){const{data,error}=await sb.rpc('hockeymat_spelers');if(!error&&data){SPELERS=data;store.set('hm_spelers',SPELERS)}
+  const r=await sb.from('hockeymat_weekdoelen').select('user_email,week_start,doel').order('week_start');
+  if(!r.error){DOELEN={};r.data.forEach(x=>{(DOELEN[x.user_email]=DOELEN[x.user_email]||[]).push({w:x.week_start,doel:x.doel})});store.set('hm_doelen',DOELEN)}}
 async function fetchOef(){const{data,error}=await sb.from('hockeymat_oefeningen').select('*').order('volgorde');if(!error){OEF=data;store.set('hm_oef',OEF)}return!error}
 async function fetchRes(){
   if(!sb||!who)return;
