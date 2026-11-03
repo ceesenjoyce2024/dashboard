@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#7B1E34">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Rekken test</title>
-<meta name="app-version" content="test-2026-11-03.6">
+<meta name="app-version" content="test-2026-11-03.7">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="rekken"></script>
@@ -181,6 +181,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 .choice .ico{overflow:hidden;background:#fff;border:1.5px solid var(--line);height:64px;gap:0;display:flex}
 .choice .ico img{width:100%;height:100%;object-fit:cover;object-position:center}
 .choice .ico.duo img{width:50%}
+.choice .ico:not(.duo) img{object-fit:contain}
 @media (prefers-reduced-motion:reduce){.trophy{animation:none}}
 @media (prefers-reduced-motion:reduce){.ring-fg{transition:none}}
 </style>
@@ -276,7 +277,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <div id="chartMin"></div>
     </div>
     <p class="empty" id="syncLbl">Gegevens laden…</p>
-    <p class="empty">Versie test-2026-11-03.6</p>
+    <p class="empty">Versie test-2026-11-03.7</p>
     <div class="history">
       <span class="label">Laatste keren</span>
       <div id="histList"></div>
