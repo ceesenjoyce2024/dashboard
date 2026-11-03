@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#7B1E34">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Riva's Rekmomenten</title>
-<meta name="app-version" content="2026-11-03.6">
+<meta name="app-version" content="2026-11-03.7">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="rekken"></script>
@@ -178,6 +178,9 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 .ex p{margin:0;min-width:0}
 .stage{display:flex;align-items:center;justify-content:center;gap:12px}
 .eximg{width:min(120px,28vw);height:auto;border-radius:14px;border:1.5px solid var(--line);background:#fff;flex:none}
+.choice .ico{overflow:hidden;background:#fff;border:1.5px solid var(--line);height:64px;gap:0;display:flex}
+.choice .ico img{width:100%;height:100%;object-fit:cover;object-position:center}
+.choice .ico.duo img{width:50%}
 @media (prefers-reduced-motion:reduce){.trophy{animation:none}}
 @media (prefers-reduced-motion:reduce){.ring-fg{transition:none}}
 </style>
@@ -210,12 +213,12 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
     <div class="choices">
       <span class="label">Wat ga je rekken?</span>
       <button class="choice" data-mode="all">
-        <span class="ico"><svg viewBox="0 0 24 24"><path d="M9 3c0 5 1 8 1 11s-2 4-2 7h8c0-2-1-3-1-5"/><path d="M14 4c0 3 1 5 1 8"/></svg></span>
+        <span class="ico duo"><img src="/kuitrekken/img/boven.jpg" alt=""><img src="/kuitrekken/img/onder.jpg" alt=""></span>
         <span><h3>Alle kuitspieren</h3><p>Links boven + onder, dan rechts · 3 rondes · ± 7 min</p></span>
         <span class="go">›</span>
       </button>
       <button class="choice" data-mode="low">
-        <span class="ico"><svg viewBox="0 0 24 24"><path d="M10 13c0 3-2 4-2 8h8c0-2-1-3-1-6"/><path d="M8 21h10"/></svg></span>
+        <span class="ico"><img src="/kuitrekken/img/onder.jpg" alt=""></span>
         <span><h3>Alleen onderste kuitspier</h3><p>Links, dan rechts · 3 rondes · ± 3,5 min</p></span>
         <span class="go">›</span>
       </button>
@@ -273,7 +276,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <div id="chartMin"></div>
     </div>
     <p class="empty" id="syncLbl">Gegevens laden…</p>
-    <p class="empty">Versie 2026-11-03.6</p>
+    <p class="empty">Versie 2026-11-03.7</p>
     <div class="history">
       <span class="label">Laatste keren</span>
       <div id="histList"></div>
