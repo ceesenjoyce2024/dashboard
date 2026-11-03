@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#7B1E34">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Riva's Rekmomenten</title>
-<meta name="app-version" content="2026-11-03.5">
+<meta name="app-version" content="2026-11-03.6">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="rekken"></script>
@@ -223,8 +223,8 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 
     <section class="how">
       <span class="label">Zo doe je het</span>
-      <div class="ex"><img src="/kuitrekken/img/boven.jpg" alt="Kuitrek met gestrekt achterste been" width="96" height="133"><p><b>Bovenste kuitspieren</b><br>Grote stap naar voren, handen op je voorste knie. Achterste been gestrekt, hak op de grond. Leun rustig naar voren tot je trek voelt in je kuit.</p></div>
-      <div class="ex"><img src="/kuitrekken/img/onder.jpg" alt="Kuitrek met beide knieën gebogen" width="96" height="154"><p><b>Onderste kuitspier</b><br>Kleine stap, voeten achter elkaar. Buig beide knieën en zak rustig door. Hakken blijven op de grond.</p></div>
+      <div class="ex"><img src="/kuitrekken/img/boven.jpg" alt="Kuitrek met gestrekt achterste been" width="96" height="133"><p><b>Bovenste kuitspieren</b><br>Handen tegen de muur, één been naar achteren. Knie gestrekt, hak op de grond, leun rustig naar voren.</p></div>
+      <div class="ex"><img src="/kuitrekken/img/onder.jpg" alt="Kuitrek met gebogen knie" width="96" height="154"><p><b>Onderste kuitspier</b><br>Zelfde houding, maar buig de knie van je achterste been. Hak blijft op de grond.</p></div>
       <p>Rustig rekken, niet veren. Het mag trekken, niet pijn doen.</p>
     </section>
   </main>
@@ -273,7 +273,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <div id="chartMin"></div>
     </div>
     <p class="empty" id="syncLbl">Gegevens laden…</p>
-    <p class="empty">Versie 2026-11-03.5</p>
+    <p class="empty">Versie 2026-11-03.6</p>
     <div class="history">
       <span class="label">Laatste keren</span>
       <div id="histList"></div>
@@ -410,8 +410,8 @@ function chime(){if(!$('beeps').checked||!audio())return;[880,1109,1319].forEach
 
 /* ---------- routine ---------- */
 const WORK=30,SWITCH=3;
-const M={boven:{name:'Bovenste kuitspieren',tip:'Achterste been gestrekt, hak op de grond, leun naar voren.',img:'/kuitrekken/img/boven.jpg'},
-         onder:{name:'Onderste kuitspier',tip:'Beide knieën buigen, zak door, hakken op de grond.',img:'/kuitrekken/img/onder.jpg'}};
+const M={boven:{name:'Bovenste kuitspieren',tip:'Knie gestrekt, hak op de grond, leun naar voren.',img:'/kuitrekken/img/boven.jpg'},
+         onder:{name:'Onderste kuitspier',tip:'Knie gebogen, hak blijft op de grond.',img:'/kuitrekken/img/onder.jpg'}};
 let waiting=false,mode='all',blocksDone=0,startedAt=0,logged=false;
 let plan=[],idx=0,phase='work',remain=WORK,endAt=0,paused=false,tick=null,wake=null,lastSec=null;
 function build(mode){
