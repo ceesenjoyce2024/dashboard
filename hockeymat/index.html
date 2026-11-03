@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hockeymat">
+<meta name="theme-color" content="#141414">
+<script>try{if(localStorage.getItem("hm_mode")==="dark")document.documentElement.dataset.mode="dark"}catch(e){}</script>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Hockeymat</title>
+<meta name="app-version" content="2026-11-03.1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="/auth-guard.js" data-access="hockeymat"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Eén kolom, telefoon eerst: weekdoel bovenaan, vandaag, oefening kiezen, score invullen */
+:root{
+  --ink:#141414; --ink-2:#2A2A2A; --yellow:#FFD21F; --yellow-deep:#E5B800; --yellow-soft:#FFF5CC;
+  --bg:#FFFFFF; --fg:#141414; --muted:#6A665C; --line:#ECE8DC; --card:#FFFFFF; --soft:#F6F4EE;
+  --hero-bg:#141414; --hero-fg:#FFFFFF; --hero-dot:rgba(255,255,255,.22);
+  --btn-bg:#141414; --btn-fg:#FFD21F; --accent-text:#141414; --chip-on-bg:#141414; --chip-on-fg:#FFD21F;
+  --mark:#141414; --mark-hi:#E5B800; --goal:#9A7400; --grid:#ECE8DC; --danger:#B42318; --ok:#1E7A46;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+:root[data-mode="dark"]{
+  --bg:#0E0E0E; --fg:#F4F2EC; --muted:#A7A296; --line:#2A2925; --card:#171717; --soft:#1E1D1A;
+  --hero-bg:#1A1A1A; --hero-fg:#FFFFFF; --hero-dot:rgba(255,255,255,.18);
+  --btn-bg:#FFD21F; --btn-fg:#141414; --accent-text:#FFD21F; --chip-on-bg:#FFD21F; --chip-on-fg:#141414;
+  --yellow-soft:#2A2614; --mark:#FFD21F; --mark-hi:#FFFFFF; --goal:#FFD21F; --grid:#2A2925; --danger:#F97066; --ok:#4ADE80;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:480px;margin:0 auto;padding-block:18px 40px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.05;letter-spacing:.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--yellow-deep);outline-offset:2px}
+.label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.view{display:flex;flex-direction:column;gap:20px}
+
+/* header */
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+.back{color:var(--muted);font-weight:600;font-size:13px;text-decoration:none}
+.brand h1{font-size:34px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.brand h1 .stick{width:14px;height:28px;background:var(--yellow);border-radius:3px;transform:skewX(-14deg);flex:none}
+.brand span{color:var(--muted);font-size:14px}
+.icons{display:flex;gap:8px;flex:none}
+.iconbtn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);display:grid;place-items:center;flex:none}
+.iconbtn svg{width:21px;height:21px;stroke:var(--fg);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* kind kiezen (ouders) */
+.who{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px}
+.chip.on{background:var(--chip-on-bg);border-color:var(--chip-on-bg);color:var(--chip-on-fg)}
+
+/* hero */
+.hero{background:var(--hero-bg);color:var(--hero-fg);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-38px;top:-38px;width:96px;height:96px;border-radius:50%;border:11px solid var(--yellow)}
+.hero h2{font-size:28px;font-weight:800;position:relative;z-index:1;padding-right:44px}
+.hero .row{display:flex;align-items:flex-end;gap:12px;position:relative;z-index:1}
+.hero .big{font-family:var(--display);font-weight:800;font-size:64px;line-height:.9;color:var(--yellow);font-variant-numeric:tabular-nums}
+.hero .row span{font-weight:700;font-size:16px;padding-bottom:6px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;position:relative;z-index:1}
+.dots i{width:14px;height:14px;border-radius:4px;background:var(--hero-dot)}
+.dots i.on{background:var(--yellow)}
+.hero .meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-weight:700;font-size:14px;position:relative;z-index:1}
+.hero .meta .dim{opacity:.75}
+
+/* lijsten */
+.section{display:flex;flex-direction:column;gap:10px}
+.today{display:flex;flex-direction:column;gap:8px}
+.res{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:11px 14px}
+.res time{font-family:var(--display);font-weight:700;font-size:18px;font-variant-numeric:tabular-nums;width:48px;flex:none}
+.res .what{flex:1;min-width:0;display:flex;flex-direction:column}
+.res .what b{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res .what small{color:var(--muted);font-size:13px}
+.score{font-family:var(--display);font-weight:800;font-size:24px;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+.res .go{color:var(--muted);font-size:20px}
+.empty{color:var(--muted);font-size:15px;margin:0}
+.statlink{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:13px 14px;font-weight:700;font-size:15px;text-align:left;width:100%}
+.statlink span:last-child{white-space:nowrap}
+
+.choices{display:flex;flex-direction:column;gap:10px}
+.choice{display:flex;gap:14px;align-items:center;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:18px;padding:14px;width:100%}
+.choice:hover{border-color:var(--fg)}
+.choice .nr{width:44px;height:44px;border-radius:12px;background:var(--yellow);color:#141414;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:22px;flex:none}
+.choice .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.choice h3{font-size:20px;font-weight:700}
+.choice p{margin:0;color:var(--muted);font-size:14px}
+.choice .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.tag{font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--soft);color:var(--muted)}
+.tag.duo{background:var(--yellow-soft);color:var(--accent-text)}
+.choice .go{font-family:var(--display);font-weight:700;font-size:24px;color:var(--muted)}
+
+/* invoer */
+.sesshead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ghost{background:none;border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px}
+.entry h2{font-size:30px;font-weight:800}
+.entry .desc{margin:4px 0 0;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:8px}
+.field label{font-weight:700;font-size:14px}
+.box{border:1.5px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:16px;background:var(--card)}
+.scorer{display:flex;align-items:center;gap:10px}
+.step{width:52px;height:52px;border-radius:14px;border:1.5px solid var(--line);background:var(--soft);font-family:var(--display);font-weight:800;font-size:26px;flex:none}
+.scorer input[type=number]{flex:1;min-width:0;text-align:center;font-family:var(--display);font-weight:800;font-size:44px;border:1.5px solid var(--line);border-radius:14px;padding:4px;background:var(--bg);font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.scorer input::-webkit-outer-spin-button,.scorer input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=range]{width:100%;accent-color:var(--yellow-deep)}
+.txtin{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;background:var(--bg);font-size:16px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips .chip{padding:5px 12px;font-size:13px}
+.err{color:var(--danger);font-weight:600;font-size:14px;margin:0}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+.primary{flex:1;background:var(--btn-bg);color:var(--btn-fg);border:0;border-radius:999px;padding:15px 24px;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.03em;text-transform:uppercase}
+.primary:disabled{opacity:.5}
+.danger{background:none;border:1.5px solid var(--danger);color:var(--danger);border-radius:999px;padding:12px 18px;font-weight:700}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center;font-family:var(--display);font-weight:800}
+.vs b{font-size:40px;font-variant-numeric:tabular-nums}
+.vs small{display:block;font-family:var(--body);font-weight:600;font-size:13px;color:var(--muted)}
+
+/* statistieken */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{border-radius:16px;background:var(--soft);padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:2px}
+.tile b{font-family:var(--display);font-weight:800;font-size:30px;font-variant-numeric:tabular-nums;line-height:1.05}
+.tile span{font-size:12px;font-weight:600;color:var(--muted)}
+.chartcard{border:1.5px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;position:relative;background:var(--card)}
+.chead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.chead h3{font-size:20px;font-weight:700}
+.seg{display:flex;background:var(--soft);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;border-radius:999px;padding:5px 10px;font-weight:700;font-size:13px;color:var(--muted)}
+.seg button.on{background:var(--chip-on-bg);color:var(--chip-on-fg)}
+.sel{border:1.5px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);font-weight:600;font-size:14px;max-width:100%}
+.chart svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.ax{fill:var(--muted);font:600 10px var(--body)}
+.ax.cur{fill:var(--fg);font-weight:800}
+.gl{stroke:var(--grid);stroke-width:1}
+.goal{stroke:var(--goal);stroke-width:1.5;stroke-dasharray:5 4}
+.goal-t{fill:var(--goal);font:700 10px var(--body)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:600}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;background:var(--mark)}
+.legend i.dash{height:0;width:16px;border-top:2px dashed var(--goal);border-radius:0;background:none}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;padding:6px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-110%);z-index:5}
+.hbar{display:grid;grid-template-columns:minmax(0,1fr) 120px 34px;align-items:center;gap:8px;font-size:14px}
+.hbar .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbar .t{height:12px;border-radius:0 4px 4px 0;background:var(--soft);position:relative}
+.hbar .t i{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;background:var(--mark)}
+.hbar b{font-family:var(--display);font-size:18px;text-align:right;font-variant-numeric:tabular-nums}
+.hbar small{grid-column:1/-1;color:var(--muted);font-size:12px;margin-top:-6px}
+.duo-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
+.duo-row:first-child{border-top:0}
+.duo-row b{font-weight:700}
+.wl{display:flex;gap:6px;font-size:13px;font-weight:700}
+.wl span{border-radius:999px;padding:2px 8px;background:var(--soft)}
+.hday{font-weight:700;font-size:13px;color:var(--muted);margin-top:8px;text-transform:capitalize}
+.more{align-self:center}
+.sync{font-size:12px;color:var(--muted);text-align:center;margin:0}
+
+/* beheer */
+.oefrow{border:1.5px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--card)}
+.oefrow.off{opacity:.6}
+.oefrow .r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.oefrow .r .txtin{flex:1;min-width:0}
+.mini{border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px;font-weight:700;font-size:13px}
+.mini.del{color:var(--danger);border-color:var(--danger)}
+.check{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
+.check input{width:18px;height:18px;accent-color:var(--yellow-deep)}
+
+/* toast + feest */
+.toast{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--yellow);font-weight:700;padding:12px 18px;border-radius:999px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.reward{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;
+  padding:max(24px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.reward canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.trophy{width:150px;height:150px;border-radius:50%;background:var(--ink);display:grid;place-items:center;animation:pop .7s cubic-bezier(.2,1.6,.4,1) both;position:relative;font-size:72px}
+.reward h2{font-size:40px;font-weight:800;text-transform:uppercase;position:relative}
+.reward p{margin:0;color:var(--muted);max-width:30ch;position:relative}
+.reward .primary{position:relative;flex:none;min-width:180px}
+@keyframes pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.trophy{animation:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <a id="dashLink" class="back" href="/" hidden>‹ Dashboard</a>
+      <h1><i class="stick"></i>Hockeymat</h1>
+      <span id="today">Vandaag</span>
+    </div>
+    <div class="icons">
+      <button class="iconbtn" id="btnMode" aria-label="Donkere modus aan of uit"><svg viewBox="0 0 24 24" id="modeIco"></svg></button>
+      <button class="iconbtn" id="btnStats" aria-label="Overzicht en grafieken"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button>
+    </div>
+  </header>
+
+  <div class="who" id="who" hidden></div>
+
+  <!-- HOME -->
+  <main id="viewHome" class="view">
+    <section class="hero" aria-live="polite">
+      <h2 id="heroTitle">Hoi!</h2>
+      <div class="row"><b class="big" id="heroBig">10</b><span id="heroSub">oefeningen te gaan deze week</span></div>
+      <div class="dots" id="weekDots"></div>
+      <div class="meta"><span id="heroCount">0 van 10 deze week</span><span class="dim" id="heroDays"></span></div>
+      <div class="meta"><span id="heroWeeks"></span></div>
+    </section>
+
+    <section class="section">
+      <span class="label">Vandaag</span>
+      <div class="today" id="todayList"></div>
+    </section>
+
+    <button class="statlink" id="btnStats2"><span id="weekLine">Bekijk je scores</span><span>Overzicht ›</span></button>
+
+    <section class="section">
+      <span class="label">Kies een oefening</span>
+      <div class="choices" id="choices"></div>
+    </section>
+    <p class="sync" id="syncLbl"></p>
+  </main>
+
+  <!-- INVOER -->
+  <main id="viewEntry" class="view entry" hidden>
+    <div class="sesshead"><span class="label" id="entryLbl">Nieuwe score</span><button class="ghost" id="btnCancel">Annuleren</button></div>
+    <div><h2 id="entryTitle">Oefening</h2><p class="desc" id="entryDesc"></p></div>
+    <div class="box">
+      <div class="field" id="fOef" hidden><label for="inOef">Oefening</label><select id="inOef" class="sel"></select></div>
+      <div class="field">
+        <label for="inScore" id="lblScore">Jouw score</label>
+        <div class="scorer"><button class="step" data-t="inScore" data-d="-1" aria-label="Eén minder">−</button><input id="inScore" type="number" inputmode="numeric" min="0" max="100" step="1" value="0"><button class="step" data-t="inScore" data-d="1" aria-label="Eén meer">+</button></div>
+        <input type="range" id="rgScore" min="0" max="100" value="0" aria-label="Score schuif">
+      </div>
+      <div id="duoFields" hidden>
+        <div class="field" style="margin-bottom:16px">
+          <label for="inOpp">Naam tegenstander</label>
+          <input id="inOpp" class="txtin" type="text" maxlength="40" autocomplete="off" placeholder="Bijv. Jesper" list="oppList">
+          <datalist id="oppList"></datalist>
+          <div class="chips" id="oppChips"></div>
+        </div>
+        <div class="field">
+          <label for="inScore2" id="lblScore2">Score tegenstander</label>
+          <div class="scorer"><button class="step" data-t="inScore2" data-d="-1" aria-label="Eén minder">−</button><input id="inScore2" type="number" inputmode="numeric" min="0" max="100" step="1" value="0"><button class="step" data-t="inScore2" data-d="1" aria-label="Eén meer">+</button></div>
+          <input type="range" id="rgScore2" min="0" max="100" value="0" aria-label="Score tegenstander schuif">
+        </div>
+      </div>
+      <div class="field"><label for="inWhen">Wanneer</label><input id="inWhen" class="txtin" type="datetime-local"></div>
+      <p class="err" id="entryErr" hidden></p>
+    </div>
+    <div class="btnrow"><button class="primary" id="btnSave">Opslaan</button></div>
+    <div class="btnrow" id="delRow" hidden><button class="danger" id="btnDel">Deze score verwijderen</button></div>
+  </main>
+
+  <!-- OVERZICHT -->
+  <main id="viewStats" class="view" hidden>
+    <div class="sesshead"><span class="label" id="statsLbl">Overzicht</span><button class="ghost" id="btnStatsBack">‹ Terug</button></div>
+    <div class="tiles">
+      <div class="tile"><b id="tWeek">0/10</b><span>deze week</span></div>
+      <div class="tile"><b id="tAvg">–</b><span>gem. score 30 dagen</span></div>
+      <div class="tile"><b id="tBest">–</b><span>beste score</span></div>
+    </div>
+
+    <section class="chartcard">
+      <div class="chead"><h3>Oefeningen per week</h3></div>
+      <div class="chart" id="chWeeks"></div>
+      <div class="legend"><span><i></i>aantal keer</span><span><i class="dash"></i>doel 10</span></div>
+    </section>
+
+    <section class="chartcard">
+      <div class="chead"><h3>Scores</h3>
+        <div class="seg" role="tablist" id="rngSeg"><button data-r="30" class="on">30 d</button><button data-r="90">90 d</button><button data-r="0">Alles</button></div>
+      </div>
+      <select class="sel" id="selOef" aria-label="Kies oefening"></select>
+      <div class="chart" id="chScores"></div>
+      <p class="empty" id="chScoresNote" hidden></p>
+    </section>
+
+    <section class="chartcard">
+      <div class="chead"><h3>Gemiddelde per oefening</h3></div>
+      <div id="perOef" style="display:flex;flex-direction:column;gap:12px"></div>
+    </section>
+
+    <section class="chartcard" id="duoCard" hidden>
+      <div class="chead"><h3>Met z'n 2-en</h3></div>
+      <div id="duoList"></div>
+    </section>
+
+    <section class="section">
+      <span class="label">Alle scores</span>
+      <div class="today" id="histList"></div>
+      <button class="ghost more" id="btnMore" hidden>Meer tonen</button>
+    </section>
+
+    <button class="statlink" id="btnBeheer" hidden><span>Oefeningen beheren</span><span>Bewerken ›</span></button>
+  </main>
+
+  <!-- BEHEER -->
+  <main id="viewBeheer" class="view" hidden>
+    <div class="sesshead"><span class="label">Oefeningen beheren</span><button class="ghost" id="btnBeheerBack">‹ Terug</button></div>
+    <p class="empty">Wijzigingen worden direct opgeslagen. Een oefening met scores kun je verbergen; verwijderen kan alleen als er nog geen scores zijn.</p>
+    <div id="oefList" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="box">
+      <div class="field"><label for="newName">Nieuwe oefening</label><input id="newName" class="txtin" maxlength="80" placeholder="Naam"></div>
+      <input id="newDesc" class="txtin" maxlength="200" placeholder="Uitleg (mag leeg)">
+      <label class="check"><input type="checkbox" id="newDuo"> Met z'n 2-en (met tegenstander)</label>
+      <p class="err" id="newErr" hidden></p>
+      <button class="primary" id="btnAdd">Toevoegen</button>
+    </div>
+  </main>
+</div>
+
+<div id="reward" class="reward" hidden>
+  <canvas id="confetti"></canvas>
+  <div class="trophy" aria-hidden="true">🏆</div>
+  <h2>Weekdoel gehaald!</h2>
+  <p id="rewardTxt">10 oefeningen deze week. Alles wat je nu nog doet is extra.</p>
+  <button class="primary" id="btnRewardOk">Top!</button>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const GOAL=10;
+const SB_URL='https://hvpooifxqhovskwgzpbr.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g';
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const naamVan=e=>{if(!e)return'';const n=e.split('@')[0].split(/[._-]/)[0];return n.charAt(0).toUpperCase()+n.slice(1)};
+
+let sb=null,me=null,rol=null,ouder=false,who=null,kids=[];
+let OEF=store.get('hm_oef',[]),RES=[];
+
+/* ---------- tijd ---------- */
+const pad=n=>String(n).padStart(2,'0');
+function weekStart(d){const x=new Date(d);x.setHours(0,0,0,0);const wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);return x}
+const dayKey=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const hhmm=t=>new Date(t).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+function isoWeek(d){const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=x.getUTCDay()||7;x.setUTCDate(x.getUTCDate()+4-n);const y=new Date(Date.UTC(x.getUTCFullYear(),0,1));return Math.ceil(((x-y)/864e5+1)/7)}
+function toLocalInput(t){const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())}
+const oefById=id=>OEF.find(o=>o.id===id);
+const activeOef=()=>OEF.filter(o=>o.actief).sort((a,b)=>a.volgorde-b.volgorde||a.naam.localeCompare(b.naam));
+function thisWeek(){const s=weekStart(new Date()).getTime();return RES.filter(r=>r.t>=s)}
+function weeksHit(){const m={};RES.forEach(r=>{const k=weekStart(r.t).getTime();m[k]=(m[k]||0)+1});return Object.values(m).filter(n=>n>=GOAL).length}
+
+/* ---------- views ---------- */
+const VIEWS=['viewHome','viewEntry','viewStats','viewBeheer'];
+function show(v){VIEWS.forEach(x=>$(x).hidden=x!==v);$('who').hidden=!(ouder&&kids.length>0&&(v==='viewHome'||v==='viewStats'));window.scrollTo(0,0)}
+function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2200)}
+function setSync(t){$('syncLbl').textContent=t}
+
+/* ---------- licht / donker ---------- */
+function renderMode(){const dark=document.documentElement.dataset.mode==='dark';
+  $('modeIco').innerHTML=dark?'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>':'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+  $('btnMode').setAttribute('aria-label',dark?'Lichte modus':'Donkere modus');
+  document.querySelector('meta[name=theme-color]').content=dark?'#0E0E0E':'#141414'}
+$('btnMode').onclick=()=>{const dark=document.documentElement.dataset.mode==='dark';
+  if(dark)delete document.documentElement.dataset.mode;else document.documentElement.dataset.mode='dark';
+  try{localStorage.setItem('hm_mode',dark?'light':'dark')}catch(e){}
+  renderMode();if(!$('viewStats').hidden)renderStats()};
+
+/* ---------- home ---------- */
+function renderWho(){
+  if(!ouder||!kids.length){$('who').innerHTML='';return}
+  $('who').innerHTML=kids.map(e=>`<button class="chip ${e===who?'on':''}" data-e="${esc(e)}">${esc(naamVan(e))}</button>`).join('');
+}
+$('who').onclick=async e=>{const b=e.target.closest('.chip');if(!b||b.dataset.e===who)return;who=b.dataset.e;store.set('hm_who',who);renderWho();RES=[];renderAll();await fetchRes()};
+
+function renderHome(){
+  const d=new Date();
+  $('today').textContent=d.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+  const naam=naamVan(who),wk=thisWeek(),n=wk.length,left=Math.max(0,GOAL-n);
+  const daysLeft=7-((d.getDay()+6)%7);
+  if(left===0){$('heroTitle').textContent=ouder?`${naam} heeft het weekdoel gehaald 🏆`:`Weekdoel gehaald, ${naam}! 🏆`;
+    $('heroBig').textContent=n;$('heroSub').textContent=n===GOAL?'oefeningen gedaan deze week':`oefeningen — ${n-GOAL} extra`;}
+  else{$('heroTitle').textContent=ouder?`${naam} deze week`:(n===0?`Hoi ${naam}!`:`Goed bezig, ${naam}!`);
+    $('heroBig').textContent=left;$('heroSub').textContent=(left===1?'oefening':'oefeningen')+' te gaan deze week';}
+  $('weekDots').innerHTML=Array.from({length:GOAL},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('');
+  $('heroCount').textContent=`${Math.min(n,GOAL)} van ${GOAL} deze week`;
+  $('heroDays').textContent=left===0?'':(daysLeft===1?'Laatste dag: vandaag':`Nog ${daysLeft} dagen, t/m zondag`);
+  const wh=weeksHit();$('heroWeeks').textContent=wh?`🏆 ${wh} ${wh===1?'week':'weken'} gehaald`:'Doe er 10 per week en verdien een beker';
+  const tk=dayKey(Date.now()),td=RES.filter(r=>dayKey(r.t)===tk).sort((a,b)=>b.t-a.t);
+  $('todayList').innerHTML=td.length?td.map(resRow).join(''):`<p class="empty">${ouder?'Vandaag nog niets ingevuld.':'Nog niets gedaan vandaag. Kies hieronder een oefening.'}</p>`;
+  const avg=wk.length?Math.round(wk.reduce((s,r)=>s+r.score,0)/wk.length):null;
+  $('weekLine').textContent=wk.length?`Deze week: ${n} keer · gemiddeld ${avg}`:'Deze week nog geen scores';
+  const list=activeOef();
+  $('choices').innerHTML=list.length?list.map((o,i)=>{
+    const rs=RES.filter(r=>r.oefening_id===o.id);const last=rs.length?rs[rs.length-1].score:null;const best=rs.length?Math.max(...rs.map(r=>r.score)):null;
+    return `<button class="choice" data-id="${o.id}"><span class="nr">${i+1}</span><span class="txt"><h3>${esc(o.naam)}</h3>${o.omschrijving?`<p>${esc(o.omschrijving)}</p>`:''}<span class="tags">${o.met_tegenstander?'<span class="tag duo">met z\'n 2-en</span>':''}${last!==null?`<span class="tag">laatst ${last} · beste ${best}</span>`:''}</span></span><span class="go">›</span></button>`}).join('')
+    :'<p class="empty">Nog geen oefeningen.</p>';
+}
+function resRow(r){const o=oefById(r.oefening_id);const duo=!!r.tegenstander;
+  const sub=duo?`tegen ${esc(r.tegenstander||'?')} · ${r.score}–${r.score_tegenstander??'?'}`:'';
+  return `<button class="res" data-rid="${r.id}"><time>${hhmm(r.t)}</time><span class="what"><b>${esc(o?o.naam:'Oefening')}</b>${sub?`<small>${sub}</small>`:''}</span><span class="score">${r.score}</span><span class="go">›</span></button>`}
+document.addEventListener('click',e=>{const c=e.target.closest('.choice');if(c&&c.dataset.id){openEntry({oefening_id:c.dataset.id});return}
+  const r=e.target.closest('.res');if(r&&r.dataset.rid){const x=RES.find(z=>z.id===r.dataset.rid);if(x)openEntry(x)}});
+
+/* ---------- invoer ---------- */
+let editing=null,backTo='viewHome';
+function bindScore(inId,rgId){const i=$(inId),g=$(rgId);
+  const clamp=v=>Math.max(0,Math.min(100,Math.round(+v||0)));
+  i.addEventListener('input',()=>{if(i.value==='')return;g.value=clamp(i.value)});
+  i.addEventListener('blur',()=>{i.value=clamp(i.value);g.value=i.value});
+  g.addEventListener('input',()=>{i.value=g.value});}
+bindScore('inScore','rgScore');bindScore('inScore2','rgScore2');
+document.querySelectorAll('.step').forEach(b=>b.onclick=()=>{const i=$(b.dataset.t);const v=Math.max(0,Math.min(100,(+i.value||0)+ +b.dataset.d));i.value=v;$(b.dataset.t==='inScore'?'rgScore':'rgScore2').value=v});
+function setScore(id,v){$(id).value=v;$(id==='inScore'?'rgScore':'rgScore2').value=v}
+function opponents(){const m={};RES.forEach(r=>{if(r.tegenstander){const k=r.tegenstander.trim();m[k]=(m[k]||0)+1}});return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(x=>x[0])}
+function applyOefUI(){const o=oefById($('inOef').value);if(!o)return;
+  $('entryTitle').textContent=o.naam;$('entryDesc').textContent=o.omschrijving||'';$('entryDesc').hidden=!o.omschrijving;
+  $('duoFields').hidden=!o.met_tegenstander;}
+$('inOef').onchange=applyOefUI;
+function openEntry(r){
+  backTo=$('viewStats').hidden?'viewHome':'viewStats';
+  editing=r.id?r:null;
+  const opts=(editing?OEF:activeOef()).slice().sort((a,b)=>a.volgorde-b.volgorde);
+  $('inOef').innerHTML=opts.map(o=>`<option value="${o.id}">${esc(o.naam)}${o.actief?'':' (verborgen)'}</option>`).join('');
+  $('inOef').value=r.oefening_id;$('fOef').hidden=!editing;
+  const naam=naamVan(who);
+  $('entryLbl').textContent=editing?'Score wijzigen':(ouder?`Nieuwe score voor ${naam}`:'Nieuwe score');
+  $('lblScore').textContent=ouder?`Score ${naam}`:'Jouw score';
+  setScore('inScore',editing?r.score:0);setScore('inScore2',editing&&r.score_tegenstander!=null?r.score_tegenstander:0);
+  $('inOpp').value=editing?(r.tegenstander||''):'';
+  const opp=opponents();$('oppList').innerHTML=opp.map(n=>`<option value="${esc(n)}">`).join('');
+  $('oppChips').innerHTML=opp.slice(0,6).map(n=>`<button type="button" class="chip" data-n="${esc(n)}">${esc(n)}</button>`).join('');
+  $('inWhen').value=toLocalInput(editing?r.t:Date.now());
+  $('entryErr').hidden=true;$('delRow').hidden=!editing;$('btnSave').disabled=false;$('btnSave').textContent=editing?'Wijziging opslaan':'Opslaan';
+  updateOppLabel();applyOefUI();show('viewEntry');
+}
+$('oppChips').onclick=e=>{const b=e.target.closest('.chip');if(b){$('inOpp').value=b.dataset.n;updateOppLabel()}};
+function updateOppLabel(){const n=$('inOpp').value.trim();$('lblScore2').textContent=n?`Score ${n}`:'Score tegenstander'}
+$('inOpp').addEventListener('input',updateOppLabel);
+$('btnCancel').onclick=()=>show(backTo);
+function entryErr(t){$('entryErr').textContent=t;$('entryErr').hidden=false}
+$('btnSave').onclick=async()=>{
+  const o=oefById($('inOef').value);if(!o)return entryErr('Kies een oefening.');
+  const raw=$('inScore').value;if(raw===''||isNaN(+raw))return entryErr('Vul een score in tussen 0 en 100.');
+  const score=+raw;if(score<0||score>100||!Number.isInteger(score))return entryErr('De score moet een heel getal tussen 0 en 100 zijn.');
+  let opp=null,s2=null;
+  if(o.met_tegenstander){opp=$('inOpp').value.trim();if(!opp)return entryErr('Vul de naam van de tegenstander in.');
+    const r2=$('inScore2').value;if(r2===''||isNaN(+r2)||+r2<0||+r2>100||!Number.isInteger(+r2))return entryErr('De score van de tegenstander moet tussen 0 en 100 zijn.');s2=+r2}
+  const when=$('inWhen').value?new Date($('inWhen').value):new Date();
+  if(isNaN(when))return entryErr('Kies een geldige datum en tijd.');
+  if(when.getTime()>Date.now()+5*60e3)return entryErr('Dat tijdstip ligt in de toekomst.');
+  const row={oefening_id:o.id,score,tegenstander:opp,score_tegenstander:s2,gedaan_op:when.toISOString()};
+  $('btnSave').disabled=true;$('btnSave').textContent='Opslaan…';
+  const before=thisWeek().length;
+  let res;
+  if(editing)res=await sb.from('hockeymat_resultaten').update(row).eq('id',editing.id).select().single();
+  else{row.user_email=who;res=await sb.from('hockeymat_resultaten').insert(row).select().single()}
+  if(res.error){$('btnSave').disabled=false;$('btnSave').textContent=editing?'Wijziging opslaan':'Opslaan';return entryErr('Opslaan lukte niet: '+res.error.message)}
+  const r=mapRow(res.data);
+  if(editing)RES=RES.map(x=>x.id===r.id?r:x);else RES.push(r);
+  RES.sort((a,b)=>a.t-b.t);cacheRes();
+  const after=thisWeek().length;
+  show(backTo);renderAll();
+  if(!editing&&!ouder&&before<GOAL&&after>=GOAL)celebrate();else toast(editing?'Gewijzigd ✓':'Opgeslagen ✓');
+};
+$('btnDel').onclick=async()=>{if(!editing||!confirm('Deze score verwijderen?'))return;
+  const{error}=await sb.from('hockeymat_resultaten').delete().eq('id',editing.id);
+  if(error)return entryErr('Verwijderen lukte niet: '+error.message);
+  RES=RES.filter(x=>x.id!==editing.id);cacheRes();show(backTo);renderAll();toast('Verwijderd');};
+
+/* ---------- feest ---------- */
+function celebrate(){const el=$('reward');el.hidden=false;
+  $('rewardTxt').textContent=`${GOAL} oefeningen deze week, ${naamVan(who)}. Alles wat je nu nog doet is extra.`;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const c=$('confetti'),x=c.getContext('2d'),W=c.width=innerWidth*devicePixelRatio,H=c.height=innerHeight*devicePixelRatio;
+  const cols=['#FFD21F','#141414','#E5B800','#FFFFFF','#9A7400'];
+  const P=Array.from({length:160},()=>({x:Math.random()*W,y:-Math.random()*H*.6,vx:(Math.random()-.5)*3,vy:2+Math.random()*4,s:(6+Math.random()*8)*devicePixelRatio,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[Math.random()*cols.length|0]}));
+  let f=0;(function loop(){if(el.hidden||f++>360){x.clearRect(0,0,W,H);return}x.clearRect(0,0,W,H);
+    P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()});requestAnimationFrame(loop)})()}
+$('btnRewardOk').onclick=()=>{$('reward').hidden=true};
+
+/* ---------- overzicht ---------- */
+let range=30,selOef='all',histN=40;
+$('btnStats').onclick=$('btnStats2').onclick=()=>{histN=40;renderStats();show('viewStats')};
+$('btnStatsBack').onclick=()=>{renderHome();show('viewHome')};
+$('rngSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;range=+b.dataset.r;[...$('rngSeg').children].forEach(x=>x.classList.toggle('on',x===b));renderScoreChart()};
+$('selOef').onchange=e=>{selOef=e.target.value;renderScoreChart()};
+$('btnMore').onclick=()=>{histN+=60;renderHistory()};
+
+function tipLayer(card,svg){
+  let tip=card.querySelector('.tip');if(!tip){tip=document.createElement('div');tip.className='tip';tip.hidden=true;card.appendChild(tip)}
+  const showTip=ev=>{const t=ev.target.closest('[data-tip]');if(!t){tip.hidden=true;return}
+    const cr=card.getBoundingClientRect(),tr=t.getBoundingClientRect();
+    tip.textContent=t.dataset.tip;tip.hidden=false;
+    const x=Math.min(Math.max(tr.left+tr.width/2-cr.left,70),cr.width-70);tip.style.left=x+'px';tip.style.top=(tr.top-cr.top+(+t.dataset.dy||0))+'px'};
+  svg.addEventListener('pointermove',showTip);svg.addEventListener('pointerdown',showTip);svg.addEventListener('pointerleave',()=>tip.hidden=true);
+}
+
+function renderStats(){
+  const naam=naamVan(who);$('statsLbl').textContent=ouder?`Overzicht ${naam}`:'Jouw overzicht';
+  const wk=thisWeek().length;$('tWeek').textContent=`${wk}/${GOAL}`;
+  const since=Date.now()-30*864e5,r30=RES.filter(r=>r.t>=since);
+  $('tAvg').textContent=r30.length?Math.round(r30.reduce((s,r)=>s+r.score,0)/r30.length):'–';
+  $('tBest').textContent=RES.length?Math.max(...RES.map(r=>r.score)):'–';
+  const used=OEF.filter(o=>o.actief||RES.some(r=>r.oefening_id===o.id)).sort((a,b)=>a.volgorde-b.volgorde);
+  if(selOef!=='all'&&!used.some(o=>o.id===selOef))selOef='all';
+  $('selOef').innerHTML='<option value="all">Alle oefeningen (gemiddelde per dag)</option>'+used.map(o=>`<option value="${o.id}">${esc(o.naam)}</option>`).join('');
+  $('selOef').value=selOef;
+  renderWeekChart();renderScoreChart();renderPerOef();renderDuo();renderHistory();
+  $('btnBeheer').hidden=!ouder;
+}
+
+function renderWeekChart(){
+  const N=8,W=340,H=170,L=26,R=6,T=14,B=26,cur=weekStart(new Date());
+  const weeks=Array.from({length:N},(_,i)=>{const s=new Date(cur);s.setDate(s.getDate()-(N-1-i)*7);return s});
+  const counts=weeks.map(s=>{const a=s.getTime(),b=a+7*864e5;return RES.filter(r=>r.t>=a&&r.t<b).length});
+  const max=Math.max(GOAL+2,...counts),y=v=>T+(H-T-B)*(1-v/max),bw=(W-L-R)/N;
+  let g='';
+  const ticks=max<=15?[0,5,10,15].filter(v=>v<=max):[0,Math.round(max/2),max];
+  ticks.forEach(v=>{g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-6}" y="${y(v)+3}" text-anchor="end">${v}</text>`});
+  counts.forEach((c,i)=>{const x=L+i*bw+bw*.18,w=bw*.64,h=H-B-y(c),isCur=i===N-1;
+    if(c>0)g+=`<path d="M${x},${H-B}V${y(c)+Math.min(4,h)}q0,-4 4,-4h${w-8}q4,0 4,4V${H-B}Z" fill="var(--mark)"/>`;
+    const lbl=weeks[i].toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+    g+=`<text class="ax ${isCur?'cur':''}" x="${x+w/2}" y="${H-B+14}" text-anchor="middle">${isCur?'nu':'wk '+isoWeek(weeks[i])}</text>`;
+    g+=`<rect x="${L+i*bw}" y="${T}" width="${bw}" height="${H-T-B}" fill="transparent" data-tip="Week van ${lbl}: ${c} keer${c>=GOAL?' 🏆':''}" data-dy="${y(c)-T}"/>`});
+  g+=`<line class="goal" x1="${L}" x2="${W-R}" y1="${y(GOAL)}" y2="${y(GOAL)}"/>`;
+  $('chWeeks').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Aantal oefeningen per week, laatste 8 weken">${g}</svg>`;
+  tipLayer($('chWeeks').parentElement,$('chWeeks').querySelector('svg'));
+}
+
+function renderScoreChart(){
+  const W=340,H=190,L=26,R=10,T=12,B=26;
+  let rs=RES.slice();if(range)rs=rs.filter(r=>r.t>=Date.now()-range*864e5);
+  let pts;
+  if(selOef==='all'){const m={};rs.forEach(r=>{const k=dayKey(r.t);(m[k]=m[k]||[]).push(r.score)});
+    pts=Object.keys(m).sort().map(k=>{const v=m[k];const d=new Date(k+'T12:00');return{t:d.getTime(),v:Math.round(v.reduce((a,b)=>a+b,0)/v.length),n:v.length}})}
+  else pts=rs.filter(r=>r.oefening_id===selOef).map(r=>({t:r.t,v:r.score,n:1,opp:r.tegenstander}));
+  const note=$('chScoresNote');
+  if(!pts.length){$('chScores').innerHTML='';note.textContent='Nog geen scores in deze periode.';note.hidden=false;return}
+  note.hidden=true;
+  const t0=pts[0].t,t1=pts[pts.length-1].t,span=Math.max(t1-t0,864e5);
+  const x=t=>pts.length===1?(L+W-R)/2:L+(W-L-R)*((t-t0)/span),y=v=>T+(H-T-B)*(1-v/100);
+  let g='';[0,25,50,75,100].forEach(v=>{g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-6}" y="${y(v)+3}" text-anchor="end">${v}</text>`});
+  const fmt=t=>new Date(t).toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+  g+=`<text class="ax" x="${x(t0)}" y="${H-8}" text-anchor="${pts.length===1?'middle':'start'}">${fmt(t0)}</text>`;
+  if(pts.length>1)g+=`<text class="ax" x="${x(t1)}" y="${H-8}" text-anchor="end">${fmt(t1)}</text>`;
+  if(pts.length>1)g+=`<path d="${pts.map((p,i)=>(i?'L':'M')+x(p.t).toFixed(1)+','+y(p.v).toFixed(1)).join('')}" fill="none" stroke="var(--mark)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  pts.forEach(p=>{const tip=`${new Date(p.t).toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'})}${selOef==='all'?'':' '+hhmm(p.t)}: ${p.v}${selOef==='all'&&p.n>1?` (gem. van ${p.n})`:''}${p.opp?' · tegen '+p.opp:''}`;
+    g+=`<circle cx="${x(p.t)}" cy="${y(p.v)}" r="4.5" fill="var(--mark)" stroke="var(--card)" stroke-width="2"/><circle cx="${x(p.t)}" cy="${y(p.v)}" r="14" fill="transparent" data-tip="${esc(tip)}" data-dy="-6"/>`});
+  $('chScores').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scores in de tijd">${g}</svg>`;
+  tipLayer($('chScores').parentElement,$('chScores').querySelector('svg'));
+}
+
+function renderPerOef(){
+  const rows=OEF.map(o=>{const rs=RES.filter(r=>r.oefening_id===o.id);return{o,n:rs.length,avg:rs.length?Math.round(rs.reduce((s,r)=>s+r.score,0)/rs.length):null,best:rs.length?Math.max(...rs.map(r=>r.score)):null}}).filter(x=>x.n).sort((a,b)=>b.avg-a.avg);
+  $('perOef').innerHTML=rows.length?rows.map(x=>`<div class="hbar"><span class="n">${esc(x.o.naam)}</span><span class="t"><i style="width:${x.avg}%"></i></span><b>${x.avg}</b><small>${x.n}× gedaan · beste ${x.best}</small></div>`).join(''):'<p class="empty">Nog geen scores.</p>';
+}
+function renderDuo(){
+  const m={};RES.filter(r=>r.tegenstander&&r.score_tegenstander!=null).forEach(r=>{const k=r.tegenstander.trim();const x=m[k]=m[k]||{w:0,g:0,v:0,n:0};x.n++;if(r.score>r.score_tegenstander)x.w++;else if(r.score<r.score_tegenstander)x.v++;else x.g++});
+  const ks=Object.keys(m).sort((a,b)=>m[b].n-m[a].n);$('duoCard').hidden=!ks.length;
+  $('duoList').innerHTML=ks.map(k=>`<div class="duo-row"><b>tegen ${esc(k)}</b><span class="wl"><span>${m[k].w} gewonnen</span><span>${m[k].g} gelijk</span><span>${m[k].v} verloren</span></span></div>`).join('');
+}
+function renderHistory(){
+  const rs=RES.slice().sort((a,b)=>b.t-a.t),sh=rs.slice(0,histN);let h='',last='';
+  sh.forEach(r=>{const k=dayKey(r.t);if(k!==last){last=k;h+=`<div class="hday">${new Date(r.t).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'})}</div>`}h+=resRow(r)});
+  $('histList').innerHTML=h||'<p class="empty">Nog geen scores.</p>';$('btnMore').hidden=rs.length<=histN;
+}
+
+/* ---------- beheer oefeningen ---------- */
+$('btnBeheer').onclick=()=>{renderBeheer();show('viewBeheer')};
+$('btnBeheerBack').onclick=()=>{renderStats();show('viewStats')};
+function renderBeheer(){
+  const list=OEF.slice().sort((a,b)=>a.volgorde-b.volgorde);
+  $('oefList').innerHTML=list.map((o,i)=>{const n=RES.filter(r=>r.oefening_id===o.id).length;return `
+  <div class="oefrow ${o.actief?'':'off'}" data-id="${o.id}">
+    <div class="r"><input class="txtin" data-f="naam" maxlength="80" value="${esc(o.naam)}" aria-label="Naam"></div>
+    <input class="txtin" data-f="omschrijving" maxlength="200" value="${esc(o.omschrijving||'')}" placeholder="Uitleg (mag leeg)" aria-label="Uitleg">
+    <div class="r">
+      <label class="check"><input type="checkbox" data-f="met_tegenstander" ${o.met_tegenstander?'checked':''}> Met z'n 2-en</label>
+      <label class="check"><input type="checkbox" data-f="actief" ${o.actief?'checked':''}> Zichtbaar</label>
+      <span style="flex:1"></span>
+      <button class="mini" data-a="up" ${i===0?'disabled':''} aria-label="Omhoog">↑</button>
+      <button class="mini" data-a="down" ${i===list.length-1?'disabled':''} aria-label="Omlaag">↓</button>
+      <button class="mini del" data-a="del">Verwijderen</button>
+    </div>
+  </div>`}).join('');
+}
+async function saveOef(id,patch){const{error}=await sb.from('hockeymat_oefeningen').update(patch).eq('id',id);
+  if(error){toast('Opslaan lukte niet');await fetchOef();renderBeheer();return false}
+  OEF=OEF.map(o=>o.id===id?{...o,...patch}:o);store.set('hm_oef',OEF);toast('Opgeslagen ✓');return true}
+$('oefList').addEventListener('change',async e=>{const row=e.target.closest('.oefrow'),f=e.target.dataset.f;if(!row||!f)return;
+  let v=e.target.type==='checkbox'?e.target.checked:e.target.value.trim();
+  if(f==='naam'&&!v){toast('Naam mag niet leeg zijn');renderBeheer();return}
+  if(f==='omschrijving'&&!v)v=null;
+  await saveOef(row.dataset.id,{[f]:v});if(f==='actief')row.classList.toggle('off',!v)});
+$('oefList').addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b)return;const id=b.closest('.oefrow').dataset.id;
+  const list=OEF.slice().sort((a,b)=>a.volgorde-b.volgorde),i=list.findIndex(o=>o.id===id);
+  if(b.dataset.a==='up'||b.dataset.a==='down'){const j=b.dataset.a==='up'?i-1:i+1;if(j<0||j>=list.length)return;
+    [list[i],list[j]]=[list[j],list[i]];
+    const upd=list.map((o,k)=>({id:o.id,v:k+1})).filter(x=>oefById(x.id).volgorde!==x.v);
+    for(const u of upd){const{error}=await sb.from('hockeymat_oefeningen').update({volgorde:u.v}).eq('id',u.id);if(error){toast('Volgorde opslaan lukte niet');break}}
+    await fetchOef();renderBeheer();return}
+  if(b.dataset.a==='del'){const o=oefById(id);
+    if(!confirm(`"${o.naam}" verwijderen?`))return;
+    const{error}=await sb.from('hockeymat_oefeningen').delete().eq('id',id);
+    if(error){if(error.code==='23503'){if(confirm('Deze oefening heeft al scores, dus verwijderen kan niet. Wil je hem verbergen? De scores blijven bewaard.'))await saveOef(id,{actief:false})}
+      else toast('Verwijderen lukte niet')}
+    else toast('Verwijderd');
+    await fetchOef();renderBeheer()}});
+$('btnAdd').onclick=async()=>{const naam=$('newName').value.trim();const err=$('newErr');err.hidden=true;
+  if(!naam){err.textContent='Geef de oefening een naam.';err.hidden=false;return}
+  const volgorde=Math.max(0,...OEF.map(o=>o.volgorde))+1;
+  const{error}=await sb.from('hockeymat_oefeningen').insert({naam,omschrijving:$('newDesc').value.trim()||null,met_tegenstander:$('newDuo').checked,volgorde});
+  if(error){err.textContent='Toevoegen lukte niet: '+error.message;err.hidden=false;return}
+  $('newName').value='';$('newDesc').value='';$('newDuo').checked=false;toast('Toegevoegd ✓');await fetchOef();renderBeheer()};
+
+/* ---------- data ---------- */
+const mapRow=r=>({id:r.id,oefening_id:r.oefening_id,t:new Date(r.gedaan_op).getTime(),score:r.score,tegenstander:r.tegenstander,score_tegenstander:r.score_tegenstander});
+function cacheRes(){store.set('hm_res_'+who,RES.slice(-1500))}
+async function fetchOef(){const{data,error}=await sb.from('hockeymat_oefeningen').select('*').order('volgorde');if(!error){OEF=data;store.set('hm_oef',OEF)}return!error}
+async function fetchRes(){
+  if(!sb||!who)return;
+  const{data,error}=await sb.from('hockeymat_resultaten').select('id,oefening_id,gedaan_op,score,tegenstander,score_tegenstander').eq('user_email',who).order('gedaan_op',{ascending:true}).limit(5000);
+  if(error){setSync('Kon scores niet ophalen. Je ziet de laatst bekende stand.');return}
+  RES=data.map(mapRow);cacheRes();setSync('Bijgewerkt om '+hhmm(Date.now()));renderAll();
+}
+function renderAll(){renderHome();if(!$('viewStats').hidden)renderStats()}
+async function init(){
+  renderMode();renderHome();
+  try{
+    if(!window.authReady||!window.supabase)return;
+    const a=await window.authReady;me=(a.session.user.email||'').toLowerCase();rol=a.rol;ouder=rol==='admin'||rol==='eikenlaan';
+    sb=window.supabase.createClient(SB_URL,SB_KEY);
+    if(ouder){$('dashLink').hidden=false;
+      const{data}=await sb.rpc('hockeymat_kinderen');kids=(data||[]).map(x=>x.email||x);
+      const saved=store.get('hm_who',null);who=kids.includes(saved)?saved:(kids[0]||me);
+    }else{who=me;
+      const{data:apps}=await sb.rpc('mijn_apps');if(apps&&apps.length>1)$('dashLink').hidden=false;}
+    RES=store.get('hm_res_'+who,[]);renderWho();show('viewHome');renderHome();
+    await fetchOef();renderHome();await fetchRes();
+  }catch(e){setSync('Kon niet verbinden. Je ziet de laatst bekende stand.')}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&sb&&$('viewEntry').hidden)fetchRes()});
+init();
+</script>
+</body>
+</html>
