@@ -10,7 +10,7 @@
 <script>try{if(localStorage.getItem("hm_mode")==="dark")document.documentElement.dataset.mode="dark"}catch(e){}</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Hockeymat</title>
-<meta name="app-version" content="2026-11-03.5">
+<meta name="app-version" content="2026-11-03.6">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="hockeymat"></script>
@@ -42,7 +42,10 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px
 .app{max-width:480px;margin:0 auto;padding-block:18px 40px;display:flex;flex-direction:column;gap:20px}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.05;letter-spacing:.01em}
 button,input,select,textarea{font:inherit;color:inherit}
-button{cursor:pointer}
+button{cursor:pointer;touch-action:manipulation}
+/* iOS zoomt in bij velden < 16px: alle invoer minimaal 16px */
+input,select,textarea{font-size:16px}
+a,label,.chip,.choice,.res,.step{touch-action:manipulation}
 button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--yellow-deep);outline-offset:2px}
 .label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .view{display:flex;flex-direction:column;gap:20px}
@@ -141,7 +144,7 @@ input[type=range]{width:100%;accent-color:var(--yellow-deep)}
 .seg{display:flex;background:var(--soft);border-radius:999px;padding:3px}
 .seg button{border:0;background:none;border-radius:999px;padding:5px 10px;font-weight:700;font-size:13px;color:var(--muted)}
 .seg button.on{background:var(--chip-on-bg);color:var(--chip-on-fg)}
-.sel{border:1.5px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);font-weight:600;font-size:14px;max-width:100%}
+.sel{border:1.5px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);font-weight:600;font-size:16px;max-width:100%}
 .chart svg{width:100%;height:auto;display:block;touch-action:pan-y}
 .ax{fill:var(--muted);font:600 10px var(--body)}
 .ax.cur{fill:var(--fg);font-weight:800}
