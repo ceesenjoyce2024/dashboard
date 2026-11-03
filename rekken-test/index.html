@@ -10,7 +10,7 @@
 <script>try{if(localStorage.getItem("rt_mode")==="dark")document.documentElement.dataset.mode="dark"}catch(e){}</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Rekken test</title>
-<meta name="app-version" content="test-2026-11-03.11">
+<meta name="app-version" content="test-2026-11-03.12">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="rekken"></script>
@@ -188,6 +188,9 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 .choice .ico img{width:100%;height:100%;object-fit:cover;object-position:center}
 .choice .ico.duo img{width:50%}
 .choice .ico:not(.duo) img{object-fit:contain}
+.mctl{display:flex;gap:6px;flex:none}
+#musicIco path,#musicIco rect{fill:var(--wine);stroke:none}
+#btnMStop svg rect{fill:var(--muted);stroke:none}
 .own{display:flex;gap:6px;flex-wrap:wrap}
 .ownchip{display:inline-flex;align-items:stretch;min-width:0;max-width:100%}
 .ownchip .track{border-top-right-radius:0;border-bottom-right-radius:0;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -294,7 +297,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <div id="chartMin"></div>
     </div>
     <p class="empty" id="syncLbl">Gegevens laden…</p>
-    <p class="empty">Versie test-2026-11-03.11</p>
+    <p class="empty">Versie test-2026-11-03.12</p>
     <div class="history">
       <span class="label">Laatste keren</span>
       <div id="histList"></div>
@@ -322,7 +325,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
   <!-- MUSIC -->
   <section class="music" aria-label="Muziek">
     <div class="mrow">
-      <button class="iconbtn" id="btnMusic" aria-label="Muziek aan of uit"><svg viewBox="0 0 24 24" id="musicIco"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></button>
+      <div class="mctl"><button class="iconbtn" id="btnMusic" aria-label="Muziek afspelen"><svg viewBox="0 0 24 24" id="musicIco"></svg></button><button class="iconbtn" id="btnMStop" aria-label="Muziek stoppen"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button></div>
       <div class="tracks" id="tracks"></div>
     </div>
     <div class="own" id="ownTracks"></div>
@@ -427,21 +430,29 @@ function playOwn(k){
   const u=songUrl(k);if(player.src!==u){player.src=u;player.currentTime=0}
   player.play().catch(()=>{$('ownNote').textContent='Tik nog een keer op het nummer om af te spelen.'});
 }
-function startMusic(){
+function startMusic(resume){
   if(!audio()||!musicOn)return; if(ctx.state==='suspended')ctx.resume();
-  stopMusic();
+  const keep=resume?step:0; stopMusic();
   if(trackIdx>=3){const k=trackIdx-3;if(own[k]){playOwn(k);return}trackIdx=0}
   if(!showTunes){const k=own.findIndex(o=>o);if(k>=0){trackIdx=3+k;renderMusic();playOwn(k)}return}
-  musicGain.gain.value=1; nextT=ctx.currentTime+.1; step=0;
+  musicGain.gain.value=1; nextT=ctx.currentTime+.1; step=keep;
   sched=setInterval(()=>{const tr=TRACKS[trackIdx],b=60/tr.bpm/2;
     while(nextT<ctx.currentTime+.25){tr.play(step,nextT,b);nextT+=b;step++}},40);
+  musicCtl();
 }
-function stopMusic(){try{player.pause()}catch(e){}if(sched){clearInterval(sched);sched=null}if(musicGain){const g=musicGain;g.gain.setTargetAtTime(0,ctx.currentTime,.05);musicGain=ctx.createGain();musicGain.connect(master)}}
+function stopMusic(){try{player.pause()}catch(e){}if(sched){clearInterval(sched);sched=null}if(musicGain){const g=musicGain;g.gain.setTargetAtTime(0,ctx.currentTime,.05);musicGain=ctx.createGain();musicGain.connect(master)};try{musicCtl()}catch(e){}}
+const isPlaying=()=>!!sched||!player.paused;
+function musicCtl(){
+  const pl=isPlaying();
+  $('musicIco').innerHTML=pl?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>':'<path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/>';
+  $('btnMusic').setAttribute('aria-label',pl?'Muziek pauzeren':'Muziek afspelen');
+}
+player.addEventListener('play',()=>musicCtl());player.addEventListener('pause',()=>musicCtl());
 function setVol(){if(master)master.gain.value=(vol/100)*.8;if(!mediaSrc)player.volume=vol/100}
 function renderMusic(){
   $('tracks').hidden=!showTunes;
   $('tracks').innerHTML=TRACKS.map((t,i)=>`<button class="track ${i===trackIdx?'on':''}" data-i="${i}">${t.name}</button>`).join('');
-  $('musicIco').innerHTML=musicOn?'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>':'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M3 3l18 18"/>';
+  musicCtl();
   $('vol').value=vol;$('volLbl').textContent=vol;
   const esc=t=>t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const free=own.findIndex(o=>!o),cnt=own.filter(Boolean).length;
@@ -480,7 +491,12 @@ $('ownFile').onchange=async e=>{
     renderMusic();startMusic();
   }catch(x){$('ownNote').textContent='Opslaan lukte niet. Probeer een ander mp3-bestand.'}
 };
-$('btnMusic').onclick=()=>{musicOn=!musicOn;store.set('rt_music',musicOn);renderMusic();musicOn?startMusic():stopMusic()};
+$('btnMusic').onclick=()=>{
+  if(isPlaying()){stopMusic();musicOn=false}            // pauze: plek onthouden
+  else{musicOn=true;startMusic(true)}                    // verder waar het was
+  store.set('rt_music',musicOn);musicCtl();
+};
+$('btnMStop').onclick=()=>{stopMusic();step=0;try{player.currentTime=0}catch(e){}musicOn=false;store.set('rt_music',false);musicCtl()};
 $('vol').oninput=e=>{vol=+e.target.value;store.set('rt_vol',vol);$('volLbl').textContent=vol;setVol()};
 let showTunes=store.get('rt_tunes',true);
 $('tunes').checked=showTunes;
