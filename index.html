@@ -542,8 +542,8 @@ async function laadGebruikers() {
         <button class="btn-del" onclick="verwijderGebruiker('${u.email}')">✕</button>
       ` : `<span class="user-rol rol-admin">admin</span>`}
     </div>
-    ${u.rol === 'kind' ? `<div class="kind-apps">${Object.keys(KIND_APPS).map(a => `
-      <label><input type="checkbox" ${(u.apps || []).includes(a) ? 'checked' : ''} onchange="wijzigKindApp('${u.email}','${a}',this.checked)"> ${KIND_APPS[a].naam}</label>`).join('')}
+    ${(u.rol === 'kind' || u.rol === 'eikenlaan') ? `<div class="kind-apps">${Object.keys(KIND_APPS).filter(a => u.rol === 'kind' || a === 'hockeymat').map(a => `
+      <label><input type="checkbox" ${(u.apps || []).includes(a) ? 'checked' : ''} onchange="wijzigKindApp('${u.email}','${a}',this.checked)"> ${KIND_APPS[a].naam}${u.rol === 'kind' ? '' : ' (doet zelf mee)'}</label>`).join('')}
     </div>` : ''}
   `).join('');
 }

@@ -10,7 +10,7 @@
 <script>try{if(localStorage.getItem("hm_mode")==="dark")document.documentElement.dataset.mode="dark"}catch(e){}</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Hockeymat</title>
-<meta name="app-version" content="2026-11-03.1">
+<meta name="app-version" content="2026-11-03.2">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="hockeymat"></script>
@@ -336,7 +336,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const naamVan=e=>{if(!e)return'';const n=e.split('@')[0].split(/[._-]/)[0];return n.charAt(0).toUpperCase()+n.slice(1)};
 
 let sb=null,me=null,rol=null,ouder=false,who=null,kids=[];
-let OEF=store.get('hm_oef',[]),RES=[];
+let OEF=store.get('hm_oef',[]),RES=[],WEEKN={};
 
 /* ---------- tijd ---------- */
 const pad=n=>String(n).padStart(2,'0');
@@ -369,7 +369,7 @@ $('btnMode').onclick=()=>{const dark=document.documentElement.dataset.mode==='da
 /* ---------- home ---------- */
 function renderWho(){
   if(!ouder||!kids.length){$('who').innerHTML='';return}
-  $('who').innerHTML=kids.map(e=>`<button class="chip ${e===who?'on':''}" data-e="${esc(e)}">${esc(naamVan(e))}</button>`).join('');
+  $('who').innerHTML=kids.map(e=>`<button class="chip ${e===who?'on':''}" data-e="${esc(e)}">${esc(naamVan(e))}${WEEKN[e]!=null?` · ${WEEKN[e]}/${GOAL}`:''}</button>`).join('');
 }
 $('who').onclick=async e=>{const b=e.target.closest('.chip');if(!b||b.dataset.e===who)return;who=b.dataset.e;store.set('hm_who',who);renderWho();RES=[];renderAll();await fetchRes()};
 
@@ -624,20 +624,26 @@ async function fetchRes(){
   if(error){setSync('Kon scores niet ophalen. Je ziet de laatst bekende stand.');return}
   RES=data.map(mapRow);cacheRes();setSync('Bijgewerkt om '+hhmm(Date.now()));renderAll();
 }
-function renderAll(){renderHome();if(!$('viewStats').hidden)renderStats()}
+async function fetchWeekAll(){
+  if(!ouder||!kids.length)return;
+  const{data,error}=await sb.from('hockeymat_resultaten').select('user_email').gte('gedaan_op',weekStart(new Date()).toISOString());
+  if(error)return;WEEKN={};kids.forEach(k=>WEEKN[k]=0);data.forEach(r=>{if(r.user_email in WEEKN)WEEKN[r.user_email]++});renderWho();
+}
+function renderAll(){if(ouder&&who)WEEKN[who]=thisWeek().length;renderWho();renderHome();if(!$('viewStats').hidden)renderStats()}
 async function init(){
   renderMode();renderHome();
   try{
     if(!window.authReady||!window.supabase)return;
-    const a=await window.authReady;me=(a.session.user.email||'').toLowerCase();rol=a.rol;ouder=rol==='admin'||rol==='eikenlaan';
+    const a=await window.authReady;me=(a.session.user.email||'').toLowerCase();rol=a.rol;
     sb=window.supabase.createClient(SB_URL,SB_KEY);
+    const{data:isO}=await sb.rpc('is_ouder');ouder=!!isO;
     if(ouder){$('dashLink').hidden=false;
       const{data}=await sb.rpc('hockeymat_kinderen');kids=(data||[]).map(x=>x.email||x);
       const saved=store.get('hm_who',null);who=kids.includes(saved)?saved:(kids[0]||me);
     }else{who=me;
-      const{data:apps}=await sb.rpc('mijn_apps');if(apps&&apps.length>1)$('dashLink').hidden=false;}
+      const{data:apps}=await sb.rpc('mijn_apps');if(rol!=='kind'||(apps&&apps.length>1))$('dashLink').hidden=false;}
     RES=store.get('hm_res_'+who,[]);renderWho();show('viewHome');renderHome();
-    await fetchOef();renderHome();await fetchRes();
+    await fetchOef();renderHome();await Promise.all([fetchRes(),fetchWeekAll()]);
   }catch(e){setSync('Kon niet verbinden. Je ziet de laatst bekende stand.')}
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&sb&&$('viewEntry').hidden)fetchRes()});
