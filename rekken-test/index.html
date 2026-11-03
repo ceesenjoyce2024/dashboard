@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#7B1E34">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Rekken test</title>
-<meta name="app-version" content="test-2026-11-03.2">
+<meta name="app-version" content="test-2026-11-03.3">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="rekken"></script>
@@ -45,9 +45,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .iconbtn svg{width:22px;height:22px;stroke:var(--wine);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* moments */
-.moments{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.moments{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .moment{border-radius:14px;border:1.5px solid var(--line);padding:10px 4px;text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center}
-.moment b{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums}
+.moment b{font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums}
 .moment small{font-size:12px;color:var(--muted);font-weight:700}
 .moment.next{border-color:var(--wine);background:var(--wine-soft)}
 .moment.next small{color:var(--wine)}
@@ -155,6 +155,25 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 .hrow .st{font-weight:800;font-size:12px;padding:3px 8px;border-radius:999px;background:var(--wine);color:var(--on-wine);white-space:nowrap}
 .hrow .st.part{background:var(--wine-soft);color:var(--wine)}
 .empty{color:var(--muted);font-size:14px;margin:0}
+.count-big{font-family:var(--display);font-size:56px;line-height:1;font-variant-numeric:tabular-nums}
+.hello .row{display:flex;align-items:flex-end;gap:12px}
+.hello .row span{font-weight:800;font-size:15px;padding-bottom:6px}
+.stars{font-weight:800;font-size:14px;opacity:.95}
+.moment .num{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.moment.done .num{color:var(--on-wine);opacity:.8}
+.reward{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;
+  padding:max(24px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.reward canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.trophy{width:150px;height:150px;border-radius:50%;background:var(--wine);display:grid;place-items:center;animation:pop .7s cubic-bezier(.2,1.6,.4,1) both;position:relative}
+.trophy svg{width:86px;height:86px}
+.reward h2{font-size:34px;color:var(--wine);position:relative}
+.reward p{margin:0;color:var(--muted);max-width:30ch;position:relative;font-size:16px}
+.reward .times3{display:flex;gap:8px;position:relative}
+.reward .times3 b{font-family:var(--display);background:var(--wine-soft);color:var(--wine);border-radius:12px;padding:8px 12px;font-size:18px}
+.reward .big{position:relative}
+.starcount{font-family:var(--display);font-size:20px;color:var(--wine);position:relative}
+@keyframes pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.trophy{animation:none}}
 @media (prefers-reduced-motion:reduce){.ring-fg{transition:none}}
 </style>
 
@@ -163,23 +182,17 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 <div class="app">
   <header class="top">
     <div class="brand"><a id="dashLink" href="/" hidden style="color:var(--muted);font-weight:700;font-size:13px;text-decoration:none">‹ Dashboard</a><h1>Rekken <span class="testtag">TEST</span></h1><span id="today">Vandaag</span></div>
-    <div style="display:flex;gap:8px"><button class="iconbtn" id="btnStats" aria-label="Overzicht"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button><button class="iconbtn" id="btnSettings" aria-label="Tijden aanpassen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
+    <div style="display:flex;gap:8px"><button class="iconbtn" id="btnStats" aria-label="Overzicht"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button></div>
   </header>
 
-  <section id="settings" class="settings" hidden>
-    <span class="label">Herinnertijden</span>
-    <div class="times" id="timeInputs"></div>
-    <p>Deze app kan zelf geen meldingen sturen als hij dicht is. Zet deze tijden als herhalende wekker op je telefoon.</p>
-    <button class="big alt" id="btnSaveTimes">Opslaan</button>
-    <p>Versie test-2026-11-03.2 · testversie, gegevens blijven op dit toestel</p>
-  </section>
 
   <!-- HOME -->
   <main id="viewHome" style="display:flex;flex-direction:column;gap:20px">
     <section class="hello">
       <h2 id="helloTitle">Hoi Riva! Tijd om te rekken</h2>
-      <p id="helloSub">Volgende moment om 16:00.</p>
-      <div class="streak"><div class="dots" id="dayDots"></div><span id="dayCount">0 van 4 vandaag</span></div>
+      <div id="helloSub"></div>
+      <div class="streak"><div class="dots" id="dayDots"></div><span id="dayCount">0 van 3 vandaag</span></div>
+      <div class="stars" id="starLine"></div>
     </section>
 
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -252,6 +265,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <div id="chartMin"></div>
     </div>
     <p class="empty" id="syncLbl">Gegevens laden…</p>
+    <p class="empty">Versie test-2026-11-03.3</p>
     <div class="history">
       <span class="label">Laatste keren</span>
       <div id="histList"></div>
@@ -265,6 +279,16 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
     <p id="doneMsg">Goed gedaan. Je hak is je dankbaar.</p>
     <button class="big" id="btnHome">Terug</button>
   </main>
+
+  <section id="reward" class="reward" hidden>
+    <canvas id="confetti"></canvas>
+    <div class="trophy"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.3l-5.8 3.1 1.1-6.5L2.6 9.3l6.5-.9z" fill="#FFD36E" stroke="#fff" stroke-width="1" stroke-linejoin="round"/></svg></div>
+    <h2>3 keer gehaald!</h2>
+    <p id="rewardMsg">Je hebt vandaag alles gedaan. Je hak is je dankbaar.</p>
+    <div class="times3" id="rewardTimes"></div>
+    <div class="starcount" id="rewardStars"></div>
+    <button class="big" id="btnRewardClose">Yes!</button>
+  </section>
 
   <!-- MUSIC -->
   <section class="music" aria-label="Muziek">
@@ -287,39 +311,30 @@ const $=id=>document.getElementById(id);
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 
 /* ---------- schedule ---------- */
-let times=store.get('rt_times',['07:30','16:00','18:00','20:00']);
+const GOAL=3;
 const dkey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
 const toMin=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
 const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
-// afgeronde sessies van vandaag koppelen aan het dichtstbijzijnde vrije moment
-function doneToday(){
-  const k=dkey(),done=[];
-  getLog().filter(e=>e.blocks>=e.total&&dayKey(e.t)===k).sort((a,b)=>a.t-b.t).forEach(e=>{
-    const d=new Date(e.t),n=d.getHours()*60+d.getMinutes();let best=-1,bd=1e9;
-    times.forEach((t,i)=>{if(done.includes(i))return;const x=Math.abs(toMin(t)-n);if(x<bd){bd=x;best=i}});
-    if(best>=0)done.push(best)});
-  return done;
-}
+// afgeronde sessies van vandaag, op volgorde
+function doneToday(){const k=dkey();return getLog().filter(e=>e.blocks>=e.total&&dayKey(e.t)===k).sort((a,b)=>a.t-b.t)}
 function markDone(){return doneToday().length}
+const hhmm=t=>new Date(t).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+// ster = dag waarop het doel is gehaald
+function starDays(){const m={};getLog().forEach(e=>{if(e.blocks>=e.total){const k=dayKey(e.t);m[k]=(m[k]||0)+1}});return Object.values(m).filter(n=>n>=GOAL).length}
 function renderHome(){
-  const done=doneToday(), n=nowMin();
-  const d=new Date();
+  const done=doneToday(),n=done.length,left=Math.max(0,GOAL-n),d=new Date();
   $('today').textContent=d.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
-  let next=times.findIndex((t,i)=>!done.includes(i)&&toMin(t)+90>=n);
-  $('moments').innerHTML=times.map((t,i)=>{
-    const st=done.includes(i)?'done':(i===next?'next':'');
-    const lbl=done.includes(i)?'✓ gedaan':(i===next?(toMin(t)<=n?'nu':'volgende'):(toMin(t)+90<n?'gemist':'straks'));
-    return `<div class="moment ${st}"><b>${t}</b><small>${lbl}</small></div>`}).join('');
-  $('dayDots').innerHTML=times.map((t,i)=>`<i class="${done.includes(i)?'on':''}"></i>`).join('');
-  $('dayCount').textContent=`${done.length} van ${times.length} vandaag`;
-  if(done.length>=times.length){$('helloTitle').textContent='Alles gedaan vandaag!';$('helloSub').textContent='Top Riva. Morgen om '+times[0]+' weer.'}
-  else if(next>=0&&toMin(times[next])<=n){$('helloTitle').textContent='Hoi Riva! Tijd om te rekken';$('helloSub').textContent='Het moment van '+times[next]+' staat klaar.'}
-  else if(next>=0){$('helloTitle').textContent='Hoi Riva!';$('helloSub').textContent='Volgende rekmoment om '+times[next]+'.'}
-  else{$('helloTitle').textContent='Hoi Riva!';$('helloSub').textContent='Morgen om '+times[0]+' weer.'}
+  $('moments').innerHTML=Array.from({length:GOAL},(_,i)=>{
+    const e=done[i];
+    return e?`<div class="moment done"><span class="num">${i+1}e keer</span><b>${hhmm(e.t)}</b><small>✓ gedaan</small></div>`
+            :`<div class="moment ${i===n?'next':''}"><span class="num">${i+1}e keer</span><b>--:--</b><small>${i===n?'nu doen':'nog te gaan'}</small></div>`}).join('');
+  $('dayDots').innerHTML=Array.from({length:GOAL},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('');
+  $('dayCount').textContent=`${Math.min(n,GOAL)} van ${GOAL} vandaag`;
+  if(left===0){$('helloTitle').innerHTML='Gehaald vandaag! ⭐';$('helloSub').innerHTML='<span class="row"><span>Alle 3 keer gedaan. Morgen weer.</span></span>'}
+  else{$('helloTitle').textContent=n===0?'Hoi Riva!':'Goed bezig, Riva!';
+    $('helloSub').innerHTML=`<span class="row"><b class="count-big">${left}</b><span>${left===1?'keer':'keer'} rekken te gaan vandaag${left===1?' — daarna je ster!':''}</span></span>`}
+  const st=starDays();$('starLine').textContent=st?`⭐ ${st} ${st===1?'ster':'sterren'} verdiend`:'Haal 3 keer per dag en verdien een ster';
 }
-function renderSettings(){$('timeInputs').innerHTML=times.map((t,i)=>`<input type="time" id="t${i}" value="${t}" aria-label="Moment ${i+1}">`).join('')}
-$('btnSettings').onclick=()=>{const s=$('settings');s.hidden=!s.hidden;if(!s.hidden)renderSettings()};
-$('btnSaveTimes').onclick=()=>{times=times.map((t,i)=>$('t'+i).value||t).sort();store.set('rt_times',times);$('settings').hidden=true;renderHome()};
 
 /* ---------- audio ---------- */
 let ctx=null,master=null,musicGain=null,fxGain=null;
@@ -447,8 +462,10 @@ function loop(){
 }
 function finish(){
   clearInterval(tick);chime();logSession();const n=markDone();
-  $('doneMsg').textContent=n>=times.length?'Alle '+times.length+' momenten van vandaag gedaan. Super!':`Moment ${n} van ${times.length} van vandaag gedaan. Goed bezig!`;
-  show('viewDone');try{wake&&wake.release()}catch(e){}
+  try{wake&&wake.release()}catch(e){}
+  if(n===GOAL){showReward();return}
+  $('doneMsg').textContent=n>GOAL?`Extra keer gedaan (${n} vandaag). Top!`:`${n} van ${GOAL} gedaan om ${hhmm(Date.now())}. Nog ${GOAL-n} te gaan!`;
+  show('viewDone');
 }
 function stop(){clearInterval(tick);if(blocksDone>0)logSession();try{wake&&wake.release()}catch(e){}show('viewHome');renderHome()}
 $('btnPause').onclick=()=>{
@@ -457,6 +474,24 @@ $('btnPause').onclick=()=>{
   else{paused=false;endAt=performance.now()+remain*1000;$('btnPause').textContent='Pauze';$('btnPause').classList.remove('alt')}
 };
 $('btnStop').onclick=stop;
+function showReward(){
+  const done=doneToday(),st=starDays();
+  $('rewardTimes').innerHTML=done.slice(0,GOAL).map(e=>`<b>${hhmm(e.t)}</b>`).join('');
+  $('rewardStars').textContent=`⭐ ${st} ${st===1?'ster':'sterren'} verdiend`;
+  $('rewardMsg').textContent=st>1&&st%7===0?`Al ${st} sterren! Tijd voor een extra beloning, vraag het aan papa of mama.`:'Je hebt vandaag alle 3 keer gerekt. Je hak is je dankbaar.';
+  $('reward').hidden=false;confetti();
+  if($('beeps').checked&&audio())[523,659,784,1046,784,1046].forEach((f,i)=>tone(fxGain,f,ctx.currentTime+i*.13,.4,'triangle',.3,.005));
+}
+function confetti(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const c=$('confetti'),x=c.getContext('2d'),W=c.width=innerWidth*devicePixelRatio,H=c.height=innerHeight*devicePixelRatio;
+  const cols=['#7B1E34','#E8A0B4','#FFD36E','#ffffff','#B3304F'];
+  const P=Array.from({length:160},()=>({x:Math.random()*W,y:-Math.random()*H*.6,vx:(Math.random()-.5)*3,vy:2+Math.random()*4,s:(6+Math.random()*8)*devicePixelRatio,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[Math.random()*cols.length|0]}));
+  const t0=performance.now();
+  (function f(t){x.clearRect(0,0,W,H);P.forEach(p=>{p.x+=p.vx*devicePixelRatio;p.y+=p.vy*devicePixelRatio;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()});
+    if(t-t0<4500&&!$('reward').hidden)requestAnimationFrame(f);else x.clearRect(0,0,W,H)})(t0);
+}
+$('btnRewardClose').onclick=()=>{$('reward').hidden=true;show('viewHome');renderHome()};
 $('btnHome').onclick=()=>{show('viewHome');renderHome()};
 document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>start(b.dataset.mode));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('viewSession').hidden)keepAwake()});
@@ -533,11 +568,11 @@ function renderStats(){
   const days=[];const now=new Date();
   for(let i=range-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);const k=dayKey(d);const e=bd[k]||[];
     days.push({e,today:i===0,dom:d.getDate(),wd:'zmdwdvz'[d.getDay()],label:d.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'})})}
-  barChart($('chart'),days,d=>{const f=d.e.filter(x=>x.blocks>=x.total).length,p=d.e.length-f;return{total:d.e.length,parts:[[f,wine],[p,rose]]}},times.length,times.length,null,v=>v+' keer');
+  barChart($('chart'),days,d=>{const f=d.e.filter(x=>x.blocks>=x.total).length,p=d.e.length-f;return{total:d.e.length,parts:[[f,wine],[p,rose]]}},GOAL,GOAL,null,v=>v+' keer');
   barChart($('chartMin'),days,d=>{const m=Math.round(d.e.reduce((a,x)=>a+x.sec,0)/6)/10;return{total:m,parts:[[m,wine]]}},5,0,null,v=>v+' min');
   // tiles
   const today=bd[dayKey(Date.now())]||[];
-  $('stToday').textContent=doneToday().length+'/'+times.length;
+  $('stToday').textContent=doneToday().length+'/'+GOAL;
   const wkStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()-((now.getDay()+6)%7)).getTime();
   const wk=getLog().filter(e=>e.t>=wkStart);
   $('stWeek').textContent=Math.round(wk.reduce((a,x)=>a+x.sec,0)/60);
