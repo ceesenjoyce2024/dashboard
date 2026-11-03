@@ -10,7 +10,7 @@
 <script>try{if(localStorage.getItem("hm_mode")==="dark")document.documentElement.dataset.mode="dark"}catch(e){}</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Hockeymat</title>
-<meta name="app-version" content="2026-11-03.2">
+<meta name="app-version" content="2026-11-03.3">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="hockeymat"></script>
@@ -119,6 +119,9 @@ input[type=range]{width:100%;accent-color:var(--yellow-deep)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips .chip{padding:5px 12px;font-size:13px}
 .err{color:var(--danger);font-weight:600;font-size:14px;margin:0}
+.hint{margin:0;font-size:13px;color:var(--muted);font-weight:600}
+.hint.on{color:var(--fg)}
+.chip.linked{border-color:var(--yellow-deep)}
 .btnrow{display:flex;gap:10px;flex-wrap:wrap}
 .primary{flex:1;background:var(--btn-bg);color:var(--btn-fg);border:0;border-radius:999px;padding:15px 24px;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.03em;text-transform:uppercase}
 .primary:disabled{opacity:.5}
@@ -245,6 +248,7 @@ input[type=range]{width:100%;accent-color:var(--yellow-deep)}
           <input id="inOpp" class="txtin" type="text" maxlength="40" autocomplete="off" placeholder="Bijv. Jesper" list="oppList">
           <datalist id="oppList"></datalist>
           <div class="chips" id="oppChips"></div>
+          <p class="hint" id="oppHint" hidden></p>
         </div>
         <div class="field">
           <label for="inScore2" id="lblScore2">Score tegenstander</label>
@@ -333,10 +337,10 @@ const SB_URL='https://hvpooifxqhovskwgzpbr.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g';
 const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const naamVan=e=>{if(!e)return'';const n=e.split('@')[0].split(/[._-]/)[0];return n.charAt(0).toUpperCase()+n.slice(1)};
+const naamVan=e=>{if(!e)return'';const sp=(typeof SPELERS!=='undefined'?SPELERS:[]).find(x=>x.email===e);if(sp&&sp.naam)return sp.naam;const n=e.split('@')[0].split(/[._-]/)[0];return n.charAt(0).toUpperCase()+n.slice(1)};
 
 let sb=null,me=null,rol=null,ouder=false,who=null,kids=[];
-let OEF=store.get('hm_oef',[]),RES=[],WEEKN={};
+let OEF=store.get('hm_oef',[]),RES=[],WEEKN={},SPELERS=store.get('hm_spelers',[]);
 
 /* ---------- tijd ---------- */
 const pad=n=>String(n).padStart(2,'0');
@@ -397,7 +401,7 @@ function renderHome(){
     :'<p class="empty">Nog geen oefeningen.</p>';
 }
 function resRow(r){const o=oefById(r.oefening_id);const duo=!!r.tegenstander;
-  const sub=duo?`tegen ${esc(r.tegenstander||'?')} · ${r.score}–${r.score_tegenstander??'?'}`:'';
+  const sub=duo?`${r.duel_id?'⇄ ':''}tegen ${esc(r.tegenstander||'?')} · ${r.score}–${r.score_tegenstander??'?'}`:'';
   return `<button class="res" data-rid="${r.id}"><time>${hhmm(r.t)}</time><span class="what"><b>${esc(o?o.naam:'Oefening')}</b>${sub?`<small>${sub}</small>`:''}</span><span class="score">${r.score}</span><span class="go">›</span></button>`}
 document.addEventListener('click',e=>{const c=e.target.closest('.choice');if(c&&c.dataset.id){openEntry({oefening_id:c.dataset.id});return}
   const r=e.target.closest('.res');if(r&&r.dataset.rid){const x=RES.find(z=>z.id===r.dataset.rid);if(x)openEntry(x)}});
@@ -412,7 +416,11 @@ function bindScore(inId,rgId){const i=$(inId),g=$(rgId);
 bindScore('inScore','rgScore');bindScore('inScore2','rgScore2');
 document.querySelectorAll('.step').forEach(b=>b.onclick=()=>{const i=$(b.dataset.t);const v=Math.max(0,Math.min(100,(+i.value||0)+ +b.dataset.d));i.value=v;$(b.dataset.t==='inScore'?'rgScore':'rgScore2').value=v});
 function setScore(id,v){$(id).value=v;$(id==='inScore'?'rgScore':'rgScore2').value=v}
-function opponents(){const m={};RES.forEach(r=>{if(r.tegenstander){const k=r.tegenstander.trim();m[k]=(m[k]||0)+1}});return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(x=>x[0])}
+function opponents(){const m={};RES.forEach(r=>{if(r.tegenstander){const k=r.tegenstander.trim();m[k]=(m[k]||0)+1}});
+  const spelers=SPELERS.filter(x=>x.email!==who).map(x=>x.naam);
+  const vrij=Object.entries(m).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(n=>!spelers.some(z=>z.toLowerCase()===n.toLowerCase()));
+  return{spelers,vrij}}
+function spelerVoorNaam(n){n=(n||'').trim().toLowerCase();if(!n)return null;return SPELERS.find(x=>x.email!==who&&x.naam.toLowerCase()===n)||null}
 function applyOefUI(){const o=oefById($('inOef').value);if(!o)return;
   $('entryTitle').textContent=o.naam;$('entryDesc').textContent=o.omschrijving||'';$('entryDesc').hidden=!o.omschrijving;
   $('duoFields').hidden=!o.met_tegenstander;}
@@ -428,14 +436,18 @@ function openEntry(r){
   $('lblScore').textContent=ouder?`Score ${naam}`:'Jouw score';
   setScore('inScore',editing?r.score:0);setScore('inScore2',editing&&r.score_tegenstander!=null?r.score_tegenstander:0);
   $('inOpp').value=editing?(r.tegenstander||''):'';
-  const opp=opponents();$('oppList').innerHTML=opp.map(n=>`<option value="${esc(n)}">`).join('');
-  $('oppChips').innerHTML=opp.slice(0,6).map(n=>`<button type="button" class="chip" data-n="${esc(n)}">${esc(n)}</button>`).join('');
+  const opp=opponents();$('oppList').innerHTML=opp.spelers.concat(opp.vrij).map(n=>`<option value="${esc(n)}">`).join('');
+  $('oppChips').innerHTML=opp.spelers.map(n=>`<button type="button" class="chip linked" data-n="${esc(n)}">${esc(n)} <span aria-hidden="true">⇄</span></button>`).join('')+opp.vrij.slice(0,5).map(n=>`<button type="button" class="chip" data-n="${esc(n)}">${esc(n)}</button>`).join('');
   $('inWhen').value=toLocalInput(editing?r.t:Date.now());
   $('entryErr').hidden=true;$('delRow').hidden=!editing;$('btnSave').disabled=false;$('btnSave').textContent=editing?'Wijziging opslaan':'Opslaan';
   updateOppLabel();applyOefUI();show('viewEntry');
 }
 $('oppChips').onclick=e=>{const b=e.target.closest('.chip');if(b){$('inOpp').value=b.dataset.n;updateOppLabel()}};
-function updateOppLabel(){const n=$('inOpp').value.trim();$('lblScore2').textContent=n?`Score ${n}`:'Score tegenstander'}
+function updateOppLabel(){const n=$('inOpp').value.trim();$('lblScore2').textContent=n?`Score ${n}`:'Score tegenstander';
+  const sp=spelerVoorNaam(n),h=$('oppHint');
+  if(!n){h.hidden=true;return}
+  h.hidden=false;h.classList.toggle('on',!!sp);
+  h.textContent=sp?`⇄ Deze wedstrijd komt ook bij ${sp.naam}, met de scores omgedraaid.`:`${n} doet niet mee in de app. De score komt alleen bij ${ouder?naamVan(who):'jou'}.`}
 $('inOpp').addEventListener('input',updateOppLabel);
 $('btnCancel').onclick=()=>show(backTo);
 function entryErr(t){$('entryErr').textContent=t;$('entryErr').hidden=false}
@@ -452,20 +464,35 @@ $('btnSave').onclick=async()=>{
   const row={oefening_id:o.id,score,tegenstander:opp,score_tegenstander:s2,gedaan_op:when.toISOString()};
   $('btnSave').disabled=true;$('btnSave').textContent='Opslaan…';
   const before=thisWeek().length;
-  let res;
-  if(editing)res=await sb.from('hockeymat_resultaten').update(row).eq('id',editing.id).select().single();
-  else{row.user_email=who;res=await sb.from('hockeymat_resultaten').insert(row).select().single()}
-  if(res.error){$('btnSave').disabled=false;$('btnSave').textContent=editing?'Wijziging opslaan':'Opslaan';return entryErr('Opslaan lukte niet: '+res.error.message)}
-  const r=mapRow(res.data);
-  if(editing)RES=RES.map(x=>x.id===r.id?r:x);else RES.push(r);
-  RES.sort((a,b)=>a.t-b.t);cacheRes();
+  const fail=m=>{$('btnSave').disabled=false;$('btnSave').textContent=editing?'Wijziging opslaan':'Opslaan';entryErr('Opslaan lukte niet: '+m)};
+  const sp=o.met_tegenstander?spelerVoorNaam(opp):null;
+  if(o.met_tegenstander){
+    const{error}=await sb.rpc('hockeymat_duo_opslaan',{p_speler:who,p_oefening:o.id,p_score:score,p_gedaan_op:row.gedaan_op,
+      p_tegenstander_naam:opp,p_tegenstander_email:sp?sp.email:null,p_score_teg:s2,
+      p_duel:editing&&editing.duel_id?editing.duel_id:null,p_vervang:editing&&!editing.duel_id?editing.id:null});
+    if(error)return fail(error.message);
+    await fetchRes();
+  }else{
+    if(editing&&editing.duel_id){const d=await sb.rpc('hockeymat_duel_verwijderen',{p_duel:editing.duel_id});if(d.error)return fail(d.error.message);
+      row.user_email=who;const r2=await sb.from('hockeymat_resultaten').insert(row);if(r2.error)return fail(r2.error.message);await fetchRes()}
+    else{let res;
+      if(editing)res=await sb.from('hockeymat_resultaten').update(row).eq('id',editing.id).select().single();
+      else{row.user_email=who;res=await sb.from('hockeymat_resultaten').insert(row).select().single()}
+      if(res.error)return fail(res.error.message);
+      const r=mapRow(res.data);
+      if(editing)RES=RES.map(x=>x.id===r.id?r:x);else RES.push(r);
+      RES.sort((a,b)=>a.t-b.t);cacheRes()}
+  }
+  fetchWeekAll();
   const after=thisWeek().length;
   show(backTo);renderAll();
-  if(!editing&&!ouder&&before<GOAL&&after>=GOAL)celebrate();else toast(editing?'Gewijzigd ✓':'Opgeslagen ✓');
+  if(!editing&&!ouder&&before<GOAL&&after>=GOAL)celebrate();else toast((editing?'Gewijzigd ✓':'Opgeslagen ✓')+(sp?` · ook bij ${sp.naam}`:''));
 };
-$('btnDel').onclick=async()=>{if(!editing||!confirm('Deze score verwijderen?'))return;
-  const{error}=await sb.from('hockeymat_resultaten').delete().eq('id',editing.id);
-  if(error)return entryErr('Verwijderen lukte niet: '+error.message);
+$('btnDel').onclick=async()=>{if(!editing)return;
+  const duel=editing.duel_id,tn=editing.tegenstander||'de tegenstander';
+  if(!confirm(duel?`Deze wedstrijd verwijderen? Hij verdwijnt ook bij ${tn}.`:'Deze score verwijderen?'))return;
+  const{error}=duel?await sb.rpc('hockeymat_duel_verwijderen',{p_duel:duel}):await sb.from('hockeymat_resultaten').delete().eq('id',editing.id);
+  if(error)return entryErr('Verwijderen lukte niet: '+error.message);fetchWeekAll();
   RES=RES.filter(x=>x.id!==editing.id);cacheRes();show(backTo);renderAll();toast('Verwijderd');};
 
 /* ---------- feest ---------- */
@@ -615,12 +642,13 @@ $('btnAdd').onclick=async()=>{const naam=$('newName').value.trim();const err=$('
   $('newName').value='';$('newDesc').value='';$('newDuo').checked=false;toast('Toegevoegd ✓');await fetchOef();renderBeheer()};
 
 /* ---------- data ---------- */
-const mapRow=r=>({id:r.id,oefening_id:r.oefening_id,t:new Date(r.gedaan_op).getTime(),score:r.score,tegenstander:r.tegenstander,score_tegenstander:r.score_tegenstander});
+const mapRow=r=>({id:r.id,oefening_id:r.oefening_id,t:new Date(r.gedaan_op).getTime(),score:r.score,tegenstander:r.tegenstander,score_tegenstander:r.score_tegenstander,duel_id:r.duel_id||null,tegenstander_email:r.tegenstander_email||null});
 function cacheRes(){store.set('hm_res_'+who,RES.slice(-1500))}
+async function fetchSpelers(){const{data,error}=await sb.rpc('hockeymat_spelers');if(!error&&data){SPELERS=data;store.set('hm_spelers',SPELERS)}}
 async function fetchOef(){const{data,error}=await sb.from('hockeymat_oefeningen').select('*').order('volgorde');if(!error){OEF=data;store.set('hm_oef',OEF)}return!error}
 async function fetchRes(){
   if(!sb||!who)return;
-  const{data,error}=await sb.from('hockeymat_resultaten').select('id,oefening_id,gedaan_op,score,tegenstander,score_tegenstander').eq('user_email',who).order('gedaan_op',{ascending:true}).limit(5000);
+  const{data,error}=await sb.from('hockeymat_resultaten').select('id,oefening_id,gedaan_op,score,tegenstander,score_tegenstander,duel_id,tegenstander_email').eq('user_email',who).order('gedaan_op',{ascending:true}).limit(5000);
   if(error){setSync('Kon scores niet ophalen. Je ziet de laatst bekende stand.');return}
   RES=data.map(mapRow);cacheRes();setSync('Bijgewerkt om '+hhmm(Date.now()));renderAll();
 }
@@ -643,7 +671,7 @@ async function init(){
     }else{who=me;
       const{data:apps}=await sb.rpc('mijn_apps');if(rol!=='kind'||(apps&&apps.length>1))$('dashLink').hidden=false;}
     RES=store.get('hm_res_'+who,[]);renderWho();show('viewHome');renderHome();
-    await fetchOef();renderHome();await Promise.all([fetchRes(),fetchWeekAll()]);
+    await Promise.all([fetchOef(),fetchSpelers()]);renderWho();renderHome();await Promise.all([fetchRes(),fetchWeekAll()]);
   }catch(e){setSync('Kon niet verbinden. Je ziet de laatst bekende stand.')}
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&sb&&$('viewEntry').hidden)fetchRes()});

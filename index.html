@@ -116,6 +116,7 @@
   .rol-kind{background:#f6e7ea;color:#7B1E34;}
   .kind-apps{display:flex;gap:14px;flex-wrap:wrap;padding:4px 0 10px 2px;font-size:13px;color:var(--text-muted);}
   .kind-apps label{display:flex;align-items:center;gap:5px;cursor:pointer;}
+  .kind-apps .naam-in{width:120px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;}
   .btn-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:4px 8px;}
   .btn-del:hover{color:var(--red);}
   .rol-select{font-family:var(--sans);font-size:12px;padding:4px 8px;border:1px solid var(--sand-dark);border-radius:7px;background:var(--sand-light);color:var(--text);cursor:pointer;outline:none;}
@@ -544,6 +545,7 @@ async function laadGebruikers() {
     </div>
     ${(u.rol === 'kind' || u.rol === 'eikenlaan') ? `<div class="kind-apps">${Object.keys(KIND_APPS).filter(a => u.rol === 'kind' || a === 'hockeymat').map(a => `
       <label><input type="checkbox" ${(u.apps || []).includes(a) ? 'checked' : ''} onchange="wijzigKindApp('${u.email}','${a}',this.checked)"> ${KIND_APPS[a].naam}${u.rol === 'kind' ? '' : ' (doet zelf mee)'}</label>`).join('')}
+      ${(u.apps || []).includes('hockeymat') ? `<label>Naam in Hockeymat <input type="text" class="naam-in" maxlength="30" value="${(u.naam || '').replace(/"/g,'&quot;')}" placeholder="${formatNaam(u.email)}" onchange="wijzigNaam('${u.email}', this.value)"></label>` : ''}
     </div>` : ''}
   `).join('');
 }
@@ -584,6 +586,18 @@ async function wijzigKindApp(email, app, aan) {
   const { error } = await sb.from('email_whitelist').update({ apps }).eq('email', email);
   if (error) { toonErr(err, 'Fout bij wijzigen apps: ' + error.message); laadGebruikers(); return; }
   suc.textContent = email + ': ' + (apps.length ? apps.map(a => KIND_APPS[a] ? KIND_APPS[a].naam : a).join(', ') : 'geen apps') + '.';
+  laadGebruikers();
+  suc.style.display = 'block';
+  setTimeout(() => { suc.style.display='none'; }, 3000);
+}
+
+async function wijzigNaam(email, naam) {
+  const err = document.getElementById('b-error');
+  const suc = document.getElementById('b-success');
+  err.style.display='none'; suc.style.display='none';
+  const { error } = await sb.from('email_whitelist').update({ naam: naam.trim() || null }).eq('email', email);
+  if (error) { toonErr(err, 'Fout bij wijzigen naam: ' + error.message); return; }
+  suc.textContent = email + ': naam ' + (naam.trim() || formatNaam(email)) + '.';
   suc.style.display = 'block';
   setTimeout(() => { suc.style.display='none'; }, 3000);
 }
