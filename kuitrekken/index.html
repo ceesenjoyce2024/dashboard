@@ -7,9 +7,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Rekken">
 <meta name="theme-color" content="#7B1E34">
+<script>try{if(localStorage.getItem("rv_mode")==="dark")document.documentElement.dataset.mode="dark"}catch(e){}</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Riva's Rekmomenten</title>
-<meta name="app-version" content="2026-11-03.8">
+<meta name="app-version" content="2026-11-03.9">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="rekken"></script>
@@ -21,7 +22,12 @@
 :root{
   --wine:#7B1E34; --wine-deep:#5A1426; --wine-soft:#F7EEF0; --rose:#E8A0B4;
   --pink:#F7EEF0; --bg:#FFFFFF; --fg:#2A1015; --muted:#7A6066; --line:#EBE1E3; --card:#FFFFFF;
-  --ok:#2E7D5B; --on-wine:#FFFFFF; color-scheme:light;
+  --ok:#2E7D5B; --on-wine:#FFFFFF; --wine-text:#7B1E34; color-scheme:light;
+}
+:root[data-mode="dark"]{
+  --wine:#8E2340; --wine-deep:#6A182E; --wine-soft:#2E1C22; --rose:#A8566C;
+  --pink:#2A1D22; --bg:#141012; --fg:#F4ECEE; --muted:#B4A3A8; --line:#30262A; --card:#1C1619;
+  --ok:#6BCB9C; --on-wine:#FFFFFF; --wine-text:#D98C9D; color-scheme:dark;
   --display:"Fredoka", "Trebuchet MS", system-ui, sans-serif;
   --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -38,7 +44,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 /* header */
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;flex-direction:column;gap:2px}
-.brand h1{font-size:28px;color:var(--wine);display:flex;align-items:center;gap:8px}
+.brand h1{font-size:28px;color:var(--wine-text);display:flex;align-items:center;gap:8px}
 .testtag{font-family:var(--body);font-size:11px;font-weight:800;letter-spacing:.08em;background:var(--rose);color:var(--wine-deep);border-radius:999px;padding:3px 8px}
 .brand span{color:var(--muted);font-size:14px}
 .iconbtn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);display:grid;place-items:center;flex:none}
@@ -50,7 +56,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .moment b{font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums}
 .moment small{font-size:12px;color:var(--muted);font-weight:700}
 .moment.next{border-color:var(--wine);background:var(--wine-soft)}
-.moment.next small{color:var(--wine)}
+.moment.next small{color:var(--wine-text)}
 .moment.done{background:var(--wine);border-color:var(--wine);color:var(--on-wine)}
 .moment.done small{color:var(--on-wine)}
 .hello{background:var(--wine);color:var(--on-wine);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:14px}
@@ -69,10 +75,10 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .choice .ico svg{width:30px;height:30px;stroke:var(--wine);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .choice h3{font-size:19px}
 .choice p{margin:2px 0 0;color:var(--muted);font-size:14px}
-.choice .go{margin-left:auto;font-family:var(--display);font-weight:600;color:var(--wine);font-size:22px}
+.choice .go{margin-left:auto;font-family:var(--display);font-weight:600;color:var(--wine-text);font-size:22px}
 .how{border-top:1.5px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:10px;font-size:15px}
 .how p{margin:0}
-.how b{color:var(--wine)}
+.how b{color:var(--wine-text)}
 
 /* session */
 .session{display:flex;flex-direction:column;gap:18px;align-items:stretch}
@@ -89,7 +95,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .ring-fg{stroke:var(--wine);fill:none;stroke-linecap:round;transition:stroke .3s}
 .ring-fg.pause{stroke:var(--rose)}
 .count{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.count b{font-family:var(--display);font-size:72px;line-height:1;font-variant-numeric:tabular-nums;color:var(--wine)}
+.count b{font-family:var(--display);font-size:72px;line-height:1;font-variant-numeric:tabular-nums;color:var(--wine-text)}
 .count span{font-weight:800;color:var(--muted);font-size:14px;letter-spacing:.06em;text-transform:uppercase}
 .tip{text-align:center;color:var(--muted);margin:0;font-size:15px;min-height:44px}
 .progress{display:flex;gap:4px}
@@ -98,7 +104,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .progress i.cur{background:var(--rose)}
 .ctrls{display:flex;gap:10px;justify-content:center}
 .big{background:var(--wine);color:var(--on-wine);border:0;border-radius:999px;padding:14px 28px;font-family:var(--display);font-weight:600;font-size:20px;min-width:150px}
-.big.alt{background:var(--wine-soft);color:var(--wine)}
+.big.alt{background:var(--wine-soft);color:var(--wine-text)}
 .upnext{text-align:center;font-size:14px;color:var(--muted)}
 .upnext b{color:var(--fg)}
 
@@ -106,7 +112,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .done-card{text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;padding-top:20px}
 .done-card .badge{width:120px;height:120px;border-radius:50%;background:var(--wine);display:grid;place-items:center}
 .done-card .badge svg{width:64px;height:64px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.done-card h2{font-size:30px;color:var(--wine)}
+.done-card h2{font-size:30px;color:var(--wine-text)}
 .done-card p{margin:0;color:var(--muted);max-width:30ch}
 
 /* music bar */
@@ -127,11 +133,11 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 .times input{width:100%;font:inherit;font-weight:700;padding:10px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg)}
 .settings p{margin:0;font-size:14px;color:var(--muted)}
 .statlink{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1.5px solid var(--line);background:var(--bg);border-radius:14px;padding:12px 14px;font-weight:700;font-size:14px;text-align:left}
-.statlink span:last-child{color:var(--wine);white-space:nowrap}
+.statlink span:last-child{color:var(--wine-text);white-space:nowrap}
 .stats{display:flex;flex-direction:column;gap:16px}
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tile{border-radius:16px;background:var(--pink);padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:2px}
-.tile b{font-family:var(--display);font-size:28px;color:var(--wine);font-variant-numeric:tabular-nums;line-height:1.1}
+.tile b{font-family:var(--display);font-size:28px;color:var(--wine-text);font-variant-numeric:tabular-nums;line-height:1.1}
 .tile span{font-size:12px;font-weight:700;color:var(--muted)}
 .chartcard{border:1.5px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .chead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
@@ -153,7 +159,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 .hrow time{font-family:var(--display);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;width:46px}
 .hrow .what{flex:1;min-width:0}
 .hrow .st{font-weight:800;font-size:12px;padding:3px 8px;border-radius:999px;background:var(--wine);color:var(--on-wine);white-space:nowrap}
-.hrow .st.part{background:var(--wine-soft);color:var(--wine)}
+.hrow .st.part{background:var(--wine-soft);color:var(--wine-text)}
 .empty{color:var(--muted);font-size:14px;margin:0}
 .count-big{font-family:var(--display);font-size:56px;line-height:1;font-variant-numeric:tabular-nums}
 .hello .row{display:flex;align-items:flex-end;gap:12px}
@@ -166,12 +172,12 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 .reward canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .trophy{width:150px;height:150px;border-radius:50%;background:var(--wine);display:grid;place-items:center;animation:pop .7s cubic-bezier(.2,1.6,.4,1) both;position:relative}
 .trophy svg{width:86px;height:86px}
-.reward h2{font-size:34px;color:var(--wine);position:relative}
+.reward h2{font-size:34px;color:var(--wine-text);position:relative}
 .reward p{margin:0;color:var(--muted);max-width:30ch;position:relative;font-size:16px}
 .reward .times3{display:flex;gap:8px;position:relative}
-.reward .times3 b{font-family:var(--display);background:var(--wine-soft);color:var(--wine);border-radius:12px;padding:8px 12px;font-size:18px}
+.reward .times3 b{font-family:var(--display);background:var(--wine-soft);color:var(--wine-text);border-radius:12px;padding:8px 12px;font-size:18px}
 .reward .big{position:relative}
-.starcount{font-family:var(--display);font-size:20px;color:var(--wine);position:relative}
+.starcount{font-family:var(--display);font-size:20px;color:var(--wine-text);position:relative}
 @keyframes pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
 .ex{display:flex;gap:14px;align-items:flex-start}
 .ex img{width:96px;height:auto;border-radius:12px;border:1.5px solid var(--line);flex:none;background:#fff}
@@ -191,7 +197,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 <div class="app">
   <header class="top">
     <div class="brand"><a id="dashLink" href="/" hidden style="color:var(--muted);font-weight:700;font-size:13px;text-decoration:none">‹ Dashboard</a><h1>Rekken</h1><span id="today">Vandaag</span></div>
-    <div style="display:flex;gap:8px"><button class="iconbtn" id="btnStats" aria-label="Overzicht"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button></div>
+    <div style="display:flex;gap:8px"><button class="iconbtn" id="btnMode" aria-label="Donkere modus aan of uit"><svg viewBox="0 0 24 24" id="modeIco"></svg></button><button class="iconbtn" id="btnStats" aria-label="Overzicht"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button></div>
   </header>
 
 
@@ -277,7 +283,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <div id="chartMin"></div>
     </div>
     <p class="empty" id="syncLbl">Gegevens laden…</p>
-    <p class="empty">Versie 2026-11-03.8</p>
+    <p class="empty">Versie 2026-11-03.9</p>
     <div class="history">
       <span class="label">Laatste keren</span>
       <div id="histList"></div>
@@ -619,6 +625,12 @@ async function checkVersion(){
 }
 checkVersion();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVersion()});
+
+const MOON='<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',SUN='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+function applyMode(){const dark=document.documentElement.dataset.mode==='dark';$('modeIco').innerHTML=dark?SUN:MOON;$('btnMode').setAttribute('aria-label',dark?'Lichte modus':'Donkere modus');
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=dark?'#141012':'#7B1E34'}
+$('btnMode').onclick=()=>{const r=document.documentElement;if(r.dataset.mode==='dark')delete r.dataset.mode;else r.dataset.mode='dark';try{localStorage.setItem('rv_mode',r.dataset.mode||'light')}catch(e){}applyMode();if(!$('viewStats').hidden)renderStats()};
+applyMode();
 
 renderMusic();renderHome();show('viewHome');setSync(syncState==='laden'?'Gegevens laden…':syncState);initSync();
 setInterval(()=>{if(!$('viewHome').hidden)renderHome()},60000);
