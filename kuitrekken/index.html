@@ -550,6 +550,7 @@ async function initSync(){
     const old=store.get('rv_log',null);
     if(old&&old.length&&!store.get('rv_migrated',false)){pending=pending.concat(old);store.set('rv_migrated',true);saveLocal()}
     if(rol==='admin'||rol==='eikenlaan')$('dashLink').hidden=false;
+    else{try{const{data:apps}=await sb.rpc('mijn_apps');if(apps&&apps.length>1)$('dashLink').hidden=false}catch(e){}}
     await flushPending();await fetchLog();
   }catch(e){setSync('Kon niet verbinden. Je ziet de laatst bekende stand.')}
 }
