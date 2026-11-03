@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#7B1E34">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Rekken test</title>
-<meta name="app-version" content="test-2026-11-03.1">
+<meta name="app-version" content="test-2026-11-03.2">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="rekken"></script>
@@ -19,20 +19,12 @@
 <style>
 /* Layout: one-column phone app — moments of the day, choose a routine, full-focus timer ring */
 :root{
-  --wine:#7B1E34; --wine-deep:#5A1426; --wine-soft:#FCE4EB; --rose:#F29CB4;
-  --pink:#F8C8D5; --bg:#FFFFFF; --fg:#3A0F1B; --muted:#8A5A68; --line:#F6D3DD; --card:#FFF5F8;
-  --ok:#2E7D5B; --on-wine:#FFFFFF;
+  --wine:#7B1E34; --wine-deep:#5A1426; --wine-soft:#F7EEF0; --rose:#E8A0B4;
+  --pink:#F7EEF0; --bg:#FFFFFF; --fg:#2A1015; --muted:#7A6066; --line:#EBE1E3; --card:#FFFFFF;
+  --ok:#2E7D5B; --on-wine:#FFFFFF; color-scheme:light;
   --display:"Fredoka", "Trebuchet MS", system-ui, sans-serif;
   --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --wine:#E0607F; --wine-deep:#8E2340; --wine-soft:#3F1724; --rose:#F29CB4;
-  --pink:#5A2233; --bg:#1E0C12; --fg:#FFF0F4; --muted:#D7A9B6; --line:#45202C; --card:#2A121B;
-  --ok:#6BCB9C; --on-wine:#FFFFFF; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --wine:#E0607F; --wine-deep:#8E2340; --wine-soft:#3F1724; --rose:#F29CB4;
-  --pink:#5A2233; --bg:#1E0C12; --fg:#FFF0F4; --muted:#D7A9B6; --line:#45202C; --card:#2A121B;
-  --ok:#6BCB9C; --on-wine:#FFFFFF; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45;
@@ -61,13 +53,13 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .moment.next small{color:var(--wine)}
 .moment.done{background:var(--wine);border-color:var(--wine);color:var(--on-wine)}
 .moment.done small{color:var(--on-wine)}
-.hello{background:linear-gradient(135deg,var(--pink),var(--wine-soft));color:var(--wine);border:1.5px solid var(--rose);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.hello{background:var(--wine);color:var(--on-wine);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:14px}
 .hello h2{font-size:24px}
 .hello p{margin:0;opacity:.92}
 .streak{display:flex;gap:6px;align-items:center;font-weight:800;font-size:14px}
 .dots{display:flex;gap:5px}
-.dots i{width:10px;height:10px;border-radius:50%;background:var(--bg);border:1.5px solid var(--rose)}
-.dots i.on{background:var(--wine);border-color:var(--wine)}
+.dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3)}
+.dots i.on{background:var(--rose)}
 
 /* choice */
 .choices{display:flex;flex-direction:column;gap:10px}
@@ -179,7 +171,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
     <div class="times" id="timeInputs"></div>
     <p>Deze app kan zelf geen meldingen sturen als hij dicht is. Zet deze tijden als herhalende wekker op je telefoon.</p>
     <button class="big alt" id="btnSaveTimes">Opslaan</button>
-    <p>Versie test-2026-11-03.1 · testversie, gegevens blijven op dit toestel</p>
+    <p>Versie test-2026-11-03.2 · testversie, gegevens blijven op dit toestel</p>
   </section>
 
   <!-- HOME -->
