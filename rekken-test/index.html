@@ -10,7 +10,7 @@
 <script>try{if(localStorage.getItem("rt_mode")==="dark")document.documentElement.dataset.mode="dark"}catch(e){}</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Rekken test</title>
-<meta name="app-version" content="test-2026-11-03.13">
+<meta name="app-version" content="test-2026-11-04.1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="/auth-guard.js" data-access="rekken"></script>
@@ -23,13 +23,13 @@
   --wine:#7B1E34; --wine-deep:#5A1426; --wine-soft:#F7EEF0; --rose:#E8A0B4;
   --pink:#F7EEF0; --bg:#FFFFFF; --fg:#2A1015; --muted:#7A6066; --line:#EBE1E3; --card:#FFFFFF;
   --ok:#2E7D5B; --on-wine:#FFFFFF; --wine-text:#7B1E34; color-scheme:light;
+  --display:"Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 :root[data-mode="dark"]{
   --wine:#8E2340; --wine-deep:#6A182E; --wine-soft:#2E1C22; --rose:#A8566C;
   --pink:#2A1D22; --bg:#141012; --fg:#F4ECEE; --muted:#B4A3A8; --line:#30262A; --card:#1C1619;
   --ok:#6BCB9C; --on-wine:#FFFFFF; --wine-text:#D98C9D; color-scheme:dark;
-  --display:"Fredoka", "Trebuchet MS", system-ui, sans-serif;
-  --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -146,7 +146,9 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
 .seg button.on{background:var(--wine);color:var(--on-wine)}
 #chart svg,#chartMin svg{width:100%;height:auto;display:block}
 .ax{fill:var(--muted);font:700 9px var(--body)}
-.ax.today{fill:var(--wine)}
+.ax.wd{font-size:8px;font-weight:600}
+.ax.dom{font-size:9.5px;font-weight:800;fill:var(--fg)}
+.ax.today{fill:var(--wine-text)}
 .grid-l{stroke:var(--line);stroke-width:1}
 .goal{stroke:var(--wine);stroke-width:1.2;stroke-dasharray:4 3;opacity:.6}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700}
@@ -297,7 +299,7 @@ input[type=range]{flex:1;accent-color:var(--wine);min-width:0}
       <div id="chartMin"></div>
     </div>
     <p class="empty" id="syncLbl">Gegevens laden…</p>
-    <p class="empty">Versie test-2026-11-03.13</p>
+    <p class="empty">Versie test-2026-11-04.1</p>
     <div class="history">
       <span class="label">Laatste keren</span>
       <div id="histList"></div>
@@ -663,18 +665,19 @@ const dayKey=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+(d.getMonth()+
 function byDay(){const m={};getLog().forEach(e=>{const k=dayKey(e.t);(m[k]=m[k]||[]).push(e)});return m}
 let range=14;
 function barChart(el,days,valFn,maxMin,goal,colFn,fmt){
-  const W=340,H=150,L=22,B=24,T=10,cw=(W-L-4)/days.length,bw=Math.max(4,cw*.62);
-  const max=Math.max(maxMin,...days.map(d=>valFn(d).total));
+  const W=340,H=160,L=22,B=36,T=10,cw=(W-L-4)/days.length,bw=Math.max(4,cw*.62);
+  const raw=Math.max(maxMin,...days.map(d=>valFn(d).total));
+  const step=raw<=6?1:raw<=12?2:raw<=30?5:raw<=60?10:20;
+  const max=Math.ceil(raw/step)*step;
   const y=v=>T+(H-T-B)*(1-v/max);
-  const step=max<=6?1:max<=20?5:max<=60?10:20;
   let g='';
   for(let v=0;v<=max;v+=step)g+=`<line class="grid-l" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-5}" y="${y(v)+3}" text-anchor="end">${v}</text>`;
   if(goal)g+=`<line class="goal" x1="${L}" x2="${W}" y1="${y(goal)}" y2="${y(goal)}"/>`;
   days.forEach((d,i)=>{
     const x=L+i*cw+(cw-bw)/2,v=valFn(d);let base=y(0);
-    v.parts.forEach(([val,col])=>{if(!val)return;const h=base-y(val);g+=`<rect x="${x}" y="${base-h}" width="${bw}" height="${Math.max(h-1,1)}" rx="2" fill="${col}"><title>${d.label}: ${fmt(v.total)}</title></rect>`;base-=h});
+    v.parts.forEach(([val,col])=>{if(!val)return;const h=base-y(val);g+=`<rect x="${x}" y="${base-h}" width="${bw}" height="${Math.max(h,1)}" rx="2" fill="${col}"><title>${d.label}: ${fmt(v.total)}</title></rect>`;base-=h});
     const show=days.length<=14||i%3===0||d.today;
-    if(show)g+=`<text class="ax ${d.today?'today':''}" x="${x+bw/2}" y="${H-12}" text-anchor="middle">${d.wd}</text><text class="ax ${d.today?'today':''}" x="${x+bw/2}" y="${H-2}" text-anchor="middle">${d.dom}</text>`;
+    if(show)g+=`<text class="ax wd ${d.today?'today':''}" x="${x+bw/2}" y="${H-B+14}" text-anchor="middle">${d.wd}</text><text class="ax dom ${d.today?'today':''}" x="${x+bw/2}" y="${H-B+27}" text-anchor="middle">${d.dom}</text>`;
   });
   el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafiek">${g}</svg>`;
 }
@@ -682,7 +685,7 @@ function renderStats(){
   const bd=byDay(),wine=getComputedStyle(document.documentElement).getPropertyValue('--wine').trim(),rose=getComputedStyle(document.documentElement).getPropertyValue('--rose').trim();
   const days=[];const now=new Date();
   for(let i=range-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);const k=dayKey(d);const e=bd[k]||[];
-    days.push({e,today:i===0,dom:d.getDate(),wd:'zmdwdvz'[d.getDay()],label:d.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'})})}
+    days.push({e,today:i===0,dom:d.getDate(),wd:['zo','ma','di','wo','do','vr','za'][d.getDay()],label:d.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'})})}
   barChart($('chart'),days,d=>{const f=d.e.filter(x=>x.blocks>=x.total).length,p=d.e.length-f;return{total:d.e.length,parts:[[f,wine],[p,rose]]}},GOAL,GOAL,null,v=>v+' keer');
   barChart($('chartMin'),days,d=>{const m=Math.round(d.e.reduce((a,x)=>a+x.sec,0)/6)/10;return{total:m,parts:[[m,wine]]}},5,0,null,v=>v+' min');
   // tiles
