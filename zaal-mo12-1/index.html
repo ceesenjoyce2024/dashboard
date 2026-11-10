@@ -238,7 +238,7 @@ async function laad(){
 }
 let saveMsg="";
 function toast(t,fout){ let el=document.getElementById("toast"); if(!el){ el=document.createElement("div"); el.id="toast"; document.body.appendChild(el); }
-  el.textContent=t; el.style.cssText=`position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom));z-index:30;padding:9px 16px;border-radius:999px;font-size:14px;font-weight:600;box-shadow:0 4px 16px #0008;background:${fout?"#7a1f1f":"#1f5a3a"};color:#fff`;
+  el.textContent=t; el.style.cssText=`position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom));z-index:30;padding:9px 16px;border-radius:999px;font-size:13.5px;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis;font-weight:600;box-shadow:0 4px 16px #0008;background:${fout?"#7a1f1f":"#1f5a3a"};color:#fff`;
   clearTimeout(el._t); el._t=setTimeout(()=>el.remove(),fout?6000:1500); }
 async function bewaar(...keys){
   if(LIVE){
@@ -519,7 +519,8 @@ function viewInstellingen(){
       return `<tr><td class="nm" style="font-weight:500">${fdat(m.datum)} · ${TEAMS[tegen(m)].n}</td><td style="text-align:right;padding-right:12px"><select class="ksel ${md==="hard"?"kh":md==="los"?"kl":"kz"}" data-act="kmode" data-k="${i}" data-w="${m.id}" ${(!ADMIN||gesp)?"disabled":""}>${opties.map(([v,l])=>`<option value="${v}" ${v===md?"selected":""}>${l}</option>`).join("")}</select></td></tr>`}).join("")}</tbody></table></div></div>`}).join("")||'<div class="card"><div class="sw muted">Nog geen koppels</div></div>'}
   ${ADMIN?`<div class="card pad"><div class="flex" style="flex-wrap:nowrap"><select class="in" id="kA">${veld().map(p=>`<option value="${p.id}">${esc(p.naam)}</option>`).join("")}</select><select class="in" id="kB">${veld().map((p,i)=>`<option value="${p.id}" ${i===1?"selected":""}>${esc(p.naam)}</option>`).join("")}</select></div>
     <div class="flex" style="margin-top:8px;flex-wrap:nowrap"><select class="in" id="kT"><option value="samen">Samen in één team</option><option value="apart">Niet samen</option></select><button class="btn sm" data-act="kadd">Toevoegen</button></div></div>`:""}
-  <p class="muted" style="margin:8px 4px">Tik per wedstrijd om te wisselen. Daarna wordt alles direct opnieuw berekend. <i>Los</i> = geen voorwaarde voor die wedstrijd.</p>
+  <div class="card pad" style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><b>Verdeling nu</b><div class="muted">${(()=>{const sp=spreiding();return `${sp.min}–${sp.max} wedstrijden per speelster`})()}</div></div>${ADMIN?`<button class="btn sm" data-act="verdeel" style="white-space:nowrap;flex:none">Opnieuw verdelen</button>`:""}</div>
+  <p class="muted" style="margin:10px 0 0">Een keuze hierboven wordt meteen meegenomen. <i>Opnieuw verdelen</i> zet daarnaast handmatige ruilen in nog niet gespeelde wedstrijden terug, zodat alles vanaf nul eerlijk wordt verdeeld. <i>Los</i> = geen voorwaarde voor die wedstrijd.</p></div>
   <div class="sec">Wisselblokken per helft</div>
   <div class="card pad">
     <div class="flex" style="flex-wrap:nowrap">${b.map((x,i)=>`<input class="in" type="number" min="1" max="20" value="${x}" data-act="blok" data-i="${i}" ${dis} style="text-align:center">`).join("")}</div>
@@ -604,7 +605,9 @@ function sheetScore(id){
 /* =====================================================================
    ACTIES
    ===================================================================== */
-async function wijzig(keys){ herbereken(); render(); await bewaar(...keys); }
+async function wijzig(keys,melding){ herbereken(); render(); await bewaar(...keys); if(melding) toast(melding()); }
+function spreiding(){ const r=speeltijd().map(x=>x.wGesp+x.wGepl); return {min:Math.min(...r),max:Math.max(...r)}; }
+const verdeelMelding=()=>{ const sp=spreiding(); return `Opnieuw verdeeld · ${sp.min}–${sp.max} wedstrijden per speelster`; };
 document.addEventListener("click",async e=>{
   const el=e.target.closest("[data-tab],[data-act]"); if(!el) return;
   if(el.dataset.tab){ TAB=el.dataset.tab; OPEN=null; RUIL=null; render(); window.scrollTo(0,0); return; }
@@ -658,13 +661,14 @@ document.addEventListener("click",async e=>{
     S.speelsters=[...S.speelsters,{id,naam:n.trim(),pos:"MA"}]; await wijzig(["speelsters"]); }
   else if(a==="reset"){ if(ARM!=="reset"){ARM="reset";render();return;} ARM=null;
     Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); S.instellingen.perWed={}; await wijzig(["opstellingen","instellingen"]); }
+  else if(a==="verdeel"){ Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["opstellingen"],verdeelMelding); }
   else if(a==="wis"){ if(ARM!=="wis"){ARM="wis";render();return;} ARM=null; try{localStorage.removeItem(LS)}catch(_){} location.reload(); }
 });
 document.addEventListener("change",async e=>{
   const el=e.target, d=el.dataset; if(!d.act) return;
   if(d.act==="kmode"){ const k=koppels()[+d.k], w=d.w; k.per=k.per||{};
     if(el.value==="zacht") delete k.per[w]; else k.per[w]=el.value;
-    if(S.opstellingen[w]&&!S.uitslagen[w]) delete S.opstellingen[w]; await wijzig(["instellingen","opstellingen"]); }
+    if(S.opstellingen[w]&&!S.uitslagen[w]) delete S.opstellingen[w]; await wijzig(["instellingen","opstellingen"],verdeelMelding); }
   else if(d.act==="blok"){ S.instellingen.blok[+d.i]=Math.max(1,Math.min(20,+el.value||1)); await wijzig(["instellingen"]); }
   else if(d.act==="pnaam"){ const p=S.speelsters.find(x=>x.id===d.p); if(p&&el.value.trim()){ p.naam=el.value.trim(); await wijzig(["speelsters"]); } }
   else if(d.act==="ppos"){ const p=S.speelsters.find(x=>x.id===d.p); if(p){ p.pos=el.value; Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["speelsters","opstellingen"]); } }
