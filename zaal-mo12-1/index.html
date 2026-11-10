@@ -237,12 +237,15 @@ async function laad(){
   if(!S.instellingen.koppels) S.instellingen.koppels=[{a:"riva",b:"dante",per:{"d7-3":"hard"}}];
 }
 let saveMsg="";
+function toast(t,fout){ let el=document.getElementById("toast"); if(!el){ el=document.createElement("div"); el.id="toast"; document.body.appendChild(el); }
+  el.textContent=t; el.style.cssText=`position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom));z-index:30;padding:9px 16px;border-radius:999px;font-size:14px;font-weight:600;box-shadow:0 4px 16px #0008;background:${fout?"#7a1f1f":"#1f5a3a"};color:#fff`;
+  clearTimeout(el._t); el._t=setTimeout(()=>el.remove(),fout?6000:1500); }
 async function bewaar(...keys){
   if(LIVE){
     if(!sb||!ADMIN) return;
     const rows=keys.map(k=>({id:k,data:S[k],bijgewerkt:new Date().toISOString()}));
     const r=await sb.from(TABEL).upsert(rows,{onConflict:"id"});
-    if(r.error){ try{alert("Opslaan mislukt: "+r.error.message)}catch(_){} }
+    toast(r.error?"Opslaan mislukt: "+r.error.message:"Opgeslagen",!!r.error);
   }else{
     try{ localStorage.setItem(LS,JSON.stringify(S)); }catch(e){}
   }
@@ -553,17 +556,17 @@ function viewWedstrijd(id){
   const team=p[TEAMSEL];
   const tok=(sid,s,i)=>{ if(!sid) return `<span class="tok ${TEAMSEL}" style="left:${s.x}%;top:${s.y}%"><i>?</i><b>leeg</b></span>`;
     const sel=RUIL&&RUIL.t===TEAMSEL&&RUIL.i===i;
-    return `<button class="tok ${TEAMSEL}${sel?" sel":""}" style="left:${s.x}%;top:${s.y}%" data-act="ruil" data-t="${TEAMSEL}" data-i="${i}" ${ADMIN&&!u?"":"disabled"}><i>${s.l}</i><b>${esc(naam(sid))}</b>${p.dubbel&&p.dubbel.includes(sid)?'<span class="d">speelt dubbel</span>':""}${p.flex&&p.flex.includes(sid)?'<span class="d">andere linie</span>':""}</button>`;};
+    return `<button class="tok ${TEAMSEL}${sel?" sel":""}" style="left:${s.x}%;top:${s.y}%" data-act="ruil" data-t="${TEAMSEL}" data-i="${i}" ${ADMIN?"":"disabled"}><i>${s.l}</i><b>${esc(naam(sid))}</b>${p.dubbel&&p.dubbel.includes(sid)?'<span class="d">speelt dubbel</span>':""}${p.flex&&p.flex.includes(sid)?'<span class="d">andere linie</span>':""}</button>`;};
   const b=S.instellingen.blok, eind=[0,1,2].map(i=>b.slice(0,i+1).reduce((x,y)=>x+(+y),0));
   const seq=(volg)=>`<div class="seq">${volg.map((t,i)=>`<div class="s${t}" style="flex:${b[i]}">Team ${t}<small>${i?eind[i-1]:0}'–${eind[i]}'</small></div>`).join("")}</div>`;
   let h=`<button class="back" data-act="terug">‹ Terug</button>
   <div class="mhead"><div class="meta">Wedstrijd ${m.nr} van ${RW.length} · ${fdat(m.datum,1)} · ${m.t} · ${thuis?"Thuis":"Uit"}</div>
     <div class="vs"><div class="tm">${badge(m.h)}${tnaam(m.h)}</div>
-      <div class="sc${u?"":" leeg"}">${u?`${u[0]} – ${u[1]}`:m.t}</div>
+      ${ADMIN?`<button class="sc${u?"":" leeg"}" data-act="score" data-id="${m.id}" style="border:0;background:none;padding:0">${u?`${u[0]} – ${u[1]}`:m.t}</button>`:`<div class="sc${u?"":" leeg"}">${u?`${u[0]} – ${u[1]}`:m.t}</div>`}
       <div class="tm">${badge(m.a)}${tnaam(m.a)}</div></div>
     ${ADMIN?`<div class="flex" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="score" data-id="${m.id}">${u?"Uitslag wijzigen":"Uitslag invullen"}</button>${p.vast&&!u?`<button class="btn sec2 sm" data-act="vrij" data-id="${m.id}">Terug naar automatisch</button>`:""}</div>`:""}
   </div>`;
-  if(!u&&ADMIN) h+=`<div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${p.form===k?"on":""}" data-act="wform" data-v="${k}">${f.naam}</button>`).join("")}</div>`;
+  if(ADMIN) h+=`<div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${p.form===k?"on":""}" data-act="wform" data-v="${k}">${f.naam}</button>`).join("")}</div>`;
   else h+=`<p class="muted" style="text-align:center;margin:12px 0 0">Opstelling: ${F.naam}</p>`;
   { const kl=koppels().filter(k=>kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m)).map(k=>`${esc(naam(k.a))} &amp; ${esc(naam(k.b))} ${kType(k)==="apart"?"niet samen":kMode(k,m)==="hard"?"samen (verplicht)":"samen"}`);
     if(kl.length) h+=`<p class="muted" style="text-align:center;margin:8px 0 0">${kl.join(" · ")}</p>`; }
@@ -583,7 +586,7 @@ function viewWedstrijd(id){
     <div class="hl">1e helft</div>${seq([1,2,1])}
     <div class="hl">2e helft</div>${seq([2,1,2])}
     <p class="muted" style="margin:10px 0 0">Team 1: ${p.t1.filter(Boolean).map(naam).join(", ")}<br>Team 2: ${p.t2.filter(Boolean).map(naam).join(", ")}</p></div>`;
-  if(ADMIN&&!u) h+=`<p class="muted" style="margin:10px 4px">Tik op een speelster in het veld om te ruilen. Die wedstrijd wordt daarna vastgezet; de wedstrijden erna worden opnieuw verdeeld.</p>`;
+  if(ADMIN) h+=`<p class="muted" style="margin:10px 4px">${u?"Klopt de opstelling niet met wie er echt gespeeld heeft? Tik op een speelster om te corrigeren; de speeltijd en de wedstrijden erna worden aangepast.":"Tik op een speelster in het veld om te ruilen. Die wedstrijd wordt daarna vastgezet; de wedstrijden erna worden opnieuw verdeeld."}</p>`;
   return h;
 }
 
