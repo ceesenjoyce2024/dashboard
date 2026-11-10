@@ -105,6 +105,8 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 .tok .d{font-size:10px;color:#ffe066}
 .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px}
 .chip{background:var(--card2);border-radius:999px;padding:5px 11px;font-size:13px;border:0}
+.ksel{appearance:none;-webkit-appearance:none;border:0;border-radius:999px;padding:6px 30px 6px 14px;font:inherit;font-size:16px;font-weight:600;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ffffff' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.ksel.kz{background-color:rgba(143,198,238,.18);color:var(--lb)}.ksel.kh{background-color:var(--or);color:#fff}.ksel.kl{background-color:var(--card2);color:var(--mut)}.ksel:disabled{opacity:.55}
 .chip.kz{background:rgba(143,198,238,.15);color:var(--lb)}.chip.kh{background:var(--or);color:#fff}.chip.kl{background:var(--card2);color:var(--mut)}
 .chip.weg{color:var(--bad);background:rgba(255,92,92,.12)}
 .chip.sel{outline:2px solid #ffe066}
@@ -511,7 +513,7 @@ function viewInstellingen(){
     const opties=sam?[["zacht","Als het kan"],["hard","Verplicht"],["los","Los"]]:[["zacht","Niet samen"],["los","Los"]];
     return `<div class="card" style="margin-bottom:10px"><div class="sw"><div><b>${esc(naam(k.a))} &amp; ${esc(naam(k.b))}</b><small>${sam?"Samen in één team":"Niet in hetzelfde team"}</small></div>${ADMIN?`<button class="btn sec2 sm" data-act="kdel" data-k="${i}">Verwijder</button>`:""}</div>
     <div class="grid"><table><tbody>${RW.map(m=>{const md=kMode(k,m), lab=opties.find(o=>o[0]===md)||opties[0], gesp=!!S.uitslagen[m.id];
-      return `<tr><td class="nm" style="font-weight:500">${fdat(m.datum)} · ${TEAMS[tegen(m)].n}</td><td style="text-align:right;padding-right:12px"><button class="chip ${md==="hard"?"kh":md==="los"?"kl":"kz"}" data-act="kmode" data-k="${i}" data-w="${m.id}" ${(!ADMIN||gesp)?"disabled":""}>${lab[1]}</button></td></tr>`}).join("")}</tbody></table></div></div>`}).join("")||'<div class="card"><div class="sw muted">Nog geen koppels</div></div>'}
+      return `<tr><td class="nm" style="font-weight:500">${fdat(m.datum)} · ${TEAMS[tegen(m)].n}</td><td style="text-align:right;padding-right:12px"><select class="ksel ${md==="hard"?"kh":md==="los"?"kl":"kz"}" data-act="kmode" data-k="${i}" data-w="${m.id}" ${(!ADMIN||gesp)?"disabled":""}>${opties.map(([v,l])=>`<option value="${v}" ${v===md?"selected":""}>${l}</option>`).join("")}</select></td></tr>`}).join("")}</tbody></table></div></div>`}).join("")||'<div class="card"><div class="sw muted">Nog geen koppels</div></div>'}
   ${ADMIN?`<div class="card pad"><div class="flex" style="flex-wrap:nowrap"><select class="in" id="kA">${veld().map(p=>`<option value="${p.id}">${esc(p.naam)}</option>`).join("")}</select><select class="in" id="kB">${veld().map((p,i)=>`<option value="${p.id}" ${i===1?"selected":""}>${esc(p.naam)}</option>`).join("")}</select></div>
     <div class="flex" style="margin-top:8px;flex-wrap:nowrap"><select class="in" id="kT"><option value="samen">Samen in één team</option><option value="apart">Niet samen</option></select><button class="btn sm" data-act="kadd">Toevoegen</button></div></div>`:""}
   <p class="muted" style="margin:8px 4px">Tik per wedstrijd om te wisselen. Daarna wordt alles direct opnieuw berekend. <i>Los</i> = geen voorwaarde voor die wedstrijd.</p>
@@ -641,11 +643,6 @@ document.addEventListener("click",async e=>{
     if(S.opstellingen[OPEN]){ S.opstellingen[OPEN].form=d.v; }
     await wijzig(["instellingen","opstellingen"]);
   }
-  else if(a==="kmode"){ const k=koppels()[+d.k], w=d.w; k.per=k.per||{};
-    const volg=kType(k)==="samen"?["zacht","hard","los"]:["zacht","los"];
-    const nx=volg[(volg.indexOf(k.per[w]||"zacht")+1)%volg.length];
-    if(nx==="zacht") delete k.per[w]; else k.per[w]=nx;
-    if(S.opstellingen[w]&&!S.uitslagen[w]) delete S.opstellingen[w]; await wijzig(["instellingen","opstellingen"]); }
   else if(a==="kdel"){ S.instellingen.koppels.splice(+d.k,1); Object.keys(S.opstellingen).forEach(w=>{ if(!S.uitslagen[w]) delete S.opstellingen[w]; }); await wijzig(["instellingen","opstellingen"]); }
   else if(a==="kadd"){ const x=$("kA").value,y=$("kB").value,t=$("kT").value; if(x===y||koppels().some(k=>(k.a===x&&k.b===y)||(k.a===y&&k.b===x))) return;
     S.instellingen.koppels=[...koppels(),{a:x,b:y,type:t,per:{}}];
@@ -662,7 +659,10 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("change",async e=>{
   const el=e.target, d=el.dataset; if(!d.act) return;
-  if(d.act==="blok"){ S.instellingen.blok[+d.i]=Math.max(1,Math.min(20,+el.value||1)); await wijzig(["instellingen"]); }
+  if(d.act==="kmode"){ const k=koppels()[+d.k], w=d.w; k.per=k.per||{};
+    if(el.value==="zacht") delete k.per[w]; else k.per[w]=el.value;
+    if(S.opstellingen[w]&&!S.uitslagen[w]) delete S.opstellingen[w]; await wijzig(["instellingen","opstellingen"]); }
+  else if(d.act==="blok"){ S.instellingen.blok[+d.i]=Math.max(1,Math.min(20,+el.value||1)); await wijzig(["instellingen"]); }
   else if(d.act==="pnaam"){ const p=S.speelsters.find(x=>x.id===d.p); if(p&&el.value.trim()){ p.naam=el.value.trim(); await wijzig(["speelsters"]); } }
   else if(d.act==="ppos"){ const p=S.speelsters.find(x=>x.id===d.p); if(p){ p.pos=el.value; Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["speelsters","opstellingen"]); } }
 });
