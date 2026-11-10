@@ -59,13 +59,13 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 /* beschikbaarheid */
 .grid{overflow-x:auto}
 .grid table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
-.grid th{color:var(--mut);font-weight:600;padding:8px 3px;text-align:center;white-space:nowrap;font-size:11.5px}
+.grid th{color:var(--mut);font-weight:600;padding:8px 1px;text-align:center;white-space:nowrap;font-size:11.5px}
 .grid th:first-child,.grid td:first-child{text-align:left;position:sticky;left:0;background:var(--card);padding-left:12px;z-index:1}
-.grid td{padding:4px 2px;text-align:center;border-top:1px solid var(--line)}
+.grid td{padding:4px 1px;text-align:center;border-top:1px solid var(--line)}
 .grid td.nm{font-weight:600;font-size:13.5px;white-space:nowrap}
-.pos{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:5px;vertical-align:1px}
+.pos{display:inline-block;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;margin-left:4px;vertical-align:1px}
 .pos.V{background:#13385f;color:var(--lb)}.pos.M,.pos.A,.pos.MA{background:#4a2410;color:var(--or2)}.pos.K{background:#2d3a1a;color:#b8e07a}
-.cell{width:34px;height:30px;border-radius:9px;border:0;font-size:12px;font-weight:700}
+.cell{width:32px;height:30px;border-radius:9px;border:0;font-size:12px;font-weight:700}
 .cell.ja{background:rgba(60,207,122,.16);color:var(--ok)}
 .cell.nee{background:rgba(255,92,92,.16);color:var(--bad)}
 .cell.w1,.cell.w2{background:rgba(255,190,60,.16);color:#ffc95a}
@@ -120,7 +120,7 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 .btn.sm{padding:7px 11px;font-size:13px}
 .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 label.f{display:block;font-size:13px;color:var(--mut);margin:12px 0 5px}
-input.in,select.in{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit;font-size:15px;width:100%}
+input.in,select.in{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit;font-size:16px;width:100%;min-width:0}
 .sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px}
 .sw+.sw{border-top:1px solid var(--line)}
 .sw small{display:block;color:var(--mut);font-size:12.5px}
@@ -427,7 +427,6 @@ function render(){
   const v=$("view");
   if(OPEN){ v.innerHTML=viewWedstrijd(OPEN); return; }
   v.innerHTML={programma:viewProgramma,stand:viewStand,speelsters:viewSpeelsters,speeltijd:viewSpeeltijd,instellingen:viewInstellingen}[TAB]();
-  window.scrollTo(0,0);
 }
 
 /* ---------- Programma ---------- */
@@ -603,11 +602,11 @@ function sheetScore(id){
 async function wijzig(keys){ herbereken(); render(); await bewaar(...keys); }
 document.addEventListener("click",async e=>{
   const el=e.target.closest("[data-tab],[data-act]"); if(!el) return;
-  if(el.dataset.tab){ TAB=el.dataset.tab; OPEN=null; RUIL=null; render(); return; }
+  if(el.dataset.tab){ TAB=el.dataset.tab; OPEN=null; RUIL=null; render(); window.scrollTo(0,0); return; }
   const a=el.dataset.act, d=el.dataset;
   if(a==="filter"){ ALLEEN_WIJ=d.v==="1"; render(); }
   else if(a==="open"){ OPEN=d.id; TEAMSEL="t1"; RUIL=null; render(); window.scrollTo(0,0); }
-  else if(a==="terug"){ OPEN=null; RUIL=null; render(); }
+  else if(a==="terug"){ OPEN=null; RUIL=null; render(); window.scrollTo(0,0); }
   else if(a==="team"){ TEAMSEL=d.v; render(); }
   else if(a==="score"){ if(ADMIN) sheetScore(d.id); }
   else if(a==="sluit"){ if(e.target===el) $("sheet").innerHTML=""; }
