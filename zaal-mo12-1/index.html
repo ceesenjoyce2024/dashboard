@@ -319,7 +319,12 @@ function maakPlan(){
         const rest=gesort.filter(p=>p!==A&&p!==B);
         const met=[A,B,...rest.slice(0,n-2)], zonder=rest.slice(0,n);
         const som=l=>l.reduce((x,p)=>x+score(p),0);
-        if(mode==="hard"||zonder.length<n||som(met)<=som(zonder)) kand=met; else kand=zonder;
+        if(mode==="hard"||zonder.length<n) kand=met;
+        else { // "als het kan": samen spelen heeft voorkeur, maar splitsen mag als dat duidelijk eerlijker is
+          const natuur=gesort.slice(0,n), split=natuur.includes(A)!==natuur.includes(B);
+          const opties=[[met,som(met)],[zonder,som(zonder)],[natuur,som(natuur)+(split?1.5:0)]];
+          kand=opties.sort((x,y)=>x[1]-y[1])[0][0];
+        }
       });
       gekozen[g]=kand.map(p=>p.id);
     });
@@ -379,8 +384,8 @@ function maakPlan(){
       const grp=i=>slotGroep(F.slots[i].g);
       // a) losse speelsters
       for(const t of ["t1","t2"]) for(let i=0;i<5;i++){
-        const x=p[t][i]; if(!x||p.dubbel.includes(x)||koppelActief(x,m)) continue;
-        const kand=p.tr.filter(y=>!koppelActief(y,m)&&past(spl(y),grp(i))&&beurt[x]-beurt[y]>=2&&apartOK(p[t],y,x))
+        const x=p[t][i]; if(!x||p.dubbel.includes(x)||verplicht(x,m)) continue;
+        const kand=p.tr.filter(y=>past(spl(y),grp(i))&&beurt[x]-beurt[y]>=((koppelActief(x,m)||koppelActief(y,m))?3:2)&&apartOK(p[t],y,x))
           .sort((a,b)=>beurt[a]-beurt[b]);
         for(const y of kand){
           const xZitAl=zus&&P[zus.id]&&P[zus.id].tr.includes(x);
