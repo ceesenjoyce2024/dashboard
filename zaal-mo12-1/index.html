@@ -281,7 +281,9 @@ function hash(s){let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h}
 const koppels=()=>S.instellingen.koppels||[];
 const kType=k=>k.type||"samen";
 const kMode=(k,m)=>(k.per&&k.per[m.id])||"zacht";
-const koppelActief=(id,m)=>koppels().some(k=>(k.a===id||k.b===id)&&kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m));
+const koppelActief=(id,m)=>koppels().some(k=>kType(k)==="samen"&&(k.a===id||k.b===id)&&kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m));
+// verplicht samen in deze wedstrijd: speelt sowieso
+const verplicht=(id,m)=>koppels().some(k=>kType(k)==="samen"&&(k.a===id||k.b===id)&&kMode(k,m)==="hard"&&aanwezig(k.a,m)&&aanwezig(k.b,m));
 function maakPlan(){
   const spelers=veld(), P={}, beurt={};
   spelers.forEach(p=>beurt[p.id]=0);
@@ -293,10 +295,11 @@ function maakPlan(){
   // 2. open wedstrijden chronologisch vullen
   open.forEach((m,oi)=>{
     const beschik=spelers.filter(p=>aanwezig(p.id,m));
-    const toekomst={}; beschik.forEach(p=>toekomst[p.id]=open.slice(oi+1).filter(x=>aanwezig(p.id,x)).length);
+    const toekomst={}, moet={};
+    beschik.forEach(p=>{ const later=open.slice(oi+1).filter(x=>aanwezig(p.id,x)); moet[p.id]=later.filter(x=>verplicht(p.id,x)).length; toekomst[p.id]=later.length-moet[p.id]; });
     const zus=RW.find(x=>x.dag===m.dag&&x!==m&&x.ihDag<m.ihDag);   // eerdere wedstrijd zelfde dag
     const zatZus=id=>zus&&P[zus.id]&&P[zus.id].tr.includes(id);
-    const score=p=>beurt[p.id]+gem*toekomst[p.id]-(zatZus(p.id)?0.6:0)+(hash(p.id+m.id)%100)/1000;
+    const score=p=>beurt[p.id]+moet[p.id]+gem*toekomst[p.id]-(zatZus(p.id)?0.6:0)+(hash(p.id+m.id)%100)/1000;
     const F=FORM[formVan(m)], nodig={};
     F.slots.forEach(s=>{const g=slotGroep(s.g); nodig[g]=(nodig[g]||0)+2;});
     const gekozen={}, flex=[];
@@ -363,21 +366,53 @@ function maakPlan(){
     P[m.id]={form:formVan(m),t1,t2,tr,flex,dubbel,vast:false,gespeeld:false};
     tel([...t1,...t2].filter(Boolean));
   });
-  // 3. bijschaven: ruil veld ↔ tribune zolang het verschil 2 beurten of meer is
-  for(let ronde=0;ronde<60;ronde++){
+  // 3. bijschaven: ruil veld ↔ tribune zolang het verschil 2 beurten of meer is.
+  //    Samen-koppels ruilen als paar; niet-samen-koppels mogen niet in hetzelfde team belanden.
+  const spl=id=>S.speelsters.find(s=>s.id===id);
+  const apartOK=(team,y,weg)=>!koppels().some(k=>kType(k)==="apart"&&kMode(k,cur)!=="los"&&(k.a===y||k.b===y)&&team.some(z=>z&&z!==weg&&z===(k.a===y?k.b:k.a)));
+  let cur=null;
+  for(let ronde=0;ronde<80;ronde++){
     let geruild=false;
     for(const m of open){
-      const p=P[m.id], F=FORM[p.form];
+      cur=m; const p=P[m.id], F=FORM[p.form];
       const zus=RW.find(x=>x.dag===m.dag&&x!==m);
+      const grp=i=>slotGroep(F.slots[i].g);
+      // a) losse speelsters
       for(const t of ["t1","t2"]) for(let i=0;i<5;i++){
         const x=p[t][i]; if(!x||p.dubbel.includes(x)||koppelActief(x,m)) continue;
-        const g=slotGroep(F.slots[i].g);
-        const kand=p.tr.filter(y=>!koppelActief(y,m)&&past(S.speelsters.find(s=>s.id===y),g)&&beurt[x]-beurt[y]>=2)
+        const kand=p.tr.filter(y=>!koppelActief(y,m)&&past(spl(y),grp(i))&&beurt[x]-beurt[y]>=2&&apartOK(p[t],y,x))
           .sort((a,b)=>beurt[a]-beurt[b]);
         for(const y of kand){
           const xZitAl=zus&&P[zus.id]&&P[zus.id].tr.includes(x);
           if(xZitAl&&kand.length>1&&y!==kand[kand.length-1]) continue;
           p[t][i]=y; p.tr=p.tr.filter(z=>z!==y).concat(x); beurt[x]--; beurt[y]++; geruild=true; break;
+        }
+      }
+      // b) samen-koppels (alleen "als het kan") als paar
+      for(const k of koppels().filter(k=>kType(k)==="samen"&&kMode(k,m)==="zacht"&&aanwezig(k.a,m)&&aanwezig(k.b,m))){
+        const waar=id=>{ for(const t of ["t1","t2"]){ const i=p[t].indexOf(id); if(i>=0) return {t,i}; } return null; };
+        const A=waar(k.a), B=waar(k.b);
+        if(A&&B&&!p.dubbel.includes(k.a)&&!p.dubbel.includes(k.b)){
+          // paar eruit, twee tribunespeelsters erin
+          const vrij=p.tr.filter(y=>!koppelActief(y,m));
+          const y1=vrij.filter(y=>past(spl(y),grp(A.i))&&beurt[k.a]-beurt[y]>=2&&apartOK(p[A.t],y,k.a)).sort((a,b)=>beurt[a]-beurt[b])[0];
+          const y2=vrij.filter(y=>y!==y1&&past(spl(y),grp(B.i))&&beurt[k.b]-beurt[y]>=2&&apartOK(p[B.t],y,k.b)).sort((a,b)=>beurt[a]-beurt[b])[0];
+          if(y1&&y2){ p[A.t][A.i]=y1; p[B.t][B.i]=y2; p.tr=p.tr.filter(z=>z!==y1&&z!==y2).concat(k.a,k.b);
+            beurt[k.a]--;beurt[k.b]--;beurt[y1]++;beurt[y2]++; geruild=true; }
+        } else if(!A&&!B&&p.tr.includes(k.a)&&p.tr.includes(k.b)){
+          // paar erin (samen in één team), twee veldspeelsters eruit
+          let best=null;
+          for(const t of ["t1","t2"]) for(let i=0;i<5;i++) for(let j=0;j<5;j++){
+            if(i===j) continue; const x1=p[t][i], x2=p[t][j];
+            if(!x1||!x2||p.dubbel.includes(x1)||p.dubbel.includes(x2)||koppelActief(x1,m)||koppelActief(x2,m)) continue;
+            if(!past(spl(k.a),grp(i))||!past(spl(k.b),grp(j))) continue;
+            if(beurt[x1]-beurt[k.a]<2||beurt[x2]-beurt[k.b]<2) continue;
+            const rest=p[t].filter((z,q)=>q!==i&&q!==j);
+            if(!apartOK(rest,k.a,null)||!apartOK(rest,k.b,null)) continue;
+            const w=beurt[x1]+beurt[x2]; if(!best||w>best.w) best={t,i,j,x1,x2,w};
+          }
+          if(best){ const {t,i,j,x1,x2}=best; p[t][i]=k.a; p[t][j]=k.b; p.tr=p.tr.filter(z=>z!==k.a&&z!==k.b).concat(x1,x2);
+            beurt[k.a]++;beurt[k.b]++;beurt[x1]--;beurt[x2]--; geruild=true; }
         }
       }
     }
