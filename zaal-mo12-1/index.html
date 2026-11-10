@@ -105,6 +105,7 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 .tok .d{font-size:10px;color:#ffe066}
 .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px}
 .chip{background:var(--card2);border-radius:999px;padding:5px 11px;font-size:13px;border:0}
+.chip.kz{background:rgba(143,198,238,.15);color:var(--lb)}.chip.kh{background:var(--or);color:#fff}.chip.kl{background:var(--card2);color:var(--mut)}
 .chip.weg{color:var(--bad);background:rgba(255,92,92,.12)}
 .chip.sel{outline:2px solid #ffe066}
 .tl{padding:12px}
@@ -273,6 +274,7 @@ function hash(s){let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h}
 
 /* Koppels: twee speelsters samen in hetzelfde team. Per wedstrijd: "hard" (verplicht), "zacht" (als het kan, standaard) of "los" */
 const koppels=()=>S.instellingen.koppels||[];
+const kType=k=>k.type||"samen";
 const kMode=(k,m)=>(k.per&&k.per[m.id])||"zacht";
 const koppelActief=(id,m)=>koppels().some(k=>(k.a===id||k.b===id)&&kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m));
 function maakPlan(){
@@ -302,7 +304,7 @@ function maakPlan(){
       }
       // koppels: beide spelen of beide niet (verplicht: beide spelen)
       const gesort=vrij().filter(p=>past(p,g)).sort((a,b)=>score(a)-score(b)), n=nodig[g];
-      koppels().forEach(k=>{
+      koppels().filter(k=>kType(k)==="samen").forEach(k=>{
         const mode=kMode(k,m); if(mode==="los") return;
         const A=gesort.find(p=>p.id===k.a), B=gesort.find(p=>p.id===k.b);
         if(!A||!B||n<2) return;
@@ -332,17 +334,25 @@ function maakPlan(){
       const kies=y.filter(z=>z&&!x.includes(z)).sort((p,q)=>beurt[p]-beurt[q])[0];
       if(kies){x[i]=kies;dubbel.push(kies);}
     }));
-    // koppel in verschillende teams: partner ruilen met een teamgenoot op een plek van dezelfde linie
-    koppels().forEach(k=>{
-      if(kMode(k,m)==="los") return;
-      const ia=t1.indexOf(k.a), ib=t2.indexOf(k.b), ja=t2.indexOf(k.a), jb=t1.indexOf(k.b);
-      const [thuis,weg,pid]= ia>=0&&ib>=0?[t1,t2,k.b]: ja>=0&&jb>=0?[t2,t1,k.b]:[null];
-      if(!thuis) return;
-      const pi=weg.indexOf(pid), g=slotGroep(F.slots[pi].g);
-      const j=thuis.findIndex((x,i)=>x&&x!==k.a&&slotGroep(F.slots[i].g)===g&&!koppels().some(q=>q.a===x||q.b===x));
-      if(j<0) return;
-      const x=thuis[j]; thuis[j]=pid; weg[pi]=x;
-    });
+    // koppels: samen-paren in hetzelfde team, niet-samen-paren in verschillende teams.
+    // Ruil tussen team 1 en 2 (zelfde linie) zolang het aantal overtredingen daalt; speeltijd verandert hierdoor niet.
+    const actief=koppels().filter(k=>kMode(k,m)!=="los");
+    const fout=()=>actief.reduce((n,k)=>{
+      const a1=t1.includes(k.a),a2=t2.includes(k.a),b1=t1.includes(k.b),b2=t2.includes(k.b);
+      if(kType(k)==="samen") return n+(((a1&&b2&&!b1)||(a2&&b1&&!b2))?(kMode(k,m)==="hard"?3:2):0);
+      return n+(((a1&&b1)||(a2&&b2))?2:0);
+    },0);
+    for(let r=0,f=fout();f>0&&r<20;r++){
+      let best=null;
+      for(let i=0;i<t1.length;i++) for(let j=0;j<t2.length;j++){
+        if(!t1[i]||!t2[j]||slotGroep(F.slots[i].g)!==slotGroep(F.slots[j].g)) continue;
+        if(dubbel.includes(t1[i])||dubbel.includes(t2[j])) continue;
+        [t1[i],t2[j]]=[t2[j],t1[i]]; const nf=fout(); [t1[i],t2[j]]=[t2[j],t1[i]];
+        if(nf<f&&(!best||nf<best.f)) best={i,j,f:nf};
+      }
+      if(!best) break;
+      [t1[best.i],t2[best.j]]=[t2[best.j],t1[best.i]]; f=best.f;
+    }
     const inVeld=new Set([...t1,...t2].filter(Boolean));
     const tr=beschik.filter(p=>!inVeld.has(p.id)).map(p=>p.id);
     P[m.id]={form:formVan(m),t1,t2,tr,flex,dubbel,vast:false,gespeeld:false};
@@ -497,10 +507,15 @@ function viewInstellingen(){
   <div class="card" style="margin-top:12px">
     <div class="sw"><div>Middenveld en aanval samen<small>Aan: M/A-speelsters wisselen vrij tussen middenveld en aanval. Uit: iedereen speelt op haar eigen linie (M of A).</small></div><button class="tg ${I.maSamen?"on":""}" data-act="masamen" ${dis}></button></div>
   </div>
-  <div class="sec">Samen in één team</div>
-  <div class="card">${koppels().map((k,i)=>`<div class="sw"><div>${esc(naam(k.a))} &amp; ${esc(naam(k.b))}<small>Samen als het kan${Object.entries(k.per||{}).filter(([,v])=>v!=="zacht").map(([w,v])=>{const mm=RW.find(x=>x.id===w);return mm?` · ${fdat(mm.datum)} vs ${TEAMS[tegen(mm)].n}: ${v==="hard"?"verplicht":"los"}`:""}).join("")}</small></div>${ADMIN?`<button class="btn sec2 sm" data-act="kdel" data-k="${i}">Verwijder</button>`:""}</div>`).join("")||'<div class="sw muted">Geen koppels</div>'}
-  ${ADMIN?`<div class="sw"><select class="in" id="kA">${veld().map(p=>`<option value="${p.id}">${esc(p.naam)}</option>`).join("")}</select><select class="in" id="kB">${veld().map((p,i)=>`<option value="${p.id}" ${i===1?"selected":""}>${esc(p.naam)}</option>`).join("")}</select><button class="btn sec2 sm" data-act="kadd">+</button></div>`:""}</div>
-  <p class="muted" style="margin:8px 4px">Per wedstrijd zet je een koppel op verplicht, als het kan of los.</p>
+  <div class="sec">Samen / niet samen in één team</div>
+  ${koppels().map((k,i)=>{const sam=kType(k)==="samen";
+    const opties=sam?[["zacht","Als het kan"],["hard","Verplicht"],["los","Los"]]:[["zacht","Niet samen"],["los","Los"]];
+    return `<div class="card" style="margin-bottom:10px"><div class="sw"><div><b>${esc(naam(k.a))} &amp; ${esc(naam(k.b))}</b><small>${sam?"Samen in één team":"Niet in hetzelfde team"}</small></div>${ADMIN?`<button class="btn sec2 sm" data-act="kdel" data-k="${i}">Verwijder</button>`:""}</div>
+    <div class="grid"><table><tbody>${RW.map(m=>{const md=kMode(k,m), lab=opties.find(o=>o[0]===md)||opties[0], gesp=!!S.uitslagen[m.id];
+      return `<tr><td class="nm" style="font-weight:500">${fdat(m.datum)} · ${TEAMS[tegen(m)].n}</td><td style="text-align:right;padding-right:12px"><button class="chip ${md==="hard"?"kh":md==="los"?"kl":"kz"}" data-act="kmode" data-k="${i}" data-w="${m.id}" ${(!ADMIN||gesp)?"disabled":""}>${lab[1]}</button></td></tr>`}).join("")}</tbody></table></div></div>`}).join("")||'<div class="card"><div class="sw muted">Nog geen koppels</div></div>'}
+  ${ADMIN?`<div class="card pad"><div class="flex" style="flex-wrap:nowrap"><select class="in" id="kA">${veld().map(p=>`<option value="${p.id}">${esc(p.naam)}</option>`).join("")}</select><select class="in" id="kB">${veld().map((p,i)=>`<option value="${p.id}" ${i===1?"selected":""}>${esc(p.naam)}</option>`).join("")}</select></div>
+    <div class="flex" style="margin-top:8px;flex-wrap:nowrap"><select class="in" id="kT"><option value="samen">Samen in één team</option><option value="apart">Niet samen</option></select><button class="btn sm" data-act="kadd">Toevoegen</button></div></div>`:""}
+  <p class="muted" style="margin:8px 4px">Tik per wedstrijd om te wisselen. Daarna wordt alles direct opnieuw berekend. <i>Los</i> = geen voorwaarde voor die wedstrijd.</p>
   <div class="sec">Wisselblokken per helft</div>
   <div class="card pad">
     <div class="flex" style="flex-wrap:nowrap">${b.map((x,i)=>`<input class="in" type="number" min="1" max="20" value="${x}" data-act="blok" data-i="${i}" ${dis} style="text-align:center">`).join("")}</div>
@@ -549,8 +564,8 @@ function viewWedstrijd(id){
   </div>`;
   if(!u&&ADMIN) h+=`<div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${p.form===k?"on":""}" data-act="wform" data-v="${k}">${f.naam}</button>`).join("")}</div>`;
   else h+=`<p class="muted" style="text-align:center;margin:12px 0 0">Opstelling: ${F.naam}</p>`;
-  if(ADMIN&&!u) koppels().forEach((k,ki)=>{ if(!aanwezig(k.a,m)||!aanwezig(k.b,m)) return; const md=kMode(k,m);
-    h+=`<div class="muted" style="margin:12px 4px 0">${esc(naam(k.a))} &amp; ${esc(naam(k.b))} in één team</div><div class="seg">${[["hard","Verplicht"],["zacht","Als het kan"],["los","Los"]].map(([v,l])=>`<button class="${md===v?"on":""}" data-act="kmode" data-k="${ki}" data-v="${v}">${l}</button>`).join("")}</div>`; });
+  { const kl=koppels().filter(k=>kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m)).map(k=>`${esc(naam(k.a))} &amp; ${esc(naam(k.b))} ${kType(k)==="apart"?"niet samen":kMode(k,m)==="hard"?"samen (verplicht)":"samen"}`);
+    if(kl.length) h+=`<p class="muted" style="text-align:center;margin:8px 0 0">${kl.join(" · ")}</p>`; }
   h+=`<div class="seg ${TEAMSEL}"><button class="b1 ${TEAMSEL==="t1"?"on":""}" data-act="team" data-v="t1">Team 1 · start</button><button class="b2 ${TEAMSEL==="t2"?"on":""}" data-act="team" data-v="t2">Team 2</button></div>
   <div class="court">${courtSVG()}
     ${F.slots.map((s,i)=>tok(team[i],s,i)).join("")}
@@ -627,11 +642,16 @@ document.addEventListener("click",async e=>{
     if(S.opstellingen[OPEN]){ S.opstellingen[OPEN].form=d.v; }
     await wijzig(["instellingen","opstellingen"]);
   }
-  else if(a==="kmode"){ const k=koppels()[+d.k]; k.per=k.per||{}; if(d.v==="zacht") delete k.per[OPEN]; else k.per[OPEN]=d.v;
-    if(S.opstellingen[OPEN]&&!S.uitslagen[OPEN]) delete S.opstellingen[OPEN]; await wijzig(["instellingen","opstellingen"]); }
-  else if(a==="kdel"){ S.instellingen.koppels.splice(+d.k,1); await wijzig(["instellingen"]); }
-  else if(a==="kadd"){ const x=$("kA").value,y=$("kB").value; if(x===y||koppels().some(k=>[k.a,k.b].includes(x)||[k.a,k.b].includes(y))) return;
-    S.instellingen.koppels=[...koppels(),{a:x,b:y,per:{}}]; await wijzig(["instellingen"]); }
+  else if(a==="kmode"){ const k=koppels()[+d.k], w=d.w; k.per=k.per||{};
+    const volg=kType(k)==="samen"?["zacht","hard","los"]:["zacht","los"];
+    const nx=volg[(volg.indexOf(k.per[w]||"zacht")+1)%volg.length];
+    if(nx==="zacht") delete k.per[w]; else k.per[w]=nx;
+    if(S.opstellingen[w]&&!S.uitslagen[w]) delete S.opstellingen[w]; await wijzig(["instellingen","opstellingen"]); }
+  else if(a==="kdel"){ S.instellingen.koppels.splice(+d.k,1); Object.keys(S.opstellingen).forEach(w=>{ if(!S.uitslagen[w]) delete S.opstellingen[w]; }); await wijzig(["instellingen","opstellingen"]); }
+  else if(a==="kadd"){ const x=$("kA").value,y=$("kB").value,t=$("kT").value; if(x===y||koppels().some(k=>(k.a===x&&k.b===y)||(k.a===y&&k.b===x))) return;
+    S.instellingen.koppels=[...koppels(),{a:x,b:y,type:t,per:{}}];
+    Object.keys(S.opstellingen).forEach(w=>{ if(!S.uitslagen[w]) delete S.opstellingen[w]; });
+    await wijzig(["instellingen","opstellingen"]); }
   else if(a==="form"){ S.instellingen.form=d.v; await wijzig(["instellingen"]); }
   else if(a==="masamen"){ S.instellingen.maSamen=!S.instellingen.maSamen; await wijzig(["instellingen"]); }
   else if(a==="padd"){ const n=($("nieuw")||{}).value; if(!n||!n.trim()) return;
