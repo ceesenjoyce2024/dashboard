@@ -295,7 +295,7 @@ async function bewaar(...keys){
 const veld=()=>S.speelsters.filter(p=>p.pos!=="K");
 const keeper=()=>S.speelsters.find(p=>p.pos==="K");
 const naam=id=>(S.speelsters.find(p=>p.id===id)||{naam:"?"}).naam;
-const formVan=m=>S.instellingen.perWed[m.id]||S.instellingen.form;
+const formVan=m=>S.instellingen.form;   // opstelling alleen via Instellingen (geldt voor alle wedstrijden)
 // volgorde van de teams per helft: 1e helft begint team 1, 2e helft team 2, steeds om en om
 const start2=()=>S.instellingen.start2||(S.instellingen.blok.length%2?2:1);   // 2e helft: even aantal blokken → team 1 (uitgerust), oneven → team 2 (gelijke minuten)
 const volgorde=h=>{ const st=h===1?1:start2(); return S.instellingen.blok.map((_,i)=>i%2?(3-st):st); };
@@ -630,7 +630,7 @@ function viewInstellingen(){
   return `<div class="sec">Opstelling</div>
   <div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${I.form===k?"on":""}" data-act="form" data-v="${k}" ${dis}>${f.naam}</button>`).join("")}</div>
   <div class="card court" style="max-width:240px;padding:8px">${courtSVG()}${FORM[I.form].slots.map(s=>`<span class="tok t1" style="left:${s.x}%;top:${s.y}%"><i style="width:30px;height:30px;font-size:11px">${s.l}</i></span>`).join("")}</div>
-  <p class="muted" style="margin:8px 4px">Standaard voor alle wedstrijden. Per wedstrijd kun je afwijken in de wedstrijdweergave.</p>
+  <p class="muted" style="margin:8px 4px">Geldt voor alle wedstrijden die nog niet gespeeld zijn.</p>
   <div class="card" style="margin-top:12px">
     <div class="sw"><div>Middenveld en aanval samen<small>Aan: M/A-speelsters wisselen vrij tussen middenveld en aanval. Uit: iedereen speelt op haar eigen linie (M of A).</small></div><button class="tg ${I.maSamen?"on":""}" data-act="masamen" ${dis}></button></div>
   </div>
@@ -694,10 +694,7 @@ function viewWedstrijd(id){
       <div class="tm">${badge(m.a)}${tnaam(m.a)}</div></div>
     ${EDIT?`<div class="flex" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="score" data-id="${m.id}">${u?"Uitslag wijzigen":"Uitslag invullen"}</button>${p.vast&&!u?`<button class="btn sec2 sm" data-act="vrij" data-id="${m.id}">Terug naar automatisch</button>`:""}</div>`:""}
   </div>`;
-  if(EDIT) h+=`<div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${p.form===k?"on":""}" data-act="wform" data-v="${k}">${f.naam}</button>`).join("")}</div>`;
-  else h+=`<p class="muted" style="text-align:center;margin:12px 0 0">Opstelling: ${F.naam}</p>`;
-  if(ADMIN){ const kl=koppels().filter(k=>kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m)).map(k=>`${esc(naam(k.a))} &amp; ${esc(naam(k.b))} ${kType(k)==="apart"?"niet samen":kMode(k,m)==="hard"?"samen (verplicht)":"samen"}`);
-    if(kl.length) h+=`<p class="muted" style="text-align:center;margin:8px 0 0">${kl.join(" · ")}</p>`; }
+  h+=`<p class="muted" style="text-align:center;margin:12px 0 0">Opstelling: ${F.naam}</p>`;
   h+=`<div class="seg ${TEAMSEL}"><button class="b1 ${TEAMSEL==="t1"?"on":""}" data-act="team" data-v="t1">Team 1 · start</button><button class="b2 ${TEAMSEL==="t2"?"on":""}" data-act="team" data-v="t2">Team 2</button></div>
   <div class="court">${courtSVG()}
     ${F.slots.map((s,i)=>tok(team[i],s,i)).join("")}
@@ -797,7 +794,7 @@ document.addEventListener("click",async e=>{
     S.koppels=[...koppels(),{a:x,b:y,type:t,per:{}}];
     Object.keys(S.opstellingen).forEach(w=>{ if(!S.uitslagen[w]) delete S.opstellingen[w]; });
     await wijzig(["koppels","opstellingen"]); }
-  else if(a==="form"){ S.instellingen.form=d.v; await wijzig(["instellingen"]); }
+  else if(a==="form"){ S.instellingen.form=d.v; S.instellingen.perWed={}; Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) S.opstellingen[k].form=d.v; }); await wijzig(["instellingen","opstellingen"]); }
   else if(a==="masamen"){ S.instellingen.maSamen=!S.instellingen.maSamen; await wijzig(["instellingen"]); }
   else if(a==="padd"){ const n=($("nieuw")||{}).value; if(!n||!n.trim()) return;
     let id=n.toLowerCase().replace(/[^a-z0-9]/g,"")||"sp"; while(S.speelsters.some(p=>p.id===id)) id+="x";
