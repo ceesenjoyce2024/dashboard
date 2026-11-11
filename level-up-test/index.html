@@ -106,6 +106,7 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
 .afw b{color:#8a3d06}
 .name.inv{border-style:dashed}
 .res{display:block;margin-top:6px;color:var(--orange);font-weight:700}
+.ressel{font:inherit;font-weight:700;color:var(--orange);border:1px solid #f6c3a5;border-radius:8px;padding:4px 6px;background:var(--extra-soft);max-width:100%}
 .blesbtn{margin-left:auto;align-self:flex-start;background:var(--surface);color:var(--orange);border:2px solid var(--orange);border-radius:10px;padding:6px 10px;font-weight:700;cursor:pointer;white-space:nowrap}
 .bpanel{position:fixed;inset:0;background:rgba(11,42,91,.55);display:flex;align-items:flex-end;justify-content:center;z-index:10}
 .bsheet{background:var(--surface);width:min(100%,600px);border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));max-height:85%;overflow:auto;display:flex;flex-direction:column;gap:12px}
@@ -277,6 +278,7 @@ const metaVan=(i,inf)=>[`Wedstrijd ${i+1}`,inf.tijd,inf.veld].filter(Boolean).jo
 // ---------- afwezigheid en herverdeling ----------
 // AFW: [{n:"Bo",vanaf:3}] — speelster doet niet meer mee vanaf die wedstrijd (eerdere wedstrijden blijven zoals gespeeld)
 let AFW=[];
+let RES={};   // zelf gekozen reserve per wedstrijd, bijv. {w1:"Ella"}; ontbreekt = automatisch
 const VERD=["Veerle","Ella","Elise","June","Jinte"];
 const SPEELSTERS=[...new Set(M.flatMap(m=>[...m.t1,...m.t2,...m.tr]))];
 const groep=n=>VERD.includes(n)?"V":"M";
@@ -306,7 +308,10 @@ function maakPlan(){
       const r=vul(t,pos,n); m[t][pos]=r||"—"; if(r) m.inv.push(r);
     }));
     // 2. reserve op de bank: wie het minst reserve was en het minst speelde
-    if(trib.length){
+    m.resKeus=[...trib];   // wie kan reserve zijn in deze wedstrijd
+    if(RES[m.id] && trib.includes(RES[m.id])){
+      m.res=RES[m.id]; m.resZelf=true; trib=trib.filter(x=>x!==m.res); resBeurten[m.res]++;
+    } else if(trib.length){
       m.res=trib.slice().sort((a,b)=>resBeurten[a]-resBeurten[b]||blokken[a]-blokken[b]||ORIG[a]-ORIG[b]||SPEELSTERS.indexOf(a)-SPEELSTERS.indexOf(b))[0];
       trib=trib.filter(x=>x!==m.res); resBeurten[m.res]++;
     }
@@ -348,7 +353,8 @@ async function laadInfo(){
     const r=await sb.from("levelup_wedstrijden").select("id,naam,tijd,veld");
     if(r.error||!r.data) return;
     r.data=r.data.filter(x=>x.id.startsWith(PFX)).map(x=>({...x,id:x.id.slice(PFX.length)}));
-    r.data.forEach(row=>{ if(row.id==="afwezig"){ try{ AFW=(JSON.parse(row.naam)||[]).filter(a=>SPEELSTERS.includes(a.n)); }catch(e){ AFW=[]; } } });
+    r.data.forEach(row=>{ if(row.id==="afwezig"){ try{ AFW=(JSON.parse(row.naam)||[]).filter(a=>SPEELSTERS.includes(a.n)); }catch(e){ AFW=[]; } }
+      if(row.id==="reserves"){ try{ RES=JSON.parse(row.naam)||{}; }catch(e){ RES={}; } } });
     PLAN=maakPlan(); renderAfw();
     r.data.forEach(row=>{ if(INFO[row.id]) INFO[row.id]={naam:row.naam||INFO[row.id].naam,tijd:row.tijd||"",veld:row.veld||""}; });
     renderPoule(); renderList(); if(cur) render();
@@ -417,7 +423,17 @@ function render(){
   else note.hidden=true;
   $("players").innerHTML=h;
   $("benchTitle").textContent=`Bank · Team ${team===1?2:1}`;
-  $("bench").innerHTML=esc(off.join(", "))+(m.res?`<span class="res">Reserve: ${esc(m.res)}</span>`:"");
+  if(isAdmin && (m.resKeus||[]).length){
+    $("bench").innerHTML=esc(off.join(", "))+`<label class="res">Reserve: <select id="resSel" class="ressel">${
+      `<option value="">Automatisch${!m.resZelf&&m.res?" ("+esc(m.res)+")":""}</option>`+m.resKeus.map(n=>`<option value="${esc(n)}"${m.resZelf&&m.res===n?" selected":""}>${esc(n)}</option>`).join("")}</select></label>`;
+    $("resSel").onchange=async e=>{
+      const nieuw={...RES}; if(e.target.value) nieuw[m.id]=e.target.value; else delete nieuw[m.id];
+      e.target.disabled=true;
+      try{ await bewaarRes(nieuw); render(); }catch(err){ e.target.disabled=false; alertNote("Opslaan mislukt: "+(err.message||err)); }
+    };
+  } else {
+    $("bench").innerHTML=esc(off.join(", "))+(m.res?`<span class="res">Reserve: ${esc(m.res)}</span>`:"");
+  }
   $("trib").textContent=m.tr.length?m.tr.join(", "):"Niemand";
   $("tb1").setAttribute("aria-pressed",team===1); $("tb2").setAttribute("aria-pressed",team===2);
   $("blesbtn").hidden=!isAdmin;
@@ -444,6 +460,12 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&cur)keepA
 const h=(location.hash||"").slice(1); if(M.some(m=>m.id===h)&&isOpen(h)) open_(h);
 
 // ---------- bewerken: alleen zichtbaar voor ingelogde beheerder ----------
+function alertNote(t){ const n=$("mNote"); n.hidden=false; n.textContent=t; }
+async function bewaarRes(nieuw){
+  const r=await sb.from("levelup_wedstrijden").upsert([{id:(typeof PFX!=="undefined"?PFX:"")+"reserves",naam:JSON.stringify(nieuw),tijd:"",veld:"",bijgewerkt:new Date().toISOString()}],{onConflict:"id"});
+  if(r.error) throw r.error;
+  RES=nieuw; PLAN=maakPlan();
+}
 async function bewaarAfw(nieuw){
   const r=await sb.from("levelup_wedstrijden").upsert([{id:(typeof PFX!=="undefined"?PFX:"")+"afwezig",naam:JSON.stringify(nieuw),tijd:"",veld:"",bijgewerkt:new Date().toISOString()}],{onConflict:"id"});
   if(r.error) throw r.error;
@@ -495,7 +517,8 @@ function openEdit(){
   M.forEach((m,i)=>{
     h+=`<div class="eblock"><h3>Wedstrijd ${i+1}${LOCK_IDS.includes(m.id)?" (extra)":""}</h3>
       ${field(m.id,"naam","Tegenstander",`Tegenstander ${i+1} MO12-1`)}
-      <div class="erow">${field(m.id,"tijd","Tijd","10:30")}${field(m.id,"veld","Veld","Veld 1")}</div></div>`;
+      <div class="erow">${field(m.id,"tijd","Tijd","10:30")}${field(m.id,"veld","Veld","Veld 1")}</div>
+      ${resVeld(m.id,i)}</div>`;
   });
   $("efields").innerHTML=h; $("emsg").textContent="";
   // live voorbeeld van de speeltijd bij wijzigen
@@ -505,6 +528,14 @@ function openEdit(){
   }));
   $("list").hidden=true; $("edit").hidden=false; window.scrollTo(0,0);
 }
+function resVeld(id,i){
+  const pm=PLAN[i]; const keus=pm.resKeus||[];
+  if(!keus.length) return `<label>Reserve<input value="Geen tribunespeelsters over" disabled></label>`;
+  return `<label>Reserve (van de tribune)<select id="res_${id}" class="ressel" style="font-size:16px;padding:10px 12px">`+
+    `<option value="">Automatisch${!pm.resZelf&&pm.res?" ("+esc(pm.res)+")":""}</option>`+
+    keus.map(n=>`<option value="${esc(n)}"${pm.resZelf&&pm.res===n?" selected":""}>${esc(n)}</option>`).join("")+`</select></label>`;
+}
+function leesRes(){ const o={}; M.forEach(m=>{ const el=$(`res_${m.id}`); if(el&&el.value) o[m.id]=el.value; }); return o; }
 function leesAfw(){ return SPEELSTERS.map(n=>{const v=$(`afw_${n}`).value; const b=v.startsWith("b");
   const a={n,vanaf:parseInt(b?v.slice(1):v,10)||0}; if(b) a.b=1; return a;}).filter(a=>a.vanaf>0); }
 function closeEdit(){ $("edit").hidden=true; $("list").hidden=false; }
@@ -521,11 +552,13 @@ $("eform").onsubmit=async e=>{
   const nieuwAfw=leesAfw();
   if(SPEELSTERS.length-nieuwAfw.filter(a=>a.vanaf<=1).length<5){ $("emsg").textContent="Te weinig speelsters over voor een team."; return; }
   rows.push({id:"afwezig",naam:JSON.stringify(nieuwAfw),tijd:"",veld:"",bijgewerkt:new Date().toISOString()});
+  const nieuwRes=leesRes();
+  rows.push({id:"reserves",naam:JSON.stringify(nieuwRes),tijd:"",veld:"",bijgewerkt:new Date().toISOString()});
   $("emsg").textContent="Opslaan…";
   const r=await sb.from("levelup_wedstrijden").upsert(rows.map(x=>({...x,id:PFX+x.id})),{onConflict:"id"});
   if(r.error){ $("emsg").textContent="Opslaan mislukt: "+r.error.message; return; }
   rows.forEach(x=>{ if(INFO[x.id]) INFO[x.id]={naam:x.naam,tijd:x.tijd,veld:x.veld}; });
-  AFW=nieuwAfw; PLAN=maakPlan(); renderAfw();
+  AFW=nieuwAfw; RES=nieuwRes; PLAN=maakPlan(); renderAfw();
   renderPoule(); renderList(); closeEdit();
 };
 </script>
