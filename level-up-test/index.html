@@ -106,6 +106,11 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
 .afw b{color:#8a3d06}
 .name.inv{border-style:dashed}
 .res{display:block;margin-top:6px;color:var(--orange);font-weight:700}
+.formbar{display:flex;align-items:center;gap:8px;padding:6px 16px 0;font-size:14px;color:var(--muted)}
+.formbar b{color:var(--navy)}
+.seg{display:inline-flex;border:2px solid var(--navy);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--surface);color:var(--navy);padding:5px 10px;font-weight:700;cursor:pointer;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
 .ressel{font:inherit;font-weight:700;color:var(--orange);border:1px solid #f6c3a5;border-radius:8px;padding:4px 6px;background:var(--extra-soft);max-width:100%}
 .blesbtn{margin-left:auto;align-self:flex-start;background:var(--surface);color:var(--orange);border:2px solid var(--orange);border-radius:10px;padding:6px 10px;font-weight:700;cursor:pointer;white-space:nowrap}
 .bpanel{position:fixed;inset:0;background:rgba(11,42,91,.55);display:flex;align-items:flex-end;justify-content:center;z-index:10}
@@ -202,6 +207,7 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
     <button type="button" class="blesbtn" id="blesbtn" hidden>Blessure</button>
   </div>
   <div class="blocks" id="mBlocks"></div>
+  <div class="formbar" id="formbar"></div>
   <div class="note" id="mNote" hidden></div>
   <div class="stage">
     <div class="courtwrap">
@@ -354,6 +360,7 @@ async function laadInfo(){
     if(r.error||!r.data) return;
     r.data=r.data.filter(x=>x.id.startsWith(PFX)).map(x=>({...x,id:x.id.slice(PFX.length)}));
     r.data.forEach(row=>{ if(row.id==="afwezig"){ try{ AFW=(JSON.parse(row.naam)||[]).filter(a=>SPEELSTERS.includes(a.n)); }catch(e){ AFW=[]; } }
+      if(row.id==="opstelling"){ try{ FORM=JSON.parse(row.naam)||{}; }catch(e){ FORM={}; } }
       if(row.id==="reserves"){ try{ RES=JSON.parse(row.naam)||{}; }catch(e){ RES={}; } } });
     PLAN=maakPlan(); renderAfw();
     r.data.forEach(row=>{ if(INFO[row.id]) INFO[row.id]={naam:row.naam||INFO[row.id].naam,tijd:row.tijd||"",veld:row.veld||""}; });
@@ -363,6 +370,12 @@ async function laadInfo(){
 
 // posities volgens de schets (% van het veld); eigen doel onderaan
 const POS=[{x:24,y:73},{x:76,y:72},{x:50,y:50},{x:24,y:37},{x:74,y:16}];
+// opstellingen; volgorde spelers per team: verd 1, verd 2, midden, aanval 1, aanval 2
+const FORMATIES={
+  dobbelsteen:{naam:"Huis-dobbelsteen",pos:POS},
+  huis:{naam:"Huis",pos:[{x:26,y:70},{x:74,y:70},{x:27,y:49},{x:73,y:49},{x:50,y:24}]}  // V1, V2, M1, M2, A
+};
+let FORM={};   // per wedstrijd gekozen opstelling, bijv. {w2:"huis"}; ontbreekt = huis-dobbelsteen
 const $=id=>document.getElementById(id);
 let cur=null, team=1, lock=null;
 
@@ -413,7 +426,19 @@ function render(){
   $("mExtra").hidden=true;
   $("mBlocks").innerHTML=`<span class="chip"></span> Team ${team} speelt <b>${team===1?"0'–6' en 12'–18'":"6'–12' en 18'–25'"}</b>`;
   let h=`<div class="p" style="left:50%;top:86%"><div class="name k">Charlotte</div></div>`;
-  on.forEach((n,i)=>{const p=POS[i];
+  const fk=FORM[m.id]==="huis"?"huis":"dobbelsteen", F=FORMATIES[fk];
+  if(isAdmin){
+    $("formbar").innerHTML=`Opstelling <span class="seg" role="group" aria-label="Opstelling">${Object.entries(FORMATIES).map(([k,f])=>`<button type="button" data-f="${k}" aria-pressed="${k===fk}">${f.naam}</button>`).join("")}</span>`;
+    $("formbar").querySelectorAll("button").forEach(b=>b.onclick=async()=>{
+      if(b.dataset.f===fk) return;
+      const nieuw={...FORM}; if(b.dataset.f==="huis") nieuw[m.id]="huis"; else delete nieuw[m.id];
+      FORM=nieuw; render();
+      try{ await bewaarRij("opstelling",nieuw); }catch(e){ alertNote("Opslaan mislukt: "+(e.message||e)); }
+    });
+  } else {
+    $("formbar").innerHTML=`Opstelling: <b>${F.naam}</b>`;
+  }
+  on.forEach((n,i)=>{const p=F.pos[i];
     h+=`<div class="p" style="left:${p.x}%;top:${p.y}%"><div class="name${m.inv.includes(n)?" inv":""}">${esc(n)}</div></div>`});
   const note=$("mNote");
   const regels=[];
@@ -460,6 +485,10 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&cur)keepA
 const h=(location.hash||"").slice(1); if(M.some(m=>m.id===h)&&isOpen(h)) open_(h);
 
 // ---------- bewerken: alleen zichtbaar voor ingelogde beheerder ----------
+async function bewaarRij(id,obj){
+  const r=await sb.from("levelup_wedstrijden").upsert([{id:(typeof PFX!=="undefined"?PFX:"")+id,naam:JSON.stringify(obj),tijd:"",veld:"",bijgewerkt:new Date().toISOString()}],{onConflict:"id"});
+  if(r.error) throw r.error;
+}
 function alertNote(t){ const n=$("mNote"); n.hidden=false; n.textContent=t; }
 async function bewaarRes(nieuw){
   const r=await sb.from("levelup_wedstrijden").upsert([{id:(typeof PFX!=="undefined"?PFX:"")+"reserves",naam:JSON.stringify(nieuw),tijd:"",veld:"",bijgewerkt:new Date().toISOString()}],{onConflict:"id"});
