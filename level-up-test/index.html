@@ -105,6 +105,22 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
 .afw{background:var(--extra-soft);border:1px solid #f6c3a5;border-radius:14px;padding:12px 16px;margin-bottom:16px;color:var(--extra);font-size:14px;line-height:1.45}
 .afw b{color:#8a3d06}
 .name.inv{border-style:dashed}
+.res{display:block;margin-top:6px;color:var(--orange);font-weight:700}
+.blesbtn{margin-left:auto;align-self:flex-start;background:var(--surface);color:var(--orange);border:2px solid var(--orange);border-radius:10px;padding:6px 10px;font-weight:700;cursor:pointer;white-space:nowrap}
+.bpanel{position:fixed;inset:0;background:rgba(11,42,91,.55);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+.bsheet{background:var(--surface);width:min(100%,600px);border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));max-height:85%;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.bsheet h3{margin:0;font-family:var(--display);font-weight:800;font-size:22px;color:var(--navy)}
+.bsheet p{margin:0;font-size:14px;color:var(--muted);line-height:1.45}
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bgrid button{border:2px solid var(--line);background:var(--bg);border-radius:12px;padding:12px 8px;font-family:var(--display);font-weight:700;font-size:20px;cursor:pointer;color:var(--fg)}
+.bkop{grid-column:1/-1;font-family:var(--display);font-weight:800;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);margin-top:4px}
+.bgrid button.t2{border-color:#f6c3a5}
+.bgrid button.t1{border-color:#b9cdf2}
+.bgrid button[aria-pressed="true"]{background:var(--orange);border-color:var(--orange);color:#fff}
+.bact{display:flex;gap:10px}
+.bact button{flex:1;border-radius:12px;padding:14px;font-weight:700;cursor:pointer;border:1px solid var(--line);background:var(--surface)}
+.bact .ok{background:var(--orange);border-color:var(--orange);color:#fff}
+.bact .ok:disabled{opacity:.4}
 .plist{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center}
 .plist span{font-size:16px}
 .plist select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg)}
@@ -182,6 +198,7 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
     <button class="back" id="back" type="button" aria-label="Terug naar wedstrijden">‹ Terug</button>
     <div class="tt"><span class="tmeta" id="mMeta">Wedstrijd 1</span><h2 id="mTitle">MO12-1 – Tegenstander 1 MO12-1</h2></div>
     <span class="tag" id="mExtra" hidden></span>
+    <button type="button" class="blesbtn" id="blesbtn" hidden>Blessure</button>
   </div>
   <div class="blocks" id="mBlocks"></div>
   <div class="note" id="mNote" hidden></div>
@@ -221,6 +238,15 @@ h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margi
       <div class="box"><h3>Tribune</h3><p id="trib"></p></div>
     </div>
   </div>
+  <div class="bpanel" id="bpanel" hidden>
+    <div class="bsheet" role="dialog" aria-modal="true" aria-labelledby="btitel">
+      <h3 id="btitel">Wie valt uit?</h3>
+      <p id="buitleg">Tik op de geblesseerde speelster. De reserve van deze wedstrijd neemt haar plek over; vanaf de volgende wedstrijd wordt de speeltijd opnieuw verdeeld.</p>
+      <div class="bgrid" id="bgrid"></div>
+      <p id="bwie"></p>
+      <div class="bact"><button type="button" id="bannuleer">Annuleren</button><button type="button" class="ok" id="bok" disabled>Bevestigen</button></div>
+    </div>
+  </div>
   <div class="switch" role="group" aria-label="Kies team">
     <button type="button" class="b1" id="tb1" aria-pressed="true"><span class="big">Team 1</span><span class="small">0'–6' · 12'–18'</span></button>
     <button type="button" class="b2" id="tb2" aria-pressed="false"><span class="big">Team 2</span><span class="small">6'–12' · 18'–25'</span></button>
@@ -241,6 +267,7 @@ const M=[
 const SB_URL="https://hvpooifxqhovskwgzpbr.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cG9vaWZ4cWhvdnNrd2d6cGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzQ1MzQsImV4cCI6MjA5NzAxMDUzNH0.zM3vFf6RB7uE4QoLP2uYdPe2AMI9NPJPFWqxQ_M2A3g";
 const WIJ="MO12-1";
+let isAdmin=false;
 const PFX="test_"; // testversie: eigen rijen in levelup_wedstrijden
 const INFO={poule:{naam:"Poule",tijd:"",veld:""}};
 M.forEach((m,i)=>INFO[m.id]={naam:`Tegenstander ${i+1} MO12-1`,tijd:"",veld:""});
@@ -253,30 +280,42 @@ let AFW=[];
 const VERD=["Veerle","Ella","Elise","June","Jinte"];
 const SPEELSTERS=[...new Set(M.flatMap(m=>[...m.t1,...m.t2,...m.tr]))];
 const groep=n=>VERD.includes(n)?"V":"M";
-const afwezigIn=(n,k)=>AFW.some(a=>a.n===n&&k+1>=a.vanaf);
+// a.b=1: geblesseerd tijdens wedstrijd a.vanaf (speelt die wedstrijd niet uit, daarna weg); anders weg vanaf a.vanaf
+const afwezigIn=(n,k)=>AFW.some(a=>a.n===n&&(a.b?k+1>a.vanaf:k+1>=a.vanaf));
+const blessureIn=(n,k)=>AFW.some(a=>a.n===n&&a.b&&k+1===a.vanaf);
 // oorspronkelijk aantal wedstrijden (1–4) per speelster, als tiebreaker
 const ORIG=Object.fromEntries(SPEELSTERS.map(n=>[n,M.slice(0,4).reduce((c,m)=>c+[...m.t1,...m.t2].filter(x=>x===n).length,0)]));
 function maakPlan(){
-  const P=M.map(m=>({...m,t1:[...m.t1],t2:[...m.t2],tr:[...m.tr],inv:[],weg:[]}));
-  if(!AFW.length) return P;
+  const P=M.map(m=>({...m,t1:[...m.t1],t2:[...m.t2],tr:[...m.tr],inv:[],weg:[],res:null,bles:[]}));
   const blokken=Object.fromEntries(SPEELSTERS.map(n=>[n,0]));   // gespeelde teambeurten tot nu toe
+  const resBeurten=Object.fromEntries(SPEELSTERS.map(n=>[n,0])); // keren reserve geweest
   P.forEach((m,k)=>{
     m.weg=SPEELSTERS.filter(n=>afwezigIn(n,k));
     let trib=m.tr.filter(n=>!afwezigIn(n,k));
-    ["t1","t2"].forEach(t=>{
-      m[t].forEach((n,pos)=>{
-        if(!afwezigIn(n,k)) return;
-        const kies=lijst=>lijst.slice().sort((a,b)=>
-          (groep(a)===groep(n)?0:1)-(groep(b)===groep(n)?0:1) || blokken[a]-blokken[b] || ORIG[a]-ORIG[b] || SPEELSTERS.indexOf(a)-SPEELSTERS.indexOf(b))[0];
-        let r=kies(trib);
-        if(r){ trib=trib.filter(x=>x!==r); }
-        else { // geen tribune meer: iemand van het andere team speelt dubbel
-          const ander=m[t==="t1"?"t2":"t1"].filter(x=>!afwezigIn(x,k)&&!m[t].includes(x));
-          r=kies(ander);
-        }
-        m[t][pos]=r||"—"; if(r) m.inv.push(r);
-      });
-    });
+    const kiesVoor=(n,lijst)=>lijst.slice().sort((a,b)=>
+      (groep(a)===groep(n)?0:1)-(groep(b)===groep(n)?0:1) || blokken[a]-blokken[b] || ORIG[a]-ORIG[b] || SPEELSTERS.indexOf(a)-SPEELSTERS.indexOf(b))[0];
+    const vul=(t,pos,n)=>{ // plek van n vullen: eerst tribune, anders iemand van het andere team dubbel
+      let r=kiesVoor(n,trib);
+      if(r){ trib=trib.filter(x=>x!==r); }
+      else { const ander=m[t==="t1"?"t2":"t1"].filter(x=>!afwezigIn(x,k)&&!m[t].includes(x)); r=kiesVoor(n,ander); }
+      return r;
+    };
+    // 1. wie al weg is, wordt vervangen
+    ["t1","t2"].forEach(t=>m[t].forEach((n,pos)=>{
+      if(!afwezigIn(n,k)) return;
+      const r=vul(t,pos,n); m[t][pos]=r||"—"; if(r) m.inv.push(r);
+    }));
+    // 2. reserve op de bank: wie het minst reserve was en het minst speelde
+    if(trib.length){
+      m.res=trib.slice().sort((a,b)=>resBeurten[a]-resBeurten[b]||blokken[a]-blokken[b]||ORIG[a]-ORIG[b]||SPEELSTERS.indexOf(a)-SPEELSTERS.indexOf(b))[0];
+      trib=trib.filter(x=>x!==m.res); resBeurten[m.res]++;
+    }
+    // 3. blessure tijdens deze wedstrijd: reserve valt in
+    ["t1","t2"].forEach(t=>m[t].forEach((n,pos)=>{
+      if(!blessureIn(n,k)) return;
+      let r=m.res; if(r){ m.res=null; } else { r=vul(t,pos,n); }
+      if(r){ m.bles.push({n,door:r}); m[t][pos]=r; m.inv.push(r); if(n in blokken) blokken[n]++; }
+    }));
     m.tr=trib;
     [...m.t1,...m.t2].forEach(n=>{ if(n in blokken) blokken[n]++; });
   });
@@ -285,7 +324,7 @@ function maakPlan(){
 let PLAN=maakPlan();
 function minutenTabel(){
   const P=PLAN, rows=SPEELSTERS.map(n=>{
-    const c=k=>P.slice(0,k).reduce((s,m)=>s+[...m.t1,...m.t2].filter(x=>x===n).length*12,0);
+    const c=k=>P.slice(0,k).reduce((s,m)=>s+[...m.t1,...m.t2,...m.bles.map(b=>b.n)].filter(x=>x===n).length*12,0);
     return {n,w4:c(4),w5:c(5),w6:c(6),weg:AFW.some(a=>a.n===n)};
   });
   return `<table class="mins"><thead><tr><th>Speelster</th><th>t/m W4</th><th>t/m W5</th><th>t/m W6</th></tr></thead><tbody>${
@@ -295,7 +334,7 @@ function renderAfw(){
   const box=$("afwBox");
   if(!AFW.length){ box.hidden=true; return; }
   box.hidden=false;
-  box.innerHTML="<b>Opstelling aangepast.</b> "+AFW.map(a=>`${esc(a.n)} ${a.vanaf>1?`doet niet mee vanaf wedstrijd ${a.vanaf}`:"is het hele toernooi afwezig"}`).join(", ")+".";
+  box.innerHTML="<b>Opstelling aangepast.</b> "+AFW.map(a=>`${esc(a.n)} ${a.b?`viel geblesseerd uit in wedstrijd ${a.vanaf}`:a.vanaf>1?`doet niet mee vanaf wedstrijd ${a.vanaf}`:"is het hele toernooi afwezig"}`).join(", ")+".";
 }
 
 function renderPoule(){
@@ -371,13 +410,17 @@ function render(){
   on.forEach((n,i)=>{const p=POS[i];
     h+=`<div class="p" style="left:${p.x}%;top:${p.y}%"><div class="name${m.inv.includes(n)?" inv":""}">${esc(n)}</div></div>`});
   const note=$("mNote");
-  if(m.weg.length){ note.hidden=false; note.textContent=`Niet aanwezig: ${m.weg.join(", ")}. Invallers staan met een stippelrand.`; }
+  const regels=[];
+  if(m.weg.length) regels.push(`Niet aanwezig: ${m.weg.join(", ")}.`);
+  m.bles.forEach(b=>regels.push(`${b.n} geblesseerd, ${b.door} valt in.`));
+  if(regels.length){ note.hidden=false; note.textContent=regels.join(" ")+" Invallers staan met een stippelrand."; }
   else note.hidden=true;
   $("players").innerHTML=h;
   $("benchTitle").textContent=`Bank · Team ${team===1?2:1}`;
-  $("bench").textContent=off.join(", ");
+  $("bench").innerHTML=esc(off.join(", "))+(m.res?`<span class="res">Reserve: ${esc(m.res)}</span>`:"");
   $("trib").textContent=m.tr.length?m.tr.join(", "):"Niemand";
   $("tb1").setAttribute("aria-pressed",team===1); $("tb2").setAttribute("aria-pressed",team===2);
+  $("blesbtn").hidden=!isAdmin;
 }
 async function keepAwake(){try{if("wakeLock" in navigator&&!lock){lock=await navigator.wakeLock.request("screen");lock.addEventListener("release",()=>lock=null)}}catch(e){}}
 function open_(id){
@@ -401,20 +444,51 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&cur)keepA
 const h=(location.hash||"").slice(1); if(M.some(m=>m.id===h)&&isOpen(h)) open_(h);
 
 // ---------- bewerken: alleen zichtbaar voor ingelogde beheerder ----------
+async function bewaarAfw(nieuw){
+  const r=await sb.from("levelup_wedstrijden").upsert([{id:(typeof PFX!=="undefined"?PFX:"")+"afwezig",naam:JSON.stringify(nieuw),tijd:"",veld:"",bijgewerkt:new Date().toISOString()}],{onConflict:"id"});
+  if(r.error) throw r.error;
+  AFW=nieuw; PLAN=maakPlan(); renderAfw(); renderList();
+}
+// blessure tijdens een wedstrijd
+let bKeuze=null;
+function openBlessure(){
+  const k=M.findIndex(m=>m.id===cur), m=PLAN[k];
+  const res=m.res;
+  $("buitleg").textContent=res?`Tik op de geblesseerde speelster. Reserve ${res} neemt haar plek over; vanaf de volgende wedstrijd wordt de speeltijd opnieuw verdeeld.`
+    :"Tik op de geblesseerde speelster. Er is geen reserve meer: iemand van de tribune of het andere team neemt haar plek over.";
+  bKeuze=null; $("bok").disabled=true; $("bwie").textContent="";
+  $("bgrid").innerHTML=[["t1",m.t1,"Team 1"],["t2",m.t2,"Team 2"]].map(([t,l,kop])=>`<span class="bkop">${kop}</span>`+l.filter(n=>n!=="—").map(n=>`<button type="button" class="${t}" data-n="${esc(n)}" aria-pressed="false">${esc(n)}</button>`).join("")).join("");
+  $("bgrid").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    bKeuze=b.dataset.n; $("bgrid").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    $("bok").disabled=false; $("bwie").textContent=res?`${res} valt in voor ${bKeuze}.`:`${bKeuze} wordt vervangen.`;
+  });
+  $("bpanel").hidden=false;
+}
+$("blesbtn").onclick=openBlessure;
+$("bannuleer").onclick=()=>{ $("bpanel").hidden=true; };
+$("bok").onclick=async()=>{
+  if(!bKeuze) return;
+  const k=M.findIndex(m=>m.id===cur);
+  const nieuw=AFW.filter(a=>a.n!==bKeuze).concat([{n:bKeuze,vanaf:k+1,b:1}]);
+  $("bok").disabled=true; $("bwie").textContent="Opslaan…";
+  try{ await bewaarAfw(nieuw); $("bpanel").hidden=true; render(); }
+  catch(e){ $("bwie").textContent="Opslaan mislukt: "+(e.message||e); $("bok").disabled=false; }
+};
 (async function checkAdmin(){
   if(!sb) return;
   try{
     const s=await sb.auth.getSession(); if(!s.data||!s.data.session) return;
-    const r=await sb.rpc("mijn_rol"); if(r.data==="admin") $("editbtn").hidden=false;
+    const r=await sb.rpc("mijn_rol"); if(r.data==="admin"){ isAdmin=true; $("editbtn").hidden=false; if(cur) render(); }
   }catch(e){}
 })();
 const field=(id,key,label,ph)=>`<label>${label}<input id="e_${id}_${key}" value="${esc(INFO[id][key])}" placeholder="${esc(ph)}"></label>`;
 function openEdit(){
-  const opts=n=>{const a=AFW.find(x=>x.n===n);const v=a?a.vanaf:0;
-    return `<select id="afw_${n}" class="${v?"uit":""}" aria-label="${esc(n)}"><option value="0"${v?"":" selected"}>Doet mee</option>${
-      M.map((m,i)=>`<option value="${i+1}"${v===i+1?" selected":""}>${i===0?"Hele toernooi afwezig":"Weg vanaf wedstrijd "+(i+1)}</option>`).join("")}</select>`;};
+  const opts=n=>{const a=AFW.find(x=>x.n===n);const v=a?(a.b?"b"+a.vanaf:String(a.vanaf)):"0";
+    const o=[["0","Doet mee"],["1","Hele toernooi afwezig"]];
+    M.forEach((m,i)=>{ o.push(["b"+(i+1),`Geblesseerd in wedstrijd ${i+1}`]); if(i+2<=M.length) o.push([String(i+2),`Weg vanaf wedstrijd ${i+2}`]); });
+    return `<select id="afw_${n}" class="${v!=="0"?"uit":""}" aria-label="${esc(n)}">${o.map(([val,t])=>`<option value="${val}"${val===v?" selected":""}>${t}</option>`).join("")}</select>`;};
   let h=`<div class="eblock"><h3>Afwezig</h3>
-    <p class="ehint">Doet iemand niet mee? Kies <b>Hele toernooi afwezig</b>, of bij uitval tijdens het toernooi vanaf welke wedstrijd. Eerdere wedstrijden blijven zoals gespeeld; in de wedstrijden daarna nemen tribunespeelsters haar plek over, zo eerlijk mogelijk verdeeld.</p>
+    <p class="ehint">Doet iemand niet mee? Kies <b>Hele toernooi afwezig</b>. Raakt iemand geblesseerd, kies <b>Geblesseerd in wedstrijd …</b>: de reserve valt in en daarna wordt de speeltijd opnieuw verdeeld. Tijdens een wedstrijd kan dat ook met de knop <b>Blessure</b> in het wedstrijdscherm. Eerdere wedstrijden blijven zoals gespeeld; in de wedstrijden daarna nemen tribunespeelsters haar plek over, zo eerlijk mogelijk verdeeld.</p>
     <div class="plist">${SPEELSTERS.map(n=>`<span>${esc(n)}</span>${opts(n)}`).join("")}</div></div>
     <div class="eblock"><h3>Speeltijd met deze indeling</h3><div id="minsBox">${minutenTabel()}</div></div>
     <div class="eblock"><h3>Poule</h3>${field("poule","naam","Naam van de poule","Poule A")}</div>`;
@@ -431,7 +505,8 @@ function openEdit(){
   }));
   $("list").hidden=true; $("edit").hidden=false; window.scrollTo(0,0);
 }
-function leesAfw(){ return SPEELSTERS.map(n=>({n,vanaf:parseInt($(`afw_${n}`).value,10)||0})).filter(a=>a.vanaf>0); }
+function leesAfw(){ return SPEELSTERS.map(n=>{const v=$(`afw_${n}`).value; const b=v.startsWith("b");
+  const a={n,vanaf:parseInt(b?v.slice(1):v,10)||0}; if(b) a.b=1; return a;}).filter(a=>a.vanaf>0); }
 function closeEdit(){ $("edit").hidden=true; $("list").hidden=false; }
 $("editbtn").onclick=openEdit;
 $("ecancel").onclick=closeEdit;
