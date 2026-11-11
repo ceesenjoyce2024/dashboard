@@ -174,14 +174,24 @@ const DAGEN=[
   {d:7,datum:"2027-01-31",w:[["TIL","MOP","11:30"],["MOP","EHV","12:20"],["ROS","DB","13:00"],["TIL","EHV","13:10"],["OSS","DB","13:50"],["ROS","OSS","14:40"]]},
   {d:8,datum:"2027-02-14",w:[["OSS","EHV","12:30"],["EHV","ROS","13:20"],["OSS","ROS","14:10"]]}
 ];
-const WED=[]; DAGEN.forEach(dg=>dg.w.forEach(([h,a,t],i)=>WED.push({id:`d${dg.d}-${i+1}`,dag:dg.d,datum:dg.datum,h,a,t})));
-const RW=WED.filter(m=>m.h===WIJ||m.a===WIJ);           // onze 12 wedstrijden, chronologisch
-RW.forEach((m,i)=>{m.nr=i+1; m.ihDag=RW.filter(x=>x.dag===m.dag).indexOf(m);});
-const RDAGEN=[...new Set(RW.map(m=>m.dag))];             // speeldagen waarop wij spelen
+const BASIS=[]; DAGEN.forEach(dg=>dg.w.forEach(([h,a,t],i)=>BASIS.push({id:`d${dg.d}-${i+1}`,orgDatum:dg.datum,orgT:t,h,a})));
+// Programma opbouwen uit de basis + eigen wijzigingen (instellingen.wedWijz: {id:{datum,t}}). Een speeldag = een datum.
+let WED=[], RW=[], RDAGEN=[], DAGLIJST=[];
+function bouw(){
+  const W=(S.instellingen&&S.instellingen.wedWijz)||{};
+  WED=BASIS.map(b=>{ const w=W[b.id]||{}; const datum=w.datum||b.orgDatum, t=w.t||b.orgT;
+    return {...b,datum,t,dag:datum,verplaatst:datum!==b.orgDatum||t!==b.orgT}; })
+    .sort((x,y)=>(x.datum+x.t).localeCompare(y.datum+y.t));
+  DAGLIJST=[...new Set(WED.map(m=>m.datum))];
+  RW=WED.filter(m=>m.h===WIJ||m.a===WIJ);
+  RW.forEach((m,i)=>{m.nr=i+1; m.ihDag=RW.filter(x=>x.dag===m.dag).indexOf(m);});
+  RDAGEN=[...new Set(RW.map(m=>m.dag))];
+}
 const tegen=m=>m.h===WIJ?m.a:m.h;
 
 const MAANDEN=["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
-const fdat=(s,lang)=>{const[y,mm,dd]=s.split("-").map(Number);return lang?`Zondag ${String(dd).padStart(2,"0")} ${MAANDEN[mm-1]} ${y}`:`${dd} ${MAANDEN[mm-1]}`};
+const DAGNM=["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
+const fdat=(s,lang)=>{const[y,mm,dd]=s.split("-").map(Number);return lang?`${DAGNM[new Date(y,mm-1,dd).getDay()]} ${String(dd).padStart(2,"0")} ${MAANDEN[mm-1]} ${y}`:`${dd} ${MAANDEN[mm-1]}`};
 
 /* Formaties: slots per team, met groep en positie op het veld (% breedte, % hoogte; eigen doel onder) */
 const FORM={
@@ -233,7 +243,9 @@ async function laad(){
   }else{
     try{ const raw=localStorage.getItem(LS); if(raw){ const o=JSON.parse(raw); KEYS.forEach(k=>{ if(o[k]) S[k]=o[k]; }); } }catch(e){}
   }
-  S.instellingen={form:"huis",maSamen:true,blok:[6,7,7],perWed:{},...S.instellingen};
+  S.instellingen={form:"huis",maSamen:true,blok:[6,7,7],perWed:{},wedWijz:{},...S.instellingen};
+  // oude aanwezigheid per speeldagnummer omzetten naar datum
+  Object.values(S.beschikbaarheid||{}).forEach(o=>Object.keys(o).forEach(k=>{ if(/^\d+$/.test(k)){ const dg=DAGEN.find(x=>x.d===+k); if(dg) o[dg.datum]=o[k]; delete o[k]; } }));
   if(!S.instellingen.koppels) S.instellingen.koppels=[{a:"riva",b:"dante",per:{"d7-3":"hard"}}];
 }
 let saveMsg="";
@@ -426,7 +438,7 @@ function maakPlan(){
   return P;
 }
 let PLAN={};
-function herbereken(){ PLAN=maakPlan(); }
+function herbereken(){ bouw(); PLAN=maakPlan(); }
 
 function speeltijd(){
   const mpb=minPerBeurt(), r={};
@@ -477,16 +489,16 @@ function render(){
 /* ---------- Programma ---------- */
 function viewProgramma(){
   let h=`<div class="seg"><button class="${ALLEEN_WIJ?"":"on"}" data-act="filter" data-v="0">Alle wedstrijden</button><button class="${ALLEEN_WIJ?"on":""}" data-act="filter" data-v="1">Alleen Rosmalen</button></div>`;
-  DAGEN.forEach(dg=>{
-    let ms=WED.filter(m=>m.dag===dg.d); const wij=ms.some(m=>m.h===WIJ||m.a===WIJ);
-    if(ALLEEN_WIJ){ ms=ms.filter(m=>m.h===WIJ||m.a===WIJ); }
-    h+=`<h2 class="day">${fdat(dg.datum,1)}${wij?"":"<small>Rosmalen vrij</small>"}</h2>`;
+  DAGLIJST.forEach(dt=>{
+    let ms=WED.filter(m=>m.dag===dt); const wij=ms.some(m=>m.h===WIJ||m.a===WIJ);
+    if(ALLEEN_WIJ){ if(!wij) return; ms=ms.filter(m=>m.h===WIJ||m.a===WIJ); }
+    h+=`<h2 class="day">${fdat(dt,1)}${wij?"":"<small>Rosmalen vrij</small>"}</h2>`;
     if(!ms.length){ h+=`<div class="card pad muted">Geen wedstrijd voor Rosmalen.</div>`; return; }
     h+=`<div class="card">`+ms.map(m=>{
       const u=S.uitslagen[m.id], wij=m.h===WIJ||m.a===WIJ;
       return `<button class="row${wij?" ros":""}" data-act="${wij?"open":"score"}" data-id="${m.id}">
         <span class="h${m.h===WIJ?" me":""}">${TEAMS[m.h].n}</span>${badge(m.h)}
-        <span class="t${u?" score":""}">${u?`${u[0]} – ${u[1]}`:m.t}</span>
+        <span class="t${u?" score":""}">${u?`${u[0]} – ${u[1]}`:m.t}${m.verplaatst&&!u?'<small style="display:block;font-size:10px;font-weight:600;color:#ffc95a">gewijzigd</small>':""}</span>
         ${badge(m.a)}<span class="a${m.a===WIJ?" me":""}">${TEAMS[m.a].n}</span><span class="chev">›</span></button>`;
     }).join("")+`</div>`;
   });
@@ -511,7 +523,7 @@ function viewStand(){
 /* ---------- Speelsters + beschikbaarheid ---------- */
 const BS=[["ja","✓"],["nee","✗"],["w1","1e"],["w2","2e"]];
 function viewSpeelsters(){
-  const dagLab=RDAGEN.map(d=>{const dg=DAGEN.find(x=>x.d===d);return `<th>${fdat(dg.datum)}</th>`}).join("");
+  const dagLab=RDAGEN.map(d=>`<th>${fdat(d)}</th>`).join("");
   const rij=p=>`<tr><td class="nm">${esc(p.naam)}<span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos}</span></td>${
     RDAGEN.map(d=>{const st=(S.beschikbaarheid[p.id]||{})[d]||"ja"; const lab=BS.find(b=>b[0]===st)[1];
       const gesp=RW.filter(m=>m.dag===d).every(m=>S.uitslagen[m.id]);
@@ -522,7 +534,7 @@ function viewSpeelsters(){
     groepen.map(([g,ps])=>ps.length?`<tr><td colspan="${RDAGEN.length+1}" class="muted" style="padding-top:12px">${g}</td></tr>`+ps.map(rij).join(""):"").join("")
   }</tbody></table>
   <div class="legend"><span><i style="background:rgba(60,207,122,.35)"></i>✓ aanwezig</span><span><i style="background:rgba(255,92,92,.35)"></i>✗ afwezig</span><span><i style="background:rgba(255,190,60,.35)"></i>1e / 2e alleen die wedstrijd</span></div></div>
-  <p class="muted" style="margin:10px 4px">${ADMIN?"Tik op een vakje om te wisselen. De verdeling wordt direct opnieuw berekend; gespeelde wedstrijden blijven zoals ze waren.":"Alleen de beheerder kan aanwezigheid aanpassen."} Rosmalen speelt niet op 13 dec en 10 jan.</p>`;
+  <p class="muted" style="margin:10px 4px">${ADMIN?"Tik op een vakje om te wisselen. De verdeling wordt direct opnieuw berekend; gespeelde wedstrijden blijven zoals ze waren.":"Alleen de beheerder kan aanwezigheid aanpassen."} ${(()=>{const vrij=DAGLIJST.filter(d=>!RDAGEN.includes(d)).map(d=>fdat(d));return vrij.length?`Rosmalen speelt niet op ${vrij.join(" en ")}.`:""})()}</p>`;
 }
 
 /* ---------- Speeltijd ---------- */
@@ -635,7 +647,10 @@ function viewWedstrijd(id){
 function sheetScore(id){
   const m=WED.find(x=>x.id===id), u=S.uitslagen[id]||["",""];
   $("sheet").innerHTML=`<div class="sheet" data-act="sluit"><div>
-    <h3>Uitslag</h3><div class="muted">${fdat(m.datum,1)} · ${m.t}</div>
+    <h3>Wedstrijd</h3><div class="muted">${tnaam(m.h)} – ${tnaam(m.a)}</div>
+    <div class="flex" style="flex-wrap:nowrap;margin-top:12px"><div style="flex:1.4"><label class="f" style="margin-top:0">Datum</label><input class="in" id="wD" type="date" value="${m.datum}"></div><div style="flex:1"><label class="f" style="margin-top:0">Tijd</label><input class="in" id="wT" type="time" value="${m.t}"></div></div>
+    ${m.verplaatst?`<p class="muted" style="margin:6px 0 0">Origineel: ${fdat(m.orgDatum,1)} · ${m.orgT} · <button class="chip" data-act="wedorg" data-id="${id}">Herstel origineel</button></p>`:""}
+    <label class="f">Uitslag</label>
     <div class="scorein"><span class="h">${tnaam(m.h)}</span><input class="in" id="sH" type="number" min="0" inputmode="numeric" value="${u[0]}"><span>–</span><input class="in" id="sA" type="number" min="0" inputmode="numeric" value="${u[1]}"><span class="a">${tnaam(m.a)}</span></div>
     <div class="flex"><button class="btn" data-act="scoreok" data-id="${id}">Opslaan</button>${S.uitslagen[id]?`<button class="btn sec2" data-act="scorewis" data-id="${id}">Uitslag wissen</button>`:""}<button class="btn sec2" data-act="sluit">Annuleren</button></div>
     ${(m.h===WIJ||m.a===WIJ)?'<p class="muted">Met een uitslag telt deze wedstrijd als gespeeld en ligt de opstelling vast.</p>':""}
@@ -659,15 +674,20 @@ document.addEventListener("click",async e=>{
   else if(a==="score"){ if(ADMIN) sheetScore(d.id); }
   else if(a==="sluit"){ if(e.target===el) $("sheet").innerHTML=""; }
   else if(a==="scoreok"){
-    const x=$("sH").value, y=$("sA").value; if(x===""||y===""){ return; }
-    const id=d.id; S.uitslagen[id]=[+x,+y];
-    const keys=["uitslagen"];
+    const x=$("sH").value, y=$("sA").value, id=d.id, keys=["instellingen"];
+    // datum/tijd
+    const b=BASIS.find(q=>q.id===id), nd=$("wD").value||b.orgDatum, nt=$("wT").value||b.orgT;
+    S.instellingen.wedWijz=S.instellingen.wedWijz||{};
+    if(nd===b.orgDatum&&nt===b.orgT) delete S.instellingen.wedWijz[id]; else S.instellingen.wedWijz[id]={datum:nd,t:nt};
+    if(x===""||y===""){ $("sheet").innerHTML=""; await wijzig(keys); return; }
+    S.uitslagen[id]=[+x,+y]; keys.push("uitslagen");
     if(PLAN[id]&&!S.opstellingen[id]){ const p=PLAN[id]; S.opstellingen[id]={form:p.form,t1:p.t1,t2:p.t2,tr:p.tr}; keys.push("opstellingen"); }
     $("sheet").innerHTML=""; await wijzig(keys);
   }
+  else if(a==="wedorg"){ delete (S.instellingen.wedWijz||{})[d.id]; $("sheet").innerHTML=""; await wijzig(["instellingen"]); }
   else if(a==="scorewis"){ delete S.uitslagen[d.id]; $("sheet").innerHTML=""; await wijzig(["uitslagen"]); }
   else if(a==="besch"){
-    const p=d.p, dag=+d.d, cur=(S.beschikbaarheid[p]||{})[dag]||"ja";
+    const p=d.p, dag=d.d, cur=(S.beschikbaarheid[p]||{})[dag]||"ja";
     const nxt=BS[(BS.findIndex(b=>b[0]===cur)+1)%BS.length][0];
     S.beschikbaarheid[p]=S.beschikbaarheid[p]||{};
     if(nxt==="ja") delete S.beschikbaarheid[p][dag]; else S.beschikbaarheid[p][dag]=nxt;
