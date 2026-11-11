@@ -494,7 +494,7 @@ const ICON={
   speeltijd:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>',
   instellingen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></svg>'
 };
-const TABS=[["programma","Programma"],["stand","Stand"],["speelsters","Speelsters"],["speeltijd","Speeltijd"],["instellingen","Instellingen"]];
+const TABS=[["programma","Programma"],["stand","Stand"],["speelsters","Speelsters"],["speeltijd","Speeltijd"],["instellingen","Opties"]];
 function renderNav(){
   $("nav").innerHTML=TABS.map(([k,l])=>`<button class="${TAB===k?"on":""}" data-tab="${k}">${ICON[k]}${l}</button>`).join("");
 }
