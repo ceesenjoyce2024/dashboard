@@ -232,7 +232,7 @@ const TABEL="zaal_mo12_data";
 const LIVE=/eikenlaan-webapps\.nl$/.test(location.hostname);
 let sb=null; if(LIVE){try{sb=window.supabase.createClient(SB_URL,SB_KEY)}catch(e){}}
 const LS="zaal-mo12-1-voorbeeld";
-const KEYS=["speelsters","beschikbaarheid","uitslagen","opstellingen","instellingen"];
+const KEYS=["speelsters","beschikbaarheid","uitslagen","opstellingen","instellingen","koppels","plan"];
 let S={
   speelsters:STD_SPEELSTERS,
   beschikbaarheid:{},          // {spelerId:{dag:"nee"|"w1"|"w2"}}  (ontbreekt = aanwezig)
@@ -240,7 +240,12 @@ let S={
   opstellingen:{},             // {wedstrijdId:{form,t1:[5 ids],t2:[5 ids],tr:[ids]}} — vastgezet
   instellingen:{form:"huis",maSamen:true,blok:[5,5,5,5],perWed:{}}  // perWed: {wedstrijdId:"huis"|"dobbel"}
 };
-let ADMIN=!LIVE;   // voorbeeld: alles bewerkbaar
+let ADMIN=!LIVE;   // Cees (rol admin): alles, ook koppels. Voorbeeld: alles bewerkbaar
+let COACH=false;   // coach-link met geheime code: alles wijzigen behalve koppels
+let EDIT=!LIVE;    // mag wijzigen (admin of coach)
+// coach-code uit de link (?c=...) bewaren op dit toestel en uit de adresbalk halen
+let CODE=null;
+try{ const q=new URLSearchParams(location.search).get("c"); if(q){ localStorage.setItem("zaal-mo12-coach",q); history.replaceState(history.state,"",location.pathname+location.hash); } CODE=localStorage.getItem("zaal-mo12-coach"); }catch(e){}
 async function laad(){
   if(LIVE&&sb){
     try{
@@ -248,6 +253,9 @@ async function laad(){
       if(!r.error&&r.data) r.data.forEach(x=>{ if(KEYS.includes(x.id)&&x.data) S[x.id]=x.data; });
       const s=await sb.auth.getSession();
       if(s.data&&s.data.session){ const q=await sb.rpc("mijn_rol"); ADMIN=q.data==="admin"; }
+      if(!ADMIN&&CODE){ const c=await sb.rpc("zaal_mo12_code_ok",{p_code:CODE}); COACH=c.data===true;
+        if(COACH){ const k=await sb.rpc("zaal_mo12_koppels",{p_code:CODE}); if(!k.error&&Array.isArray(k.data)) S.koppels=k.data; } }
+      EDIT=ADMIN||COACH;
     }catch(e){}
   }else{
     try{ const raw=localStorage.getItem(LS); if(raw){ const o=JSON.parse(raw); KEYS.forEach(k=>{ if(o[k]) S[k]=o[k]; }); } }catch(e){}
@@ -255,18 +263,25 @@ async function laad(){
   S.instellingen={form:"huis",maSamen:true,blok:[5,5,5,5],perWed:{},wedWijz:{},...S.instellingen};
   // oude aanwezigheid per speeldagnummer omzetten naar datum
   Object.values(S.beschikbaarheid||{}).forEach(o=>Object.keys(o).forEach(k=>{ if(/^\d+$/.test(k)){ const dg=DAGEN.find(x=>x.d===+k); if(dg) o[dg.datum]=o[k]; delete o[k]; } }));
-  if(!S.instellingen.koppels) S.instellingen.koppels=[{a:"riva",b:"dante",per:{"d7-3":"hard"}}];
+  // koppels stonden vroeger in instellingen
+  if(S.instellingen.koppels){ if(!Array.isArray(S.koppels)) S.koppels=S.instellingen.koppels; delete S.instellingen.koppels; }
+  if(!LIVE&&!Array.isArray(S.koppels)) S.koppels=[{a:"riva",b:"dante",per:{"d7-3":"hard"}}];
 }
 let saveMsg="";
 function toast(t,fout){ let el=document.getElementById("toast"); if(!el){ el=document.createElement("div"); el.id="toast"; document.body.appendChild(el); }
   el.textContent=t; el.style.cssText=`position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom));z-index:30;padding:9px 16px;border-radius:999px;font-size:13.5px;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis;font-weight:600;box-shadow:0 4px 16px #0008;background:${fout?"#7a1f1f":"#1f5a3a"};color:#fff`;
   clearTimeout(el._t); el._t=setTimeout(()=>el.remove(),fout?6000:1500); }
+// momentopname van de indeling: kijkers zonder wijzigrechten lezen deze (zij hebben de koppels niet)
+function planFoto(){ const w={}; RW.forEach(m=>{ const p=PLAN[m.id]; if(p) w[m.id]={form:p.form,t1:p.t1,t2:p.t2,tr:p.tr,res:p.res||null,flex:p.flex||[],dubbel:p.dubbel||[]}; }); return {w}; }
 async function bewaar(...keys){
   if(LIVE){
-    if(!sb||!ADMIN) return;
-    const rows=keys.map(k=>({id:k,data:S[k],bijgewerkt:new Date().toISOString()}));
-    const r=await sb.from(TABEL).upsert(rows,{onConflict:"id"});
-    toast(r.error?"Opslaan mislukt: "+r.error.message:"Opgeslagen",!!r.error);
+    if(!sb||!EDIT) return;
+    const stil=keys[0]==="__stil"; if(stil) keys=keys.slice(1);
+    S.plan=planFoto(); if(!keys.includes("plan")) keys.push("plan");
+    let r;
+    if(ADMIN){ r=await sb.from(TABEL).upsert(keys.map(k=>({id:k,data:S[k],bijgewerkt:new Date().toISOString()})),{onConflict:"id"}); }
+    else { r=await sb.rpc("zaal_mo12_bewaar",{p_code:CODE,p_rijen:keys.filter(k=>k!=="koppels").map(k=>({id:k,data:S[k]}))}); }
+    if(r.error||!stil) toast(r.error?"Opslaan mislukt: "+r.error.message:"Opgeslagen",!!r.error);
   }else{
     try{ localStorage.setItem(LS,JSON.stringify(S)); }catch(e){}
   }
@@ -303,7 +318,7 @@ function past(p,grp){
 function hash(s){let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h}
 
 /* Koppels: twee speelsters samen in hetzelfde team. Per wedstrijd: "hard" (verplicht), "zacht" (als het kan, standaard) of "los" */
-const koppels=()=>S.instellingen.koppels||[];
+const koppels=()=>Array.isArray(S.koppels)?S.koppels:[];
 const kType=k=>k.type||"samen";
 const kMode=(k,m)=>(k.per&&k.per[m.id])||"zacht";
 const koppelActief=(id,m)=>koppels().some(k=>kType(k)==="samen"&&(k.a===id||k.b===id)&&kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m));
@@ -460,7 +475,10 @@ function maakPlan(){
   return P;
 }
 let PLAN={};
-function herbereken(){ bouw(); PLAN=maakPlan(); }
+function herbereken(){ bouw();
+  if(LIVE&&!EDIT&&S.plan&&S.plan.w){ PLAN={}; RW.forEach(m=>{ const f=S.plan.w[m.id]; if(f) PLAN[m.id]={...f,vast:!!S.opstellingen[m.id],gespeeld:!!S.uitslagen[m.id]}; });
+    if(RW.every(m=>PLAN[m.id])) return; }
+  PLAN=maakPlan(); }
 
 function speeltijd(){
   const mpb=minPerBeurt(), r={};
@@ -499,7 +517,7 @@ function renderNav(){
   $("nav").innerHTML=TABS.map(([k,l])=>`<button class="${TAB===k?"on":""}" data-tab="${k}">${ICON[k]}${l}</button>`).join("");
 }
 function renderBanner(){
-  $("banner").innerHTML=LIVE?(ADMIN?"":`<div class="banner">Alleen lezen. <a href="/?next=${encodeURIComponent(location.pathname)}" style="color:inherit">Inloggen als beheerder</a> om te wijzigen.</div>`)
+  $("banner").innerHTML=LIVE?(ADMIN?"":COACH?`<div class="banner" style="background:#12301f;border-color:#2f6b45;color:#9fe0b8">Coach-modus: je kunt wijzigen.</div>`:`<div class="banner">Alleen lezen. <a href="/?next=${encodeURIComponent(location.pathname)}" style="color:inherit">Inloggen als beheerder</a> om te wijzigen.</div>`)
     :`<div class="banner"><b>Voorbeeld.</b> Wijzigingen blijven alleen in deze browser; er is nog niets in Supabase.</div>`;
 }
 function render(){
@@ -541,7 +559,7 @@ function viewStand(){
   const r=stand(), n=Object.keys(S.uitslagen).length;
   return `<div class="sec">Stand · Poule B</div><div class="card"><table class="st"><thead><tr><th>#</th><th>Team</th><th>GS</th><th>PT</th><th>V</th><th>T</th><th>DS</th></tr></thead><tbody>${
     r.map((x,i)=>`<tr class="${x.k===WIJ?"me":""}"><td>${i+1}</td><td class="tn">${badge(x.k)}${tnaam(x.k)}</td><td>${x.gs}</td><td>${x.pt}</td><td>${x.v}</td><td>${x.t}</td><td>${x.v-x.t>0?"+":""}${x.v-x.t}</td></tr>`).join("")
-  }</tbody></table></div><p class="muted" style="margin:10px 4px">${n} van ${WED.length} uitslagen ingevuld. GS gespeeld · PT punten (3/1/0) · V voor · T tegen · DS doelsaldo.${ADMIN?" Tik in het programma op een wedstrijd om de uitslag in te vullen.":""}</p>`;
+  }</tbody></table></div><p class="muted" style="margin:10px 4px">${n} van ${WED.length} uitslagen ingevuld. GS gespeeld · PT punten (3/1/0) · V voor · T tegen · DS doelsaldo.${EDIT?" Tik in het programma op een wedstrijd om de uitslag in te vullen.":""}</p>`;
 }
 
 /* ---------- Speelsters + beschikbaarheid ---------- */
@@ -551,7 +569,7 @@ function viewSpeelsters(){
   const rij=p=>`<tr><td class="nm"><button class="lnk" data-act="sp" data-p="${p.id}">${esc(p.naam)}</button><span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos}</span></td>${
     RDAGEN.map(d=>{const st=(S.beschikbaarheid[p.id]||{})[d]||"ja"; const lab=BS.find(b=>b[0]===st)[1];
       const gesp=RW.filter(m=>m.dag===d).every(m=>S.uitslagen[m.id]);
-      return `<td><button class="cell ${st}" data-act="besch" data-p="${p.id}" data-d="${d}" ${(!ADMIN||gesp)?"disabled":""}>${lab}</button></td>`}).join("")}</tr>`;
+      return `<td><button class="cell ${st}" data-act="besch" data-p="${p.id}" data-d="${d}" ${(!EDIT||gesp)?"disabled":""}>${lab}</button></td>`}).join("")}</tr>`;
   const abc=l=>l.sort((a,b)=>a.naam.localeCompare(b.naam,"nl"));
   const groepen=[["Keeper",abc(S.speelsters.filter(p=>p.pos==="K"))],["Verdediging",abc(S.speelsters.filter(p=>p.pos==="V"))],["Middenveld / aanval",abc(S.speelsters.filter(p=>["M","A","MA"].includes(p.pos)))]];
   return `<div class="sec">Aanwezigheid per speeldag</div>
@@ -559,7 +577,7 @@ function viewSpeelsters(){
     groepen.map(([g,ps])=>ps.length?`<tr><td colspan="${RDAGEN.length+1}" class="muted" style="padding-top:12px">${g}</td></tr>`+ps.map(rij).join(""):"").join("")
   }</tbody></table>
   <div class="legend"><span><i style="background:rgba(60,207,122,.35)"></i>✓ aanwezig</span><span><i style="background:rgba(255,92,92,.35)"></i>✗ afwezig</span><span><i style="background:rgba(255,190,60,.35)"></i>1e / 2e alleen die wedstrijd</span></div></div>
-  <p class="muted" style="margin:10px 4px">${ADMIN?"Tik op een vakje om te wisselen. De verdeling wordt direct opnieuw berekend; gespeelde wedstrijden blijven zoals ze waren.":"Alleen de beheerder kan aanwezigheid aanpassen."} ${(()=>{const vrij=DAGLIJST.filter(d=>!RDAGEN.includes(d)).map(d=>fdat(d));return vrij.length?`Rosmalen speelt niet op ${vrij.join(" en ")}.`:""})()}</p>`;
+  <p class="muted" style="margin:10px 4px">${EDIT?"Tik op een vakje om te wisselen. De verdeling wordt direct opnieuw berekend; gespeelde wedstrijden blijven zoals ze waren.":"Alleen de beheerder kan aanwezigheid aanpassen."} ${(()=>{const vrij=DAGLIJST.filter(d=>!RDAGEN.includes(d)).map(d=>fdat(d));return vrij.length?`Rosmalen speelt niet op ${vrij.join(" en ")}.`:""})()}</p>`;
 }
 
 /* ---------- Speeltijd ---------- */
@@ -606,7 +624,7 @@ function viewSpeelster(id){
 
 /* ---------- Instellingen ---------- */
 function viewInstellingen(){
-  const I=S.instellingen, b=I.blok, dis=ADMIN?"":"disabled";
+  const I=S.instellingen, b=I.blok, dis=EDIT?"":"disabled";
   return `<div class="sec">Opstelling</div>
   <div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${I.form===k?"on":""}" data-act="form" data-v="${k}" ${dis}>${f.naam}</button>`).join("")}</div>
   <div class="card court" style="max-width:240px;padding:8px">${courtSVG()}${FORM[I.form].slots.map(s=>`<span class="tok t1" style="left:${s.x}%;top:${s.y}%"><i style="width:30px;height:30px;font-size:11px">${s.l}</i></span>`).join("")}</div>
@@ -617,27 +635,27 @@ function viewInstellingen(){
   ${ADMIN?`  <div class="sec">Samen / niet samen in één team</div>
   ${koppels().map((k,i)=>{const sam=kType(k)==="samen";
     const opties=sam?[["zacht","Als het kan"],["hard","Verplicht"],["los","Los"]]:[["zacht","Niet samen"],["los","Los"]];
-    return `<div class="card" style="margin-bottom:10px"><div class="sw"><div><b>${esc(naam(k.a))} &amp; ${esc(naam(k.b))}</b><small>${sam?"Samen in één team":"Niet in hetzelfde team"}</small></div>${ADMIN?`<button class="btn sec2 sm" data-act="kdel" data-k="${i}">Verwijder</button>`:""}</div>
+    return `<div class="card" style="margin-bottom:10px"><div class="sw"><div><b>${esc(naam(k.a))} &amp; ${esc(naam(k.b))}</b><small>${sam?"Samen in één team":"Niet in hetzelfde team"}</small></div>${EDIT?`<button class="btn sec2 sm" data-act="kdel" data-k="${i}">Verwijder</button>`:""}</div>
     <div class="grid"><table><tbody>${RW.map(m=>{const md=kMode(k,m), lab=opties.find(o=>o[0]===md)||opties[0], gesp=!!S.uitslagen[m.id];
-      return `<tr><td class="nm" style="font-weight:500">${fdat(m.datum)} · ${TEAMS[tegen(m)].n}</td><td style="text-align:right;padding-right:12px"><select class="ksel ${md==="hard"?"kh":md==="los"?"kl":"kz"}" data-act="kmode" data-k="${i}" data-w="${m.id}" ${(!ADMIN||gesp)?"disabled":""}>${opties.map(([v,l])=>`<option value="${v}" ${v===md?"selected":""}>${l}</option>`).join("")}</select></td></tr>`}).join("")}</tbody></table></div></div>`}).join("")||'<div class="card"><div class="sw muted">Nog geen koppels</div></div>'}
+      return `<tr><td class="nm" style="font-weight:500">${fdat(m.datum)} · ${TEAMS[tegen(m)].n}</td><td style="text-align:right;padding-right:12px"><select class="ksel ${md==="hard"?"kh":md==="los"?"kl":"kz"}" data-act="kmode" data-k="${i}" data-w="${m.id}" ${(!EDIT||gesp)?"disabled":""}>${opties.map(([v,l])=>`<option value="${v}" ${v===md?"selected":""}>${l}</option>`).join("")}</select></td></tr>`}).join("")}</tbody></table></div></div>`}).join("")||'<div class="card"><div class="sw muted">Nog geen koppels</div></div>'}
   ${ADMIN?`<div class="card pad"><div class="flex" style="flex-wrap:nowrap"><select class="in" id="kA">${veld().map(p=>`<option value="${p.id}">${esc(p.naam)}</option>`).join("")}</select><select class="in" id="kB">${veld().map((p,i)=>`<option value="${p.id}" ${i===1?"selected":""}>${esc(p.naam)}</option>`).join("")}</select></div>
     <div class="flex" style="margin-top:8px;flex-wrap:nowrap"><select class="in" id="kT"><option value="samen">Samen in één team</option><option value="apart">Niet samen</option></select><button class="btn sm" data-act="kadd">Toevoegen</button></div></div>`:""}
 `:""}
-  <div class="card pad" style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><b>Verdeling nu</b><div class="muted">${(()=>{const sp=spreiding();return `${sp.min}–${sp.max} wedstrijden per speelster`})()}</div></div>${ADMIN?`<button class="btn sm" data-act="verdeel" style="white-space:nowrap;flex:none">Opnieuw verdelen</button>`:""}</div>
+  <div class="card pad" style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><b>Verdeling nu</b><div class="muted">${(()=>{const sp=spreiding();return `${sp.min}–${sp.max} wedstrijden per speelster`})()}</div></div>${EDIT?`<button class="btn sm" data-act="verdeel" style="white-space:nowrap;flex:none">Opnieuw verdelen</button>`:""}</div>
   <p class="muted" style="margin:10px 0 0">Een keuze hierboven wordt meteen meegenomen. <i>Opnieuw verdelen</i> zet daarnaast handmatige ruilen in nog niet gespeelde wedstrijden terug, zodat alles vanaf nul eerlijk wordt verdeeld. <i>Los</i> = geen voorwaarde voor die wedstrijd.</p></div>
   <div class="sec">Wisselblokken per helft</div>
   <div class="card pad">
     <div class="flex" style="flex-wrap:nowrap">${b.map((x,i)=>`<input class="in" type="number" min="1" max="20" value="${x}" data-act="blok" data-i="${i}" ${dis} style="text-align:center">`).join("")}</div>
     <label class="f">2e helft begint met</label><div class="seg" style="margin:0">${[1,2].map(t=>`<button class="${start2()===t?"on":""}" data-act="start2" data-v="${t}" ${dis}>Team ${t}</button>`).join("")}</div>
-    ${ADMIN?`<div class="flex" style="margin-top:8px"><button class="btn sec2 sm" data-act="blokmin" ${b.length<=2?"disabled":""}>− blok</button><button class="btn sec2 sm" data-act="blokplus" ${b.length>=6?"disabled":""}>+ blok</button><span class="muted">${b.length} wissels per helft</span></div>`:""}
+    ${EDIT?`<div class="flex" style="margin-top:8px"><button class="btn sec2 sm" data-act="blokmin" ${b.length<=2?"disabled":""}>− blok</button><button class="btn sec2 sm" data-act="blokplus" ${b.length>=6?"disabled":""}>+ blok</button><span class="muted">${b.length} wissels per helft</span></div>`:""}
     <p class="muted" style="margin:10px 0 0">1e helft: ${volgorde(1).map(t=>"team "+t).join(" – ")}. 2e helft: ${volgorde(2).map(t=>"team "+t).join(" – ")}. ${minTeam(1)===minTeam(2)?`Elk team speelt ${minTeam(1)} min per wedstrijd.`:`<b style="color:#ffc95a">Ongelijk: team 1 speelt ${minTeam(1)} min, team 2 ${minTeam(2)} min.</b>`}${minPerBeurt()!==20?` <b style="color:#ffc95a">Let op: dit telt op tot ${minPerBeurt()} min per helft, de helft duurt 20.</b>`:""}</p>
   </div>
   <div class="sec">Speelsters</div>
   <p class="muted" style="margin:-2px 4px 8px">★ = voorrang: valt er binnen een linie een wedstrijd extra te verdelen, dan krijgt zij die het eerst. Gelijk verdelen gaat altijd voor.</p>
   <div class="card">${[...S.speelsters].sort((a,b)=>({K:0,V:1}[a.pos]??2)-({K:0,V:1}[b.pos]??2)||a.naam.localeCompare(b.naam,"nl")).map(p=>`<div class="sw"><input class="in" value="${esc(p.naam)}" data-act="pnaam" data-p="${p.id}" ${dis} style="flex:1">
     <select class="in" data-act="ppos" data-p="${p.id}" ${dis} style="flex:1.15;padding-right:4px">${[["K","Keeper"],["V","Verdediger"],["M","Middenveld"],["A","Aanval"],["MA","Mid/aanval"]].map(([k,l])=>`<option value="${k}" ${p.pos===k?"selected":""}>${l}</option>`).join("")}</select>${p.pos==="K"?'<span style="width:36px;flex:none"></span>':`<button class="pvr${p.voorrang?" on":""}" data-act="pvr" data-p="${p.id}" ${dis} aria-label="Voorrang">${p.voorrang?"★":"☆"}</button>`}</div>`).join("")}
-    ${ADMIN?`<div class="sw"><input class="in" id="nieuw" placeholder="Naam nieuwe speelster" style="max-width:200px"><button class="btn sec2 sm" data-act="padd">+ Toevoegen</button></div>`:""}</div>
-  ${ADMIN?`<div class="sec">Opnieuw verdelen</div><div class="card pad"><p class="muted" style="margin:0 0 10px">Zet alle handmatige wijzigingen in nog niet gespeelde wedstrijden terug naar de automatische verdeling.</p><button class="btn sec2 sm" data-act="reset">${ARM==="reset"?"Zeker? Tik nogmaals":"Alles opnieuw berekenen"}</button>${LIVE?"":` <button class="btn sec2 sm" data-act="wis">${ARM==="wis"?"Zeker? Tik nogmaals":"Voorbeeld wissen"}</button>`}</div>`:""}`;
+    ${EDIT?`<div class="sw"><input class="in" id="nieuw" placeholder="Naam nieuwe speelster" style="max-width:200px"><button class="btn sec2 sm" data-act="padd">+ Toevoegen</button></div>`:""}</div>
+  ${EDIT?`<div class="sec">Opnieuw verdelen</div><div class="card pad"><p class="muted" style="margin:0 0 10px">Zet alle handmatige wijzigingen in nog niet gespeelde wedstrijden terug naar de automatische verdeling.</p><button class="btn sec2 sm" data-act="reset">${ARM==="reset"?"Zeker? Tik nogmaals":"Alles opnieuw berekenen"}</button>${LIVE?"":` <button class="btn sec2 sm" data-act="wis">${ARM==="wis"?"Zeker? Tik nogmaals":"Voorbeeld wissen"}</button>`}</div>`:""}`;
 }
 
 /* ---------- Veld ---------- */
@@ -664,17 +682,17 @@ function viewWedstrijd(id){
   const team=p[TEAMSEL];
   const tok=(sid,s,i)=>{ if(!sid) return `<span class="tok ${TEAMSEL}" style="left:${s.x}%;top:${s.y}%"><i>?</i><b>leeg</b></span>`;
     const sel=RUIL&&RUIL.t===TEAMSEL&&RUIL.i===i;
-    return `<button class="tok ${TEAMSEL}${sel?" sel":""}" style="left:${s.x}%;top:${s.y}%" data-act="ruil" data-t="${TEAMSEL}" data-i="${i}" ${ADMIN?"":"disabled"}><i>${s.l}</i><b>${esc(naam(sid))}</b>${p.dubbel&&p.dubbel.includes(sid)?'<span class="d">speelt dubbel</span>':""}${p.flex&&p.flex.includes(sid)?'<span class="d">andere linie</span>':""}</button>`;};
+    return `<button class="tok ${TEAMSEL}${sel?" sel":""}" style="left:${s.x}%;top:${s.y}%" data-act="ruil" data-t="${TEAMSEL}" data-i="${i}" ${EDIT?"":"disabled"}><i>${s.l}</i><b>${esc(naam(sid))}</b>${p.dubbel&&p.dubbel.includes(sid)?'<span class="d">speelt dubbel</span>':""}${p.flex&&p.flex.includes(sid)?'<span class="d">andere linie</span>':""}</button>`;};
   const b=S.instellingen.blok, eind=b.map((_,i)=>b.slice(0,i+1).reduce((x,y)=>x+(+y),0));
   const seq=(volg)=>`<div class="seq">${volg.map((t,i)=>`<div class="s${t}" style="flex:${b[i]}">Team ${t}<small>${i?eind[i-1]:0}'–${eind[i]}'</small></div>`).join("")}</div>`;
   let h=`<button class="back" data-act="terug">‹ Terug</button>
   <div class="mhead"><div class="meta">Wedstrijd ${m.nr} van ${RW.length} · ${fdat(m.datum,1)} · ${m.t} · ${thuis?"Thuis":"Uit"}</div>
     <div class="vs"><div class="tm">${badge(m.h)}${tnaam(m.h)}</div>
-      ${ADMIN?`<button class="sc${u?"":" leeg"}" data-act="score" data-id="${m.id}" style="border:0;background:none;padding:0">${u?`${u[0]} – ${u[1]}`:m.t}</button>`:`<div class="sc${u?"":" leeg"}">${u?`${u[0]} – ${u[1]}`:m.t}</div>`}
+      ${EDIT?`<button class="sc${u?"":" leeg"}" data-act="score" data-id="${m.id}" style="border:0;background:none;padding:0">${u?`${u[0]} – ${u[1]}`:m.t}</button>`:`<div class="sc${u?"":" leeg"}">${u?`${u[0]} – ${u[1]}`:m.t}</div>`}
       <div class="tm">${badge(m.a)}${tnaam(m.a)}</div></div>
-    ${ADMIN?`<div class="flex" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="score" data-id="${m.id}">${u?"Uitslag wijzigen":"Uitslag invullen"}</button>${p.vast&&!u?`<button class="btn sec2 sm" data-act="vrij" data-id="${m.id}">Terug naar automatisch</button>`:""}</div>`:""}
+    ${EDIT?`<div class="flex" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="score" data-id="${m.id}">${u?"Uitslag wijzigen":"Uitslag invullen"}</button>${p.vast&&!u?`<button class="btn sec2 sm" data-act="vrij" data-id="${m.id}">Terug naar automatisch</button>`:""}</div>`:""}
   </div>`;
-  if(ADMIN) h+=`<div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${p.form===k?"on":""}" data-act="wform" data-v="${k}">${f.naam}</button>`).join("")}</div>`;
+  if(EDIT) h+=`<div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${p.form===k?"on":""}" data-act="wform" data-v="${k}">${f.naam}</button>`).join("")}</div>`;
   else h+=`<p class="muted" style="text-align:center;margin:12px 0 0">Opstelling: ${F.naam}</p>`;
   if(ADMIN){ const kl=koppels().filter(k=>kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m)).map(k=>`${esc(naam(k.a))} &amp; ${esc(naam(k.b))} ${kType(k)==="apart"?"niet samen":kMode(k,m)==="hard"?"samen (verplicht)":"samen"}`);
     if(kl.length) h+=`<p class="muted" style="text-align:center;margin:8px 0 0">${kl.join(" · ")}</p>`; }
@@ -687,15 +705,15 @@ function viewWedstrijd(id){
   if(p.vast&&!u) h+=`<div class="warn">Handmatig aangepast. Deze opstelling blijft staan bij herberekenen.</div>`;
   if(RUIL) h+=`<div class="warn">Kies hieronder met wie ${esc(naam(p[RUIL.t][RUIL.i]))} ruilt, of tik op een speelster in het veld.</div>`;
   const ander=TEAMSEL==="t1"?"t2":"t1";
-  h+=`<div class="sec">Tribune</div><div class="card"><div class="chips">${p.tr.length?p.tr.map(x=>`<button class="chip${x===p.res?" res":""}" data-act="trib" data-v="${x}" ${RUIL||ADMIN?"":"disabled"}>${x===p.res?"🩹 ":""}${esc(naam(x))}${x===p.res?" · reserve":""}</button>`).join(""):'<span class="muted">Niemand</span>'}
+  h+=`<div class="sec">Tribune</div><div class="card"><div class="chips">${p.tr.length?p.tr.map(x=>`<button class="chip${x===p.res?" res":""}" data-act="trib" data-v="${x}" ${RUIL||EDIT?"":"disabled"}>${x===p.res?"🩹 ":""}${esc(naam(x))}${x===p.res?" · reserve":""}</button>`).join(""):'<span class="muted">Niemand</span>'}
     ${weg.map(x=>`<span class="chip weg">${esc(naam(x))} · afwezig</span>`).join("")}</div>
-    ${p.tr.length?`<p class="muted" style="margin:0 12px 10px">${p.res?`<b style="color:var(--tx)">${esc(naam(p.res))}</b> is reserve en valt in bij een blessure. Invallen is bonus en telt niet mee in de speeltijd.`:""}${ADMIN&&!RUIL?" Tik op een andere tribunespeelster om haar reserve te maken.":""}</p>`:""}</div>`;
+    ${p.tr.length?`<p class="muted" style="margin:0 12px 10px">${p.res?`<b style="color:var(--tx)">${esc(naam(p.res))}</b> is reserve en valt in bij een blessure. Invallen is bonus en telt niet mee in de speeltijd.`:""}${EDIT&&!RUIL?" Tik op een andere tribunespeelster om haar reserve te maken.":""}</p>`:""}</div>`;
   if(RUIL) h+=`<div class="sec">Of ruil met team ${ander==="t1"?1:2}</div><div class="card"><div class="chips">${p[ander].filter(Boolean).map((x,i)=>`<button class="chip" data-act="ruilmet" data-v="${ander}:${p[ander].indexOf(x)}">${esc(naam(x))} · ${F.slots[p[ander].indexOf(x)].l}</button>`).join("")}</div></div>`;
   h+=`<div class="sec">Wisselschema</div><div class="card tl">
     <div class="hl">1e helft</div>${seq(volgorde(1))}
     <div class="hl">2e helft</div>${seq(volgorde(2))}
     <p class="muted" style="margin:10px 0 0">Team 1: ${p.t1.filter(Boolean).map(x=>`<button class="lnk" data-act="sp" data-p="${x}">${esc(naam(x))}</button>`).join(", ")}<br>Team 2: ${p.t2.filter(Boolean).map(x=>`<button class="lnk" data-act="sp" data-p="${x}">${esc(naam(x))}</button>`).join(", ")}</p></div>`;
-  if(ADMIN) h+=`<p class="muted" style="margin:10px 4px">${u?"Klopt de opstelling niet met wie er echt gespeeld heeft? Tik op een speelster om te corrigeren; de speeltijd en de wedstrijden erna worden aangepast.":"Tik op een speelster in het veld om te ruilen. Die wedstrijd wordt daarna vastgezet; de wedstrijden erna worden opnieuw verdeeld."}</p>`;
+  if(EDIT) h+=`<p class="muted" style="margin:10px 4px">${u?"Klopt de opstelling niet met wie er echt gespeeld heeft? Tik op een speelster om te corrigeren; de speeltijd en de wedstrijden erna worden aangepast.":"Tik op een speelster in het veld om te ruilen. Die wedstrijd wordt daarna vastgezet; de wedstrijden erna worden opnieuw verdeeld."}</p>`;
   return h;
 }
 
@@ -728,7 +746,7 @@ document.addEventListener("click",async e=>{
   else if(a==="sp"){ ga("s-"+d.p); }
   else if(a==="terug"){ terug(); }
   else if(a==="team"){ TEAMSEL=d.v; render(); }
-  else if(a==="score"){ if(ADMIN) sheetScore(d.id); }
+  else if(a==="score"){ if(EDIT) sheetScore(d.id); }
   else if(a==="sluit"){ if(e.target===el) $("sheet").innerHTML=""; }
   else if(a==="scoreok"){
     const x=$("sH").value, y=$("sA").value, id=d.id, keys=["instellingen"];
@@ -763,7 +781,7 @@ document.addEventListener("click",async e=>{
   else if(a==="ruilmet"){ if(RUIL) await doeRuil(d.v); }
   else if(a==="trib"){
     if(RUIL){ await doeRuil("tr:"+d.v); return; }
-    if(!ADMIN) return;
+    if(!EDIT) return;
     S.instellingen.reserve=S.instellingen.reserve||{}; S.instellingen.reserve[OPEN]=d.v;
     await wijzig(["instellingen"],()=>`${naam(d.v)} is reserve`); }
   else if(a==="vrij"){ delete S.opstellingen[d.id]; delete S.instellingen.perWed[d.id]; await wijzig(["opstellingen","instellingen"]); }
@@ -772,11 +790,11 @@ document.addEventListener("click",async e=>{
     if(S.opstellingen[OPEN]){ S.opstellingen[OPEN].form=d.v; }
     await wijzig(["instellingen","opstellingen"]);
   }
-  else if(a==="kdel"){ S.instellingen.koppels.splice(+d.k,1); Object.keys(S.opstellingen).forEach(w=>{ if(!S.uitslagen[w]) delete S.opstellingen[w]; }); await wijzig(["instellingen","opstellingen"]); }
+  else if(a==="kdel"){ S.koppels=koppels().filter((_,i)=>i!==+d.k); Object.keys(S.opstellingen).forEach(w=>{ if(!S.uitslagen[w]) delete S.opstellingen[w]; }); await wijzig(["koppels","opstellingen"]); }
   else if(a==="kadd"){ const x=$("kA").value,y=$("kB").value,t=$("kT").value; if(x===y||koppels().some(k=>(k.a===x&&k.b===y)||(k.a===y&&k.b===x))) return;
-    S.instellingen.koppels=[...koppels(),{a:x,b:y,type:t,per:{}}];
+    S.koppels=[...koppels(),{a:x,b:y,type:t,per:{}}];
     Object.keys(S.opstellingen).forEach(w=>{ if(!S.uitslagen[w]) delete S.opstellingen[w]; });
-    await wijzig(["instellingen","opstellingen"]); }
+    await wijzig(["koppels","opstellingen"]); }
   else if(a==="form"){ S.instellingen.form=d.v; await wijzig(["instellingen"]); }
   else if(a==="masamen"){ S.instellingen.maSamen=!S.instellingen.maSamen; await wijzig(["instellingen"]); }
   else if(a==="padd"){ const n=($("nieuw")||{}).value; if(!n||!n.trim()) return;
@@ -796,7 +814,7 @@ document.addEventListener("change",async e=>{
   const el=e.target, d=el.dataset; if(!d.act) return;
   if(d.act==="kmode"){ const k=koppels()[+d.k], w=d.w; k.per=k.per||{};
     if(el.value==="zacht") delete k.per[w]; else k.per[w]=el.value;
-    if(S.opstellingen[w]&&!S.uitslagen[w]) delete S.opstellingen[w]; await wijzig(["instellingen","opstellingen"],verdeelMelding); }
+    if(S.opstellingen[w]&&!S.uitslagen[w]) delete S.opstellingen[w]; await wijzig(["koppels","opstellingen"],verdeelMelding); }
   else if(d.act==="blok"){ S.instellingen.blok[+d.i]=Math.max(1,Math.min(20,+el.value||1)); await wijzig(["instellingen"]); }
   else if(d.act==="pnaam"){ const p=S.speelsters.find(x=>x.id===d.p); if(p&&el.value.trim()){ p.naam=el.value.trim(); await wijzig(["speelsters"]); } }
   else if(d.act==="ppos"){ const p=S.speelsters.find(x=>x.id===d.p); if(p){ p.pos=el.value; Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["speelsters","opstellingen"]); } }
@@ -824,7 +842,8 @@ function ga(h){ if(location.hash.slice(1)===h) return; history.pushState({d:diep
 function naarTab(t){ history.replaceState({d:0},"","#"+t); toon(); }
 function terug(){ if(diepte()>0) history.back(); else naarTab(TAB); }
 window.addEventListener("popstate",toon);
-(async()=>{ await laad(); herbereken(); leesHash(); render(); })();
+(async()=>{ await laad(); herbereken(); leesHash(); render();
+  if(LIVE&&EDIT){ const nu=JSON.stringify(planFoto()); if(nu!==JSON.stringify(S.plan||{})) bewaar("__stil"); } })();
 </script>
 </body>
 </html>
