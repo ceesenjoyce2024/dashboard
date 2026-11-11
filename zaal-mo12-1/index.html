@@ -706,7 +706,7 @@ function viewWedstrijd(id){
   const ander=TEAMSEL==="t1"?"t2":"t1";
   h+=`<div class="sec">Tribune</div><div class="card"><div class="chips">${p.tr.length?p.tr.map(x=>`<button class="chip${x===p.res?" res":""}" data-act="trib" data-v="${x}" ${RUIL||EDIT?"":"disabled"}>${x===p.res?"🩹 ":""}${esc(naam(x))}${x===p.res?" · reserve":""}</button>`).join(""):'<span class="muted">Niemand</span>'}
     ${weg.map(x=>`<span class="chip weg">${esc(naam(x))} · afwezig</span>`).join("")}</div>
-    ${p.tr.length?`<p class="muted" style="margin:0 12px 10px">${p.res?`<b style="color:var(--tx)">${esc(naam(p.res))}</b> is reserve en valt in bij een blessure. Invallen is bonus en telt niet mee in de speeltijd.`:""}${EDIT&&!RUIL?" Tik op een andere tribunespeelster om haar reserve te maken.":""}</p>`:""}</div>`;
+    ${p.tr.length?`<p class="muted" style="margin:0 12px 10px">${p.res?`<b style="color:var(--tx)">${esc(naam(p.res))}</b> is reserve en valt in bij een blessure.`:""}${EDIT&&!RUIL?" Tik op een andere tribunespeelster om haar reserve te maken.":""}</p>`:""}</div>`;
   if(RUIL) h+=`<div class="sec">Of ruil met team ${ander==="t1"?1:2}</div><div class="card"><div class="chips">${p[ander].filter(Boolean).map((x,i)=>`<button class="chip" data-act="ruilmet" data-v="${ander}:${p[ander].indexOf(x)}">${esc(naam(x))} · ${F.slots[p[ander].indexOf(x)].l}</button>`).join("")}</div></div>`;
   h+=`<div class="sec">Wisselschema</div><div class="card tl">
     <div class="hl">1e helft</div>${seq(volgorde(1))}
