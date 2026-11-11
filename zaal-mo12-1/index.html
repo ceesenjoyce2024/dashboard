@@ -107,6 +107,7 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 .chip{background:var(--card2);border-radius:999px;padding:5px 11px;font-size:13px;border:0}
 .ksel{appearance:none;-webkit-appearance:none;border:0;border-radius:999px;padding:6px 30px 6px 14px;font:inherit;font-size:16px;font-weight:600;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ffffff' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 .ksel.kz{background-color:rgba(143,198,238,.18);color:var(--lb)}.ksel.kh{background-color:var(--or);color:#fff}.ksel.kl{background-color:var(--card2);color:var(--mut)}.ksel:disabled{opacity:.55}
+.pvr{width:36px;height:36px;flex:none;border:0;border-radius:10px;background:var(--card2);color:var(--mut);font-size:19px}.pvr.on{color:var(--or2);background:rgba(255,107,26,.15)}
 .chip.kz{background:rgba(143,198,238,.15);color:var(--lb)}.chip.kh{background:var(--or);color:#fff}.chip.kl{background:var(--card2);color:var(--mut)}
 .chip.weg{color:var(--bad);background:rgba(255,92,92,.12)}
 .chip.sel{outline:2px solid #ffe066}
@@ -123,7 +124,7 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 label.f{display:block;font-size:13px;color:var(--mut);margin:12px 0 5px}
 input.in,select.in{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit;font-size:16px;width:100%;min-width:0}
-.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px}
 .sw+.sw{border-top:1px solid var(--line)}
 .sw small{display:block;color:var(--mut);font-size:12.5px}
 .tg{width:50px;height:30px;border-radius:999px;background:var(--card2);border:0;position:relative;flex:none}
@@ -211,7 +212,7 @@ const STD_SPEELSTERS=[
   ["veerle","Veerle","V"],["ella","Ella","V"],["elise","Elise","V"],["june","June","V"],["jinte","Jinte","V"],
   ["riva","Riva","MA"],["dante","Dante","MA"],["bo","Bo","MA"],["tess","Tess","MA"],
   ["lillemor","Lillemor","MA"],["emma","Emma","MA"],["rosalie","Rosalie","MA"],["annemijn","Annemijn","MA"]
-].map(([id,naam,pos])=>({id,naam,pos}));
+].map(([id,naam,pos])=>({id,naam,pos,...(["veerle","elise","june"].includes(id)?{voorrang:true}:{})}));
 
 /* =====================================================================
    OPSLAG — op eikenlaan-webapps.nl: Supabase-tabel zaal_mo12_data
@@ -311,7 +312,7 @@ function maakPlan(){
     beschik.forEach(p=>{ const later=open.slice(oi+1).filter(x=>aanwezig(p.id,x)); moet[p.id]=later.filter(x=>verplicht(p.id,x)).length; toekomst[p.id]=later.length-moet[p.id]; });
     const zus=RW.find(x=>x.dag===m.dag&&x!==m&&x.ihDag<m.ihDag);   // eerdere wedstrijd zelfde dag
     const zatZus=id=>zus&&P[zus.id]&&P[zus.id].tr.includes(id);
-    const score=p=>beurt[p.id]+moet[p.id]+gem*toekomst[p.id]-(zatZus(p.id)?0.6:0)+(hash(p.id+m.id)%100)/1000;
+    const score=p=>beurt[p.id]+moet[p.id]+gem*toekomst[p.id]-(zatZus(p.id)?0.6:0)-(p.voorrang?0.3:0)+(hash(p.id+m.id)%100)/1000;
     const F=FORM[formVan(m)], nodig={};
     F.slots.forEach(s=>{const g=slotGroep(s.g); nodig[g]=(nodig[g]||0)+2;});
     const gekozen={}, flex=[];
@@ -397,7 +398,7 @@ function maakPlan(){
       // a) losse speelsters
       for(const t of ["t1","t2"]) for(let i=0;i<5;i++){
         const x=p[t][i]; if(!x||p.dubbel.includes(x)||verplicht(x,m)) continue;
-        const kand=p.tr.filter(y=>past(spl(y),grp(i))&&beurt[x]-beurt[y]>=((koppelActief(x,m)||koppelActief(y,m))?3:2)&&apartOK(p[t],y,x))
+        const kand=p.tr.filter(y=>past(spl(y),grp(i))&&(beurt[x]-beurt[y]>=((koppelActief(x,m)||koppelActief(y,m))?3:2)||(beurt[x]-beurt[y]===1&&spl(y).voorrang&&!spl(x).voorrang&&!koppelActief(x,m)&&!koppelActief(y,m)))&&apartOK(p[t],y,x))
           .sort((a,b)=>beurt[a]-beurt[b]);
         for(const y of kand){
           const xZitAl=zus&&P[zus.id]&&P[zus.id].tr.includes(x);
@@ -579,8 +580,9 @@ function viewInstellingen(){
     <p class="muted" style="margin:10px 0 0">1e helft: team 1 – team 2 – team 1. 2e helft: team 2 – team 1 – team 2. Elk team speelt ${minPerBeurt()} min per wedstrijd.${minPerBeurt()!==20?` <b style="color:#ffc95a">Let op: dit telt op tot ${minPerBeurt()} min per helft, de helft duurt 20.</b>`:""}</p>
   </div>
   <div class="sec">Speelsters</div>
-  <div class="card">${S.speelsters.map(p=>`<div class="sw"><input class="in" value="${esc(p.naam)}" data-act="pnaam" data-p="${p.id}" ${dis} style="max-width:170px">
-    <select class="in" data-act="ppos" data-p="${p.id}" ${dis} style="max-width:150px">${[["K","Keeper"],["V","Verdediging"],["M","Middenveld"],["A","Aanval"],["MA","Midden/aanval"]].map(([k,l])=>`<option value="${k}" ${p.pos===k?"selected":""}>${l}</option>`).join("")}</select></div>`).join("")}
+  <p class="muted" style="margin:-2px 4px 8px">★ = voorrang: valt er binnen een linie een wedstrijd extra te verdelen, dan krijgt zij die het eerst. Gelijk verdelen gaat altijd voor.</p>
+  <div class="card">${S.speelsters.map(p=>`<div class="sw"><input class="in" value="${esc(p.naam)}" data-act="pnaam" data-p="${p.id}" ${dis} style="flex:1">
+    <select class="in" data-act="ppos" data-p="${p.id}" ${dis} style="flex:1.15;padding-right:4px">${[["K","Keeper"],["V","Verdediger"],["M","Middenveld"],["A","Aanval"],["MA","Mid/aanval"]].map(([k,l])=>`<option value="${k}" ${p.pos===k?"selected":""}>${l}</option>`).join("")}</select>${p.pos==="K"?'<span style="width:36px;flex:none"></span>':`<button class="pvr${p.voorrang?" on":""}" data-act="pvr" data-p="${p.id}" ${dis} aria-label="Voorrang">${p.voorrang?"★":"☆"}</button>`}</div>`).join("")}
     ${ADMIN?`<div class="sw"><input class="in" id="nieuw" placeholder="Naam nieuwe speelster" style="max-width:200px"><button class="btn sec2 sm" data-act="padd">+ Toevoegen</button></div>`:""}</div>
   ${ADMIN?`<div class="sec">Opnieuw verdelen</div><div class="card pad"><p class="muted" style="margin:0 0 10px">Zet alle handmatige wijzigingen in nog niet gespeelde wedstrijden terug naar de automatische verdeling.</p><button class="btn sec2 sm" data-act="reset">${ARM==="reset"?"Zeker? Tik nogmaals":"Alles opnieuw berekenen"}</button>${LIVE?"":` <button class="btn sec2 sm" data-act="wis">${ARM==="wis"?"Zeker? Tik nogmaals":"Voorbeeld wissen"}</button>`}</div>`:""}`;
 }
@@ -721,6 +723,8 @@ document.addEventListener("click",async e=>{
     S.speelsters=[...S.speelsters,{id,naam:n.trim(),pos:"MA"}]; await wijzig(["speelsters"]); }
   else if(a==="reset"){ if(ARM!=="reset"){ARM="reset";render();return;} ARM=null;
     Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); S.instellingen.perWed={}; await wijzig(["opstellingen","instellingen"]); }
+  else if(a==="pvr"){ const sp=S.speelsters.find(x=>x.id===d.p); if(!sp) return; sp.voorrang=!sp.voorrang; if(!sp.voorrang) delete sp.voorrang;
+    S.speelsters=[...S.speelsters]; await wijzig(["speelsters"],verdeelMelding); }
   else if(a==="verdeel"){ Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["opstellingen"],verdeelMelding); }
   else if(a==="wis"){ if(ARM!=="wis"){ARM="wis";render();return;} ARM=null; try{localStorage.removeItem(LS)}catch(_){} location.reload(); }
 });
