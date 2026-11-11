@@ -842,7 +842,31 @@ function ga(h){ if(location.hash.slice(1)===h) return; history.pushState({d:diep
 function naarTab(t){ history.replaceState({d:0},"","#"+t); toon(); }
 function terug(){ if(diepte()>0) history.back(); else naarTab(TAB); }
 window.addEventListener("popstate",toon);
-(async()=>{ await laad(); herbereken(); leesHash(); render();
+/* ---------- Live bijwerken: Supabase meldt wijzigingen van anderen ---------- */
+const sig=()=>JSON.stringify(KEYS.map(k=>S[k]));
+let LIVE_WACHT=false, liveTimer=null;
+const bezig=()=>!!$("sheet").innerHTML||!!RUIL||!!ARM||(document.activeElement&&/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName));
+async function haalOpnieuw(){
+  if(bezig()){ LIVE_WACHT=true; clearTimeout(liveTimer); liveTimer=setTimeout(haalOpnieuw,1500); return; }
+  LIVE_WACHT=false;
+  try{
+    const voor=sig();
+    const r=await sb.from(TABEL).select("id,data"); if(r.error||!r.data) return;
+    r.data.forEach(x=>{ if(KEYS.includes(x.id)&&x.data) S[x.id]=x.data; });
+    if(COACH){ const k=await sb.rpc("zaal_mo12_koppels",{p_code:CODE}); if(!k.error&&Array.isArray(k.data)) S.koppels=k.data; }
+    S.instellingen={form:"huis",maSamen:true,blok:[5,5,5,5],perWed:{},wedWijz:{},...S.instellingen};
+    if(sig()===voor) return;                       // eigen wijziging of niets nieuws
+    if(bezig()){ LIVE_WACHT=true; liveTimer=setTimeout(haalOpnieuw,1500); return; }
+    herbereken(); render(); toast("Bijgewerkt door een ander");
+  }catch(e){}
+}
+function startLive(){
+  if(!LIVE||!sb) return;
+  try{ sb.channel("zaal-mo12").on("postgres_changes",{event:"*",schema:"public",table:TABEL},()=>{ clearTimeout(liveTimer); liveTimer=setTimeout(haalOpnieuw,600); }).subscribe(); }catch(e){}
+  // terug naar de app (telefoon uit slaapstand): even ophalen, de verbinding kan weg zijn geweest
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") haalOpnieuw(); });
+}
+(async()=>{ await laad(); herbereken(); leesHash(); render(); startLive();
   if(LIVE&&EDIT){ const nu=JSON.stringify(planFoto()); if(nu!==JSON.stringify(S.plan||{})) bewaar("__stil"); } })();
 </script>
 </body>
