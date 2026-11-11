@@ -98,6 +98,14 @@
 
   .public-note{background:var(--sand-light);border:1px solid var(--sand-dark);border-radius:9px;padding:12px 16px;font-size:12px;color:var(--text-muted);margin-bottom:14px;display:flex;align-items:center;gap:10px;line-height:1.5;}
 
+  /* ── Tabbladen admin ── */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--sand-dark);margin-bottom:24px;}
+  .tab{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 16px;font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:0.04em;color:var(--text-muted);cursor:pointer;}
+  .tab:hover{color:var(--olive);}
+  .tab.active{color:var(--olive);border-bottom-color:var(--olive);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
   /* ── Beheer tab ── */
   .beheer-card{background:var(--card-bg);border:1px solid var(--sand-dark);border-radius:var(--radius);padding:24px;margin-bottom:14px;}
   .beheer-card h3{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--olive);margin-bottom:16px;}
@@ -170,7 +178,12 @@
   </div>
   <div class="welcome-bar">Welkom terug, <strong id="admin-name"></strong></div>
   <div class="main">
-    <div class="section-label"><span>Persoonlijk</span></div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="persoonlijk" onclick="toonTab('persoonlijk')">Persoonlijk</button>
+      <button class="tab" data-tab="hockey" onclick="toonTab('hockey')">Hockey</button>
+      <button class="tab" data-tab="beheer" onclick="toonTab('beheer')">Beheer</button>
+    </div>
+    <div class="tab-panel active" id="tab-persoonlijk">
     <div class="grid">
       <a class="app-card" href="./hartslag/"><div class="app-icon">❤️</div><div class="app-name">Hartslag</div><div class="app-desc">Bloeddruk & hartslag bijhouden</div><span class="app-badge badge-private">Privé</span></a>
       <a class="app-card" href="./dagboek/"><div class="app-icon">📔</div><div class="app-name">Dagboek</div><div class="app-desc">Dagelijkse status bijhouden</div><span class="app-badge badge-private">Privé</span></a>
@@ -181,7 +194,8 @@
       <a class="app-card" href="./rekken-test/"><div class="app-icon">🧪</div><div class="app-name">Rekken test</div><div class="app-desc">Proefversie rek-app (wit, bordeaux, roze)</div><span class="app-badge badge-private">Test</span></a>
       <a class="app-card" href="./gewicht-joyce/"><div class="app-icon">⚖️</div><div class="app-name">Gewicht Joyce</div><div class="app-desc">Dagelijks gewicht bijhouden</div><span class="app-badge badge-private">Privé</span></a>
     </div>
-    <div class="section-label"><span>Hockey — MHC Rosmalen</span></div>
+    </div>
+    <div class="tab-panel" id="tab-hockey">
     <div class="public-note"><span>👥</span><span>De hockey-apps zijn ook openbaar te bekijken zonder inloggen.</span></div>
     <div class="grid">
       <a class="app-card" href="./mo11-1/"><div class="app-icon">🏑</div><div class="app-name">MO11-1</div><div class="app-desc">Statistieken & standen</div><span class="app-badge badge-public">Publiek leesbaar</span></a>
@@ -190,7 +204,8 @@
       <a class="app-card" href="./zaal-mo12-1/?v=2026-11-11.11"><div class="app-icon">🏟️</div><div class="app-name">Zaalcompetitie</div><div class="app-desc">Programma, opstellingen & speeltijd MO12-1</div><span class="app-badge badge-public">Publiek leesbaar</span></a>
       <a class="app-card" href="./level-up-test/"><div class="app-icon">🧪</div><div class="app-name">Level Up Test</div><div class="app-desc">Proefversie om wijzigingen te testen</div><span class="app-badge badge-private">Test</span></a>
     </div>
-    <div class="section-label"><span>Beheer</span></div>
+    </div>
+    <div class="tab-panel" id="tab-beheer">
     <button class="beheer-toggle" id="beheer-toggle" onclick="toggleBeheer()">
       <span>👥 Gebruikersbeheer</span>
       <span class="chevron">›</span>
@@ -212,6 +227,7 @@
       <div id="b-error" class="auth-error"></div>
       <div id="b-success" class="auth-success"></div>
       <div id="gebruikers-lijst"></div>
+    </div>
     </div>
   </div>
 </div>
@@ -635,6 +651,15 @@ function toonErr(el, msg) {
 }
 
 init();
+
+// Tabbladen admin-dashboard. Standaard Persoonlijk; binnen dezelfde sessie
+// onthouden zodat je na terug uit een hockey-app weer op Hockey staat.
+function toonTab(naam){
+  document.querySelectorAll('#dashboard-admin .tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===naam);});
+  document.querySelectorAll('#dashboard-admin .tab-panel').forEach(function(p){p.classList.toggle('active',p.id==='tab-'+naam);});
+  try{sessionStorage.setItem('adminTab',naam);}catch(e){}
+}
+(function(){var t=null;try{t=sessionStorage.getItem('adminTab');}catch(e){}if(t&&document.getElementById('tab-'+t))toonTab(t);})();
 </script>
 </body>
 </html>
