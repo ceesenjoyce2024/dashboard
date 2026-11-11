@@ -92,7 +92,9 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 .mhead .vs .tm{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:14px;text-align:center}
 .mhead .vs .sc{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--or2)}
 .mhead .vs .sc.leeg{color:var(--mut);font-size:20px}
-.back{display:inline-flex;align-items:center;gap:2px;margin:2px 0 10px;border:0;background:var(--card);border-radius:999px;padding:7px 14px 7px 10px;font-size:14px;color:var(--mut)}
+.back{display:inline-flex;align-items:center;gap:6px;margin:2px 0 12px;border:1.5px solid var(--lb);background:rgba(143,198,238,.14);border-radius:999px;padding:9px 18px 9px 12px;font-size:15px;font-weight:700;color:var(--lb)}
+.back:active{background:rgba(143,198,238,.3)}
+.back b{font-size:20px;line-height:0;margin-top:-2px}
 .court{position:relative;margin:10px auto 0;max-width:320px}
 .court svg{display:block;width:100%;height:auto}
 .tok{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;padding:0}
@@ -601,7 +603,7 @@ function viewSpeelster(id){
   const sp=S.speelsters.find(p=>p.id===id); if(!sp) return "";
   const st=speeltijd().find(x=>x.id===id);
   const posNm={K:"Keeper",V:"Verdediging",M:"Middenveld",A:"Aanval",MA:"Middenveld / aanval"}[sp.pos]||sp.pos;
-  let h=`<button class="back" data-act="terug">‹ Terug</button>
+  let h=`<button class="back" data-act="terug"><b>‹</b>Terug</button>
   <div class="mhead" style="text-align:center"><div style="font-size:22px;font-weight:800">${esc(sp.naam)}${sp.voorrang?' <span style="color:var(--or2)">★</span>':""}</div><div class="muted">${posNm}</div></div>`;
   if(st) h+=`<div class="stats"><div><b>${st.gesp+st.gepl}'</b><span>${st.gesp}' gespeeld</span></div><div><b>${st.wGesp+st.wGepl}</b><span>wedstrijden</span></div><div><b>${st.trib}×</b><span>tribune</span></div></div>`;
   else h+=`<p class="muted" style="text-align:center">Speelt alle wedstrijden als keeper.</p>`;
@@ -685,7 +687,7 @@ function viewWedstrijd(id){
     return `<button class="tok ${TEAMSEL}${sel?" sel":""}" style="left:${s.x}%;top:${s.y}%" data-act="ruil" data-t="${TEAMSEL}" data-i="${i}" ${EDIT?"":"disabled"}><i>${s.l}</i><b>${esc(naam(sid))}</b>${p.dubbel&&p.dubbel.includes(sid)?'<span class="d">speelt dubbel</span>':""}${p.flex&&p.flex.includes(sid)?'<span class="d">andere linie</span>':""}</button>`;};
   const b=S.instellingen.blok, eind=b.map((_,i)=>b.slice(0,i+1).reduce((x,y)=>x+(+y),0));
   const seq=(volg)=>`<div class="seq">${volg.map((t,i)=>`<div class="s${t}" style="flex:${b[i]}">Team ${t}<small>${i?eind[i-1]:0}'–${eind[i]}'</small></div>`).join("")}</div>`;
-  let h=`<button class="back" data-act="terug">‹ Terug</button>
+  let h=`<button class="back" data-act="terug"><b>‹</b>Terug</button>
   <div class="mhead"><div class="meta">Wedstrijd ${m.nr} van ${RW.length} · ${fdat(m.datum,1)} · ${m.t} · ${thuis?"Thuis":"Uit"}</div>
     <div class="vs"><div class="tm">${badge(m.h)}${tnaam(m.h)}</div>
       ${EDIT?`<button class="sc${u?"":" leeg"}" data-act="score" data-id="${m.id}" style="border:0;background:none;padding:0">${u?`${u[0]} – ${u[1]}`:m.t}</button>`:`<div class="sc${u?"":" leeg"}">${u?`${u[0]} – ${u[1]}`:m.t}</div>`}
