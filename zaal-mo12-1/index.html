@@ -273,7 +273,9 @@ const keeper=()=>S.speelsters.find(p=>p.pos==="K");
 const naam=id=>(S.speelsters.find(p=>p.id===id)||{naam:"?"}).naam;
 const formVan=m=>S.instellingen.perWed[m.id]||S.instellingen.form;
 // volgorde van de teams per helft: 1e helft begint team 1, 2e helft team 2, steeds om en om
-const volgorde=h=>S.instellingen.blok.map((_,i)=>((i+(h===2?1:0))%2)?2:1);
+const start2=()=>S.instellingen.start2||1;   // welk team begint de 2e helft (standaard team 1: meest uitgerust)
+const volgorde=h=>{ const st=h===1?1:start2(); return S.instellingen.blok.map((_,i)=>i%2?(3-st):st); };
+const minTeam=t=>[1,2].reduce((s,h)=>s+volgorde(h).reduce((x,tt,i)=>x+(tt===t?(+S.instellingen.blok[i]||0):0),0),0);
 const minPerBeurt=()=>S.instellingen.blok.reduce((a,b)=>a+(+b||0),0);
 function aanwezig(pid,m){
   const s=(S.beschikbaarheid[pid]||{})[m.dag];
@@ -459,8 +461,8 @@ function speeltijd(){
   RW.forEach(m=>{
     const p=PLAN[m.id]; if(!p) return;
     const gespeeld=!!S.uitslagen[m.id];
-    [...p.t1,...p.t2].filter(Boolean).forEach(id=>{ if(!r[id])return;
-      if(gespeeld){r[id].gesp+=mpb;} else {r[id].gepl+=mpb;} });
+    [["t1",minTeam(1)],["t2",minTeam(2)]].forEach(([t,mn])=>p[t].filter(Boolean).forEach(id=>{ if(!r[id])return;
+      if(gespeeld){r[id].gesp+=mn;} else {r[id].gepl+=mn;} }));
     new Set([...p.t1,...p.t2].filter(Boolean)).forEach(id=>{ if(!r[id])return; gespeeld?r[id].wGesp++:r[id].wGepl++; });
     p.tr.forEach(id=>{ if(r[id]) r[id].trib++; });
     if(p.res&&r[p.res]) r[p.res].res++;
@@ -590,8 +592,9 @@ function viewInstellingen(){
   <div class="sec">Wisselblokken per helft</div>
   <div class="card pad">
     <div class="flex" style="flex-wrap:nowrap">${b.map((x,i)=>`<input class="in" type="number" min="1" max="20" value="${x}" data-act="blok" data-i="${i}" ${dis} style="text-align:center">`).join("")}</div>
+    <label class="f">2e helft begint met</label><div class="seg" style="margin:0">${[1,2].map(t=>`<button class="${start2()===t?"on":""}" data-act="start2" data-v="${t}" ${dis}>Team ${t}</button>`).join("")}</div>
     ${ADMIN?`<div class="flex" style="margin-top:8px"><button class="btn sec2 sm" data-act="blokmin" ${b.length<=2?"disabled":""}>− blok</button><button class="btn sec2 sm" data-act="blokplus" ${b.length>=6?"disabled":""}>+ blok</button><span class="muted">${b.length} wissels per helft</span></div>`:""}
-    <p class="muted" style="margin:10px 0 0">1e helft: ${volgorde(1).map(t=>"team "+t).join(" – ")}. 2e helft: ${volgorde(2).map(t=>"team "+t).join(" – ")}. Elk team speelt ${minPerBeurt()} min per wedstrijd.${minPerBeurt()!==20?` <b style="color:#ffc95a">Let op: dit telt op tot ${minPerBeurt()} min per helft, de helft duurt 20.</b>`:""}</p>
+    <p class="muted" style="margin:10px 0 0">1e helft: ${volgorde(1).map(t=>"team "+t).join(" – ")}. 2e helft: ${volgorde(2).map(t=>"team "+t).join(" – ")}. ${minTeam(1)===minTeam(2)?`Elk team speelt ${minTeam(1)} min per wedstrijd.`:`<b style="color:#ffc95a">Ongelijk: team 1 speelt ${minTeam(1)} min, team 2 ${minTeam(2)} min.</b>`}${minPerBeurt()!==20?` <b style="color:#ffc95a">Let op: dit telt op tot ${minPerBeurt()} min per helft, de helft duurt 20.</b>`:""}</p>
   </div>
   <div class="sec">Speelsters</div>
   <p class="muted" style="margin:-2px 4px 8px">★ = voorrang: valt er binnen een linie een wedstrijd extra te verdelen, dan krijgt zij die het eerst. Gelijk verdelen gaat altijd voor.</p>
@@ -746,6 +749,7 @@ document.addEventListener("click",async e=>{
     Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); S.instellingen.perWed={}; await wijzig(["opstellingen","instellingen"]); }
   else if(a==="pvr"){ const sp=S.speelsters.find(x=>x.id===d.p); if(!sp) return; sp.voorrang=!sp.voorrang; if(!sp.voorrang) delete sp.voorrang;
     S.speelsters=[...S.speelsters]; await wijzig(["speelsters"],verdeelMelding); }
+  else if(a==="start2"){ S.instellingen.start2=+d.v; await wijzig(["instellingen"]); }
   else if(a==="blokplus"||a==="blokmin"){ const b=S.instellingen.blok;
     if(a==="blokplus"&&b.length<6) b.push(5); if(a==="blokmin"&&b.length>2) b.pop(); await wijzig(["instellingen"]); }
   else if(a==="verdeel"){ Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["opstellingen"],verdeelMelding); }
