@@ -109,6 +109,7 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 .ksel.kz{background-color:rgba(143,198,238,.18);color:var(--lb)}.ksel.kh{background-color:var(--or);color:#fff}.ksel.kl{background-color:var(--card2);color:var(--mut)}.ksel:disabled{opacity:.55}
 .pvr{width:36px;height:36px;flex:none;border:0;border-radius:10px;background:var(--card2);color:var(--mut);font-size:19px}.pvr.on{color:var(--or2);background:rgba(255,107,26,.15)}
 .chip.kz{background:rgba(143,198,238,.15);color:var(--lb)}.chip.kh{background:var(--or);color:#fff}.chip.kl{background:var(--card2);color:var(--mut)}
+.chip.res{background:rgba(255,107,26,.18);color:var(--or2);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--or)}
 .chip.weg{color:var(--bad);background:rgba(255,92,92,.12)}
 .chip.sel{outline:2px solid #ffe066}
 .tl{padding:12px}
@@ -436,6 +437,15 @@ function maakPlan(){
     }
     if(!geruild) break;
   }
+  // 4. reserve per wedstrijd: één tribunespeelster die kan invallen bij een blessure (telt niet mee in speeltijd).
+  //    Automatisch: wie het minst vaak reserve was, daarna wie het minst speelt. Handmatige keuze in instellingen.reserve.
+  const resTel={}; spelers.forEach(p=>resTel[p.id]=0);
+  RW.forEach(m=>{ const p=P[m.id]; if(!p) return;
+    const hand=(S.instellingen.reserve||{})[m.id];
+    let r=hand&&p.tr.includes(hand)?hand:null;
+    if(!r&&p.tr.length) r=[...p.tr].sort((a,b)=>(resTel[a]-resTel[b])||(beurt[a]-beurt[b])||((hash(a+m.id)%97)-(hash(b+m.id)%97)))[0];
+    p.res=r||null; p.resHand=!!(hand&&r===hand); if(r&&r in resTel) resTel[r]++;
+  });
   return P;
 }
 let PLAN={};
@@ -443,7 +453,7 @@ function herbereken(){ bouw(); PLAN=maakPlan(); }
 
 function speeltijd(){
   const mpb=minPerBeurt(), r={};
-  veld().forEach(p=>r[p.id]={id:p.id,naam:p.naam,pos:p.pos,gesp:0,gepl:0,wGesp:0,wGepl:0,trib:0,afw:0});
+  veld().forEach(p=>r[p.id]={id:p.id,naam:p.naam,pos:p.pos,gesp:0,gepl:0,wGesp:0,wGepl:0,trib:0,res:0,afw:0});
   RW.forEach(m=>{
     const p=PLAN[m.id]; if(!p) return;
     const gespeeld=!!S.uitslagen[m.id];
@@ -451,6 +461,7 @@ function speeltijd(){
       if(gespeeld){r[id].gesp+=mpb;} else {r[id].gepl+=mpb;} });
     new Set([...p.t1,...p.t2].filter(Boolean)).forEach(id=>{ if(!r[id])return; gespeeld?r[id].wGesp++:r[id].wGepl++; });
     p.tr.forEach(id=>{ if(r[id]) r[id].trib++; });
+    if(p.res&&r[p.res]) r[p.res].res++;
     veld().forEach(s=>{ if(!aanwezig(s.id,m)) r[s.id].afw++; });
   });
   return Object.values(r);
@@ -547,7 +558,7 @@ function viewSpeeltijd(){
     <div class="pl"><span class="n">${esc(x.naam)}</span>
       <div class="bar"><i class="g" style="width:${x.gesp/max*100}%"></i><i class="p" style="width:${x.gepl/max*100}%"></i></div>
       <span class="m">${tot(x)}'</span>
-      <span class="sub">${x.gesp}' gespeeld · ${x.gepl}' gepland · ${x.wGesp+x.wGepl} wedstr. · ${x.trib}× tribune${x.afw?` · ${x.afw}× afwezig`:""}</span></div>`).join("")}</div>`;
+      <span class="sub">${x.gesp}' gespeeld · ${x.gepl}' gepland · ${x.wGesp+x.wGepl} wedstr. · ${x.trib}× tribune${x.res?` (${x.res}× reserve)`:""}${x.afw?` · ${x.afw}× afwezig`:""}</span></div>`).join("")}</div>`;
   return `<div class="stats"><div><b>${Math.round(gem)}'</b><span>gemiddeld</span></div><div><b>${Math.min(...tots)}–${Math.max(...tots)}'</b><span>laagste – hoogste</span></div><div><b>${mpb}'</b><span>per wedstrijd</span></div></div>
   <div class="legend" style="padding:4px 4px 0"><span><i style="background:var(--or)"></i>gespeeld</span><span><i style="background:var(--lb)"></i>gepland</span></div>
   ${groep("Verdediging",r.filter(x=>x.pos==="V"))}${groep("Middenveld / aanval",r.filter(x=>x.pos!=="V"))}
@@ -634,8 +645,9 @@ function viewWedstrijd(id){
   if(p.vast&&!u) h+=`<div class="warn">Handmatig aangepast. Deze opstelling blijft staan bij herberekenen.</div>`;
   if(RUIL) h+=`<div class="warn">Kies hieronder met wie ${esc(naam(p[RUIL.t][RUIL.i]))} ruilt, of tik op een speelster in het veld.</div>`;
   const ander=TEAMSEL==="t1"?"t2":"t1";
-  h+=`<div class="sec">Tribune</div><div class="card"><div class="chips">${p.tr.length?p.tr.map(x=>`<button class="chip" data-act="ruilmet" data-v="tr:${x}" ${RUIL?"":"disabled"}>${esc(naam(x))}</button>`).join(""):'<span class="muted">Niemand</span>'}
-    ${weg.map(x=>`<span class="chip weg">${esc(naam(x))} · afwezig</span>`).join("")}</div></div>`;
+  h+=`<div class="sec">Tribune</div><div class="card"><div class="chips">${p.tr.length?p.tr.map(x=>`<button class="chip${x===p.res?" res":""}" data-act="trib" data-v="${x}" ${RUIL||ADMIN?"":"disabled"}>${x===p.res?"🩹 ":""}${esc(naam(x))}${x===p.res?" · reserve":""}</button>`).join(""):'<span class="muted">Niemand</span>'}
+    ${weg.map(x=>`<span class="chip weg">${esc(naam(x))} · afwezig</span>`).join("")}</div>
+    ${p.tr.length?`<p class="muted" style="margin:0 12px 10px">${p.res?`<b style="color:var(--tx)">${esc(naam(p.res))}</b> is reserve en valt in bij een blessure. Invallen is bonus en telt niet mee in de speeltijd.`:""}${ADMIN&&!RUIL?" Tik op een andere tribunespeelster om haar reserve te maken.":""}</p>`:""}</div>`;
   if(RUIL) h+=`<div class="sec">Of ruil met team ${ander==="t1"?1:2}</div><div class="card"><div class="chips">${p[ander].filter(Boolean).map((x,i)=>`<button class="chip" data-act="ruilmet" data-v="${ander}:${p[ander].indexOf(x)}">${esc(naam(x))} · ${F.slots[p[ander].indexOf(x)].l}</button>`).join("")}</div></div>`;
   h+=`<div class="sec">Wisselschema</div><div class="card tl">
     <div class="hl">1e helft</div>${seq([1,2,1])}
@@ -684,6 +696,7 @@ document.addEventListener("click",async e=>{
     if(x===""||y===""){ $("sheet").innerHTML=""; await wijzig(keys); return; }
     S.uitslagen[id]=[+x,+y]; keys.push("uitslagen");
     if(PLAN[id]&&!S.opstellingen[id]){ const p=PLAN[id]; S.opstellingen[id]={form:p.form,t1:p.t1,t2:p.t2,tr:p.tr}; keys.push("opstellingen"); }
+    if(PLAN[id]&&PLAN[id].res&&!(S.instellingen.reserve||{})[id]){ S.instellingen.reserve=S.instellingen.reserve||{}; S.instellingen.reserve[id]=PLAN[id].res; }
     $("sheet").innerHTML=""; await wijzig(keys);
   }
   else if(a==="wedorg"){ delete (S.instellingen.wedWijz||{})[d.id]; $("sheet").innerHTML=""; await wijzig(["instellingen"]); }
@@ -705,6 +718,11 @@ document.addEventListener("click",async e=>{
     RUIL={t,i}; render();
   }
   else if(a==="ruilmet"){ if(RUIL) await doeRuil(d.v); }
+  else if(a==="trib"){
+    if(RUIL){ await doeRuil("tr:"+d.v); return; }
+    if(!ADMIN) return;
+    S.instellingen.reserve=S.instellingen.reserve||{}; S.instellingen.reserve[OPEN]=d.v;
+    await wijzig(["instellingen"],()=>`${naam(d.v)} is reserve`); }
   else if(a==="vrij"){ delete S.opstellingen[d.id]; delete S.instellingen.perWed[d.id]; await wijzig(["opstellingen","instellingen"]); }
   else if(a==="wform"){
     const p=PLAN[OPEN]; S.instellingen.perWed[OPEN]=d.v;
