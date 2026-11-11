@@ -273,7 +273,7 @@ const keeper=()=>S.speelsters.find(p=>p.pos==="K");
 const naam=id=>(S.speelsters.find(p=>p.id===id)||{naam:"?"}).naam;
 const formVan=m=>S.instellingen.perWed[m.id]||S.instellingen.form;
 // volgorde van de teams per helft: 1e helft begint team 1, 2e helft team 2, steeds om en om
-const start2=()=>S.instellingen.start2||1;   // welk team begint de 2e helft (standaard team 1: meest uitgerust)
+const start2=()=>S.instellingen.start2||(S.instellingen.blok.length%2?2:1);   // 2e helft: even aantal blokken → team 1 (uitgerust), oneven → team 2 (gelijke minuten)
 const volgorde=h=>{ const st=h===1?1:start2(); return S.instellingen.blok.map((_,i)=>i%2?(3-st):st); };
 const minTeam=t=>[1,2].reduce((s,h)=>s+volgorde(h).reduce((x,tt,i)=>x+(tt===t?(+S.instellingen.blok[i]||0):0),0),0);
 const minPerBeurt=()=>S.instellingen.blok.reduce((a,b)=>a+(+b||0),0);
@@ -751,7 +751,7 @@ document.addEventListener("click",async e=>{
     S.speelsters=[...S.speelsters]; await wijzig(["speelsters"],verdeelMelding); }
   else if(a==="start2"){ S.instellingen.start2=+d.v; await wijzig(["instellingen"]); }
   else if(a==="blokplus"||a==="blokmin"){ const b=S.instellingen.blok;
-    if(a==="blokplus"&&b.length<6) b.push(5); if(a==="blokmin"&&b.length>2) b.pop(); await wijzig(["instellingen"]); }
+    if(a==="blokplus"&&b.length<6) b.push(5); if(a==="blokmin"&&b.length>2) b.pop(); delete S.instellingen.start2; await wijzig(["instellingen"]); }
   else if(a==="verdeel"){ Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["opstellingen"],verdeelMelding); }
   else if(a==="wis"){ if(ARM!=="wis"){ARM="wis";render();return;} ARM=null; try{localStorage.removeItem(LS)}catch(_){} location.reload(); }
 });
