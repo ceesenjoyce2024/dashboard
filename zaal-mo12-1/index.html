@@ -552,7 +552,8 @@ function viewSpeelsters(){
     RDAGEN.map(d=>{const st=(S.beschikbaarheid[p.id]||{})[d]||"ja"; const lab=BS.find(b=>b[0]===st)[1];
       const gesp=RW.filter(m=>m.dag===d).every(m=>S.uitslagen[m.id]);
       return `<td><button class="cell ${st}" data-act="besch" data-p="${p.id}" data-d="${d}" ${(!ADMIN||gesp)?"disabled":""}>${lab}</button></td>`}).join("")}</tr>`;
-  const groepen=[["Keeper",S.speelsters.filter(p=>p.pos==="K")],["Verdediging",S.speelsters.filter(p=>p.pos==="V")],["Middenveld / aanval",S.speelsters.filter(p=>["M","A","MA"].includes(p.pos))]];
+  const abc=l=>l.sort((a,b)=>a.naam.localeCompare(b.naam,"nl"));
+  const groepen=[["Keeper",abc(S.speelsters.filter(p=>p.pos==="K"))],["Verdediging",abc(S.speelsters.filter(p=>p.pos==="V"))],["Middenveld / aanval",abc(S.speelsters.filter(p=>["M","A","MA"].includes(p.pos)))]];
   return `<div class="sec">Aanwezigheid per speeldag</div>
   <div class="card grid"><table><thead><tr><th>Speelster</th>${dagLab}</tr></thead><tbody>${
     groepen.map(([g,ps])=>ps.length?`<tr><td colspan="${RDAGEN.length+1}" class="muted" style="padding-top:12px">${g}</td></tr>`+ps.map(rij).join(""):"").join("")
@@ -632,7 +633,7 @@ function viewInstellingen(){
   </div>
   <div class="sec">Speelsters</div>
   <p class="muted" style="margin:-2px 4px 8px">★ = voorrang: valt er binnen een linie een wedstrijd extra te verdelen, dan krijgt zij die het eerst. Gelijk verdelen gaat altijd voor.</p>
-  <div class="card">${S.speelsters.map(p=>`<div class="sw"><input class="in" value="${esc(p.naam)}" data-act="pnaam" data-p="${p.id}" ${dis} style="flex:1">
+  <div class="card">${[...S.speelsters].sort((a,b)=>({K:0,V:1}[a.pos]??2)-({K:0,V:1}[b.pos]??2)||a.naam.localeCompare(b.naam,"nl")).map(p=>`<div class="sw"><input class="in" value="${esc(p.naam)}" data-act="pnaam" data-p="${p.id}" ${dis} style="flex:1">
     <select class="in" data-act="ppos" data-p="${p.id}" ${dis} style="flex:1.15;padding-right:4px">${[["K","Keeper"],["V","Verdediger"],["M","Middenveld"],["A","Aanval"],["MA","Mid/aanval"]].map(([k,l])=>`<option value="${k}" ${p.pos===k?"selected":""}>${l}</option>`).join("")}</select>${p.pos==="K"?'<span style="width:36px;flex:none"></span>':`<button class="pvr${p.voorrang?" on":""}" data-act="pvr" data-p="${p.id}" ${dis} aria-label="Voorrang">${p.voorrang?"★":"☆"}</button>`}</div>`).join("")}
     ${ADMIN?`<div class="sw"><input class="in" id="nieuw" placeholder="Naam nieuwe speelster" style="max-width:200px"><button class="btn sec2 sm" data-act="padd">+ Toevoegen</button></div>`:""}</div>
   ${ADMIN?`<div class="sec">Opnieuw verdelen</div><div class="card pad"><p class="muted" style="margin:0 0 10px">Zet alle handmatige wijzigingen in nog niet gespeelde wedstrijden terug naar de automatische verdeling.</p><button class="btn sec2 sm" data-act="reset">${ARM==="reset"?"Zeker? Tik nogmaals":"Alles opnieuw berekenen"}</button>${LIVE?"":` <button class="btn sec2 sm" data-act="wis">${ARM==="wis"?"Zeker? Tik nogmaals":"Voorbeeld wissen"}</button>`}</div>`:""}`;
