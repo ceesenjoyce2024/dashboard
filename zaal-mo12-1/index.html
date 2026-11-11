@@ -108,6 +108,13 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 .ksel{appearance:none;-webkit-appearance:none;border:0;border-radius:999px;padding:6px 30px 6px 14px;font:inherit;font-size:16px;font-weight:600;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ffffff' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 .ksel.kz{background-color:rgba(143,198,238,.18);color:var(--lb)}.ksel.kh{background-color:var(--or);color:#fff}.ksel.kl{background-color:var(--card2);color:var(--mut)}.ksel:disabled{opacity:.55}
 .pvr{width:36px;height:36px;flex:none;border:0;border-radius:10px;background:var(--card2);color:var(--mut);font-size:19px}.pvr.on{color:var(--or2);background:rgba(255,107,26,.15)}
+.lnk{border:0;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline;text-decoration-color:#ffffff40;text-underline-offset:3px}
+.sprow{display:grid;grid-template-columns:62px 1fr auto 14px;gap:10px;align-items:center;padding:11px 12px;border:0;background:none;width:100%;text-align:left}
+.sprow+.sprow{border-top:1px solid var(--line)}
+.sprow .dt{font-size:13px;color:var(--mut);line-height:1.25}.sprow .dt b{display:block;color:var(--tx);font-size:14px}
+.st1,.st2,.sttr,.stres,.stweg{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.st1{background:var(--lb);color:var(--navy)}.st2{background:var(--or);color:#fff}.sttr{background:var(--card2);color:var(--mut)}
+.stres{background:rgba(255,107,26,.18);color:var(--or2);box-shadow:inset 0 0 0 1.5px var(--or)}.stweg{background:rgba(255,92,92,.14);color:var(--bad)}
 .chip.kz{background:rgba(143,198,238,.15);color:var(--lb)}.chip.kh{background:var(--or);color:#fff}.chip.kl{background:var(--card2);color:var(--mut)}
 .chip.res{background:rgba(255,107,26,.18);color:var(--or2);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--or)}
 .chip.weg{color:var(--bad);background:rgba(255,92,92,.12)}
@@ -478,7 +485,7 @@ const $=id=>document.getElementById(id);
 const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const badge=k=>`<span class="badge${k===WIJ?" r":""}">${TEAMS[k].k}</span>`;
 const tnaam=k=>`${TEAMS[k].n} zMO12-1`;
-let ARM=null, TAB="programma", OPEN=null, TEAMSEL="t1", ALLEEN_WIJ=false, RUIL=null;
+let ARM=null, TAB="programma", OPEN=null, OPENSP=null, TEAMSEL="t1", ALLEEN_WIJ=false, RUIL=null;
 
 const ICON={
   programma:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
@@ -499,6 +506,7 @@ function render(){
   renderNav(); renderBanner();
   const v=$("view");
   if(OPEN){ v.innerHTML=viewWedstrijd(OPEN); return; }
+  if(OPENSP){ v.innerHTML=viewSpeelster(OPENSP); return; }
   v.innerHTML={programma:viewProgramma,stand:viewStand,speelsters:viewSpeelsters,speeltijd:viewSpeeltijd,instellingen:viewInstellingen}[TAB]();
 }
 
@@ -540,7 +548,7 @@ function viewStand(){
 const BS=[["ja","✓"],["nee","✗"],["w1","1e"],["w2","2e"]];
 function viewSpeelsters(){
   const dagLab=RDAGEN.map(d=>`<th>${fdat(d)}</th>`).join("");
-  const rij=p=>`<tr><td class="nm">${esc(p.naam)}<span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos}</span></td>${
+  const rij=p=>`<tr><td class="nm"><button class="lnk" data-act="sp" data-p="${p.id}">${esc(p.naam)}</button><span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos}</span></td>${
     RDAGEN.map(d=>{const st=(S.beschikbaarheid[p.id]||{})[d]||"ja"; const lab=BS.find(b=>b[0]===st)[1];
       const gesp=RW.filter(m=>m.dag===d).every(m=>S.uitslagen[m.id]);
       return `<td><button class="cell ${st}" data-act="besch" data-p="${p.id}" data-d="${d}" ${(!ADMIN||gesp)?"disabled":""}>${lab}</button></td>`}).join("")}</tr>`;
@@ -559,7 +567,7 @@ function viewSpeeltijd(){
   const tot=x=>x.gesp+x.gepl, max=Math.max(...r.map(tot),1);
   const tots=r.map(tot), gem=tots.reduce((a,b)=>a+b,0)/r.length;
   const groep=(t,ps)=>`<div class="sec">${t}</div><div class="card">${ps.sort((a,b)=>tot(b)-tot(a)||a.naam.localeCompare(b.naam)).map(x=>`
-    <div class="pl"><span class="n">${esc(x.naam)}</span>
+    <div class="pl" data-act="sp" data-p="${x.id}" style="cursor:pointer"><span class="n">${esc(x.naam)} <span class="muted">›</span></span>
       <div class="bar"><i class="g" style="width:${x.gesp/max*100}%"></i><i class="p" style="width:${x.gepl/max*100}%"></i></div>
       <span class="m">${tot(x)}'</span>
       <span class="sub">${x.gesp}' gespeeld · ${x.gepl}' gepland · ${x.wGesp+x.wGepl} wedstr. · ${x.trib}× tribune${x.res?` (${x.res}× reserve)`:""}${x.afw?` · ${x.afw}× afwezig`:""}</span></div>`).join("")}</div>`;
@@ -567,6 +575,32 @@ function viewSpeeltijd(){
   <div class="legend" style="padding:4px 4px 0"><span><i style="background:var(--or)"></i>gespeeld</span><span><i style="background:var(--lb)"></i>gepland</span></div>
   ${groep("Verdediging",r.filter(x=>x.pos==="V"))}${groep("Middenveld / aanval",r.filter(x=>x.pos!=="V"))}
   <p class="muted" style="margin:10px 4px">Keeper ${esc((keeper()||{}).naam||"")} speelt alle wedstrijden en telt hier niet mee. Een wedstrijd is gespeeld zodra de uitslag is ingevuld.</p>`;
+}
+
+/* ---------- Speelster ---------- */
+function viewSpeelster(id){
+  const sp=S.speelsters.find(p=>p.id===id); if(!sp) return "";
+  const st=speeltijd().find(x=>x.id===id);
+  const posNm={K:"Keeper",V:"Verdediging",M:"Middenveld",A:"Aanval",MA:"Middenveld / aanval"}[sp.pos]||sp.pos;
+  let h=`<button class="back" data-act="terug">‹ Terug</button>
+  <div class="mhead" style="text-align:center"><div style="font-size:22px;font-weight:800">${esc(sp.naam)}${sp.voorrang?' <span style="color:var(--or2)">★</span>':""}</div><div class="muted">${posNm}</div></div>`;
+  if(st) h+=`<div class="stats"><div><b>${st.gesp+st.gepl}'</b><span>${st.gesp}' gespeeld</span></div><div><b>${st.wGesp+st.wGepl}</b><span>wedstrijden</span></div><div><b>${st.trib}×</b><span>tribune</span></div></div>`;
+  else h+=`<p class="muted" style="text-align:center">Speelt alle wedstrijden als keeper.</p>`;
+  h+=`<div class="sec">Wedstrijden</div><div class="card">`+RW.map(m=>{
+    const p=PLAN[m.id]; let lab='<span class="stweg">Afwezig</span>';
+    if(p){ const i1=p.t1.indexOf(id), i2=p.t2.indexOf(id), F=FORM[p.form];
+      if(sp.pos==="K") lab=aanwezig(id,m)?'<span class="st1" style="background:#b8e07a;color:#1d2a0c">Keeper</span>':lab;
+      else if(i1>=0&&i2>=0) lab=`<span class="st1">Team 1 · ${F.slots[i1].l}</span> <span class="st2">Team 2 · ${F.slots[i2].l}</span>`;
+      else if(i1>=0) lab=`<span class="st1">Team 1 · ${F.slots[i1].l}</span>`;
+      else if(i2>=0) lab=`<span class="st2">Team 2 · ${F.slots[i2].l}</span>`;
+      else if(p.res===id) lab='<span class="stres">🩹 Reserve</span>';
+      else if(p.tr.includes(id)) lab='<span class="sttr">Tribune</span>'; }
+    const u=S.uitslagen[m.id];
+    return `<button class="sprow" data-act="open" data-id="${m.id}"><span class="dt"><b>${fdat(m.datum)}</b>${m.t}</span>
+      <span style="font-size:14px">${m.h===WIJ?"vs":"@"} ${TEAMS[tegen(m)].n}${u?` <span class="muted">${u[0]}–${u[1]}</span>`:""}</span>${lab}<span class="muted">›</span></button>`;
+  }).join("")+`</div>
+  <p class="muted" style="margin:10px 4px">Tik op een wedstrijd voor de opstelling. Team 1 lichtblauw, team 2 oranje.</p>`;
+  return h;
 }
 
 /* ---------- Instellingen ---------- */
@@ -658,7 +692,7 @@ function viewWedstrijd(id){
   h+=`<div class="sec">Wisselschema</div><div class="card tl">
     <div class="hl">1e helft</div>${seq(volgorde(1))}
     <div class="hl">2e helft</div>${seq(volgorde(2))}
-    <p class="muted" style="margin:10px 0 0">Team 1: ${p.t1.filter(Boolean).map(naam).join(", ")}<br>Team 2: ${p.t2.filter(Boolean).map(naam).join(", ")}</p></div>`;
+    <p class="muted" style="margin:10px 0 0">Team 1: ${p.t1.filter(Boolean).map(x=>`<button class="lnk" data-act="sp" data-p="${x}">${esc(naam(x))}</button>`).join(", ")}<br>Team 2: ${p.t2.filter(Boolean).map(x=>`<button class="lnk" data-act="sp" data-p="${x}">${esc(naam(x))}</button>`).join(", ")}</p></div>`;
   if(ADMIN) h+=`<p class="muted" style="margin:10px 4px">${u?"Klopt de opstelling niet met wie er echt gespeeld heeft? Tik op een speelster om te corrigeren; de speeltijd en de wedstrijden erna worden aangepast.":"Tik op een speelster in het veld om te ruilen. Die wedstrijd wordt daarna vastgezet; de wedstrijden erna worden opnieuw verdeeld."}</p>`;
   return h;
 }
@@ -685,11 +719,12 @@ function spreiding(){ const r=speeltijd().map(x=>x.wGesp+x.wGepl); return {min:M
 const verdeelMelding=()=>{ const sp=spreiding(); return `Opnieuw verdeeld · ${sp.min}–${sp.max} wedstrijden per speelster`; };
 document.addEventListener("click",async e=>{
   const el=e.target.closest("[data-tab],[data-act]"); if(!el) return;
-  if(el.dataset.tab){ TAB=el.dataset.tab; OPEN=null; RUIL=null; render(); window.scrollTo(0,0); return; }
+  if(el.dataset.tab){ naarTab(el.dataset.tab); return; }
   const a=el.dataset.act, d=el.dataset;
   if(a==="filter"){ ALLEEN_WIJ=d.v==="1"; render(); }
-  else if(a==="open"){ OPEN=d.id; TEAMSEL="t1"; RUIL=null; render(); window.scrollTo(0,0); }
-  else if(a==="terug"){ OPEN=null; RUIL=null; render(); window.scrollTo(0,0); }
+  else if(a==="open"){ ga("w-"+d.id); }
+  else if(a==="sp"){ ga("s-"+d.p); }
+  else if(a==="terug"){ terug(); }
   else if(a==="team"){ TEAMSEL=d.v; render(); }
   else if(a==="score"){ if(ADMIN) sheetScore(d.id); }
   else if(a==="sluit"){ if(e.target===el) $("sheet").innerHTML=""; }
@@ -773,7 +808,21 @@ async function doeRuil(doel){
   S.opstellingen[OPEN]=v; RUIL=null; await wijzig(["opstellingen"]);
 }
 
-(async()=>{ await laad(); herbereken(); render(); })();
+/* ---------- Navigatie via #hash: browser-terug en iPhone-veegbeweging werken ---------- */
+function leesHash(){
+  const h=decodeURIComponent(location.hash.slice(1));
+  OPEN=null; OPENSP=null; RUIL=null;
+  if(h.startsWith("w-")&&RW.some(m=>m.id===h.slice(2))){ OPEN=h.slice(2); TEAMSEL="t1"; }
+  else if(h.startsWith("s-")&&S.speelsters.some(p=>p.id===h.slice(2))){ OPENSP=h.slice(2); }
+  else if(TABS.some(t=>t[0]===h)){ TAB=h; }
+}
+const diepte=()=>(history.state&&history.state.d)||0;
+function toon(){ leesHash(); render(); window.scrollTo(0,0); }
+function ga(h){ if(location.hash.slice(1)===h) return; history.pushState({d:diepte()+1},"","#"+h); toon(); }
+function naarTab(t){ history.replaceState({d:0},"","#"+t); toon(); }
+function terug(){ if(diepte()>0) history.back(); else naarTab(TAB); }
+window.addEventListener("popstate",toon);
+(async()=>{ await laad(); herbereken(); leesHash(); render(); })();
 </script>
 </body>
 </html>
