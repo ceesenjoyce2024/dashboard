@@ -494,7 +494,7 @@ const ICON={
   speeltijd:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>',
   instellingen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></svg>'
 };
-const TABS=[["programma","Programma"],["stand","Stand"],["speelsters","Speelsters"],["speeltijd","Speeltijd"],["instellingen","Opties"]];
+const TABS=[["programma","Programma"],["stand","Stand"],["speelsters","Speelsters"],["speeltijd","Speeltijd"],["instellingen","Instellingen"]];
 function renderNav(){
   $("nav").innerHTML=TABS.map(([k,l])=>`<button class="${TAB===k?"on":""}" data-tab="${k}">${ICON[k]}${l}</button>`).join("");
 }
@@ -614,7 +614,7 @@ function viewInstellingen(){
   <div class="card" style="margin-top:12px">
     <div class="sw"><div>Middenveld en aanval samen<small>Aan: M/A-speelsters wisselen vrij tussen middenveld en aanval. Uit: iedereen speelt op haar eigen linie (M of A).</small></div><button class="tg ${I.maSamen?"on":""}" data-act="masamen" ${dis}></button></div>
   </div>
-  <div class="sec">Samen / niet samen in één team</div>
+  ${ADMIN?`  <div class="sec">Samen / niet samen in één team</div>
   ${koppels().map((k,i)=>{const sam=kType(k)==="samen";
     const opties=sam?[["zacht","Als het kan"],["hard","Verplicht"],["los","Los"]]:[["zacht","Niet samen"],["los","Los"]];
     return `<div class="card" style="margin-bottom:10px"><div class="sw"><div><b>${esc(naam(k.a))} &amp; ${esc(naam(k.b))}</b><small>${sam?"Samen in één team":"Niet in hetzelfde team"}</small></div>${ADMIN?`<button class="btn sec2 sm" data-act="kdel" data-k="${i}">Verwijder</button>`:""}</div>
@@ -622,6 +622,7 @@ function viewInstellingen(){
       return `<tr><td class="nm" style="font-weight:500">${fdat(m.datum)} · ${TEAMS[tegen(m)].n}</td><td style="text-align:right;padding-right:12px"><select class="ksel ${md==="hard"?"kh":md==="los"?"kl":"kz"}" data-act="kmode" data-k="${i}" data-w="${m.id}" ${(!ADMIN||gesp)?"disabled":""}>${opties.map(([v,l])=>`<option value="${v}" ${v===md?"selected":""}>${l}</option>`).join("")}</select></td></tr>`}).join("")}</tbody></table></div></div>`}).join("")||'<div class="card"><div class="sw muted">Nog geen koppels</div></div>'}
   ${ADMIN?`<div class="card pad"><div class="flex" style="flex-wrap:nowrap"><select class="in" id="kA">${veld().map(p=>`<option value="${p.id}">${esc(p.naam)}</option>`).join("")}</select><select class="in" id="kB">${veld().map((p,i)=>`<option value="${p.id}" ${i===1?"selected":""}>${esc(p.naam)}</option>`).join("")}</select></div>
     <div class="flex" style="margin-top:8px;flex-wrap:nowrap"><select class="in" id="kT"><option value="samen">Samen in één team</option><option value="apart">Niet samen</option></select><button class="btn sm" data-act="kadd">Toevoegen</button></div></div>`:""}
+`:""}
   <div class="card pad" style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><b>Verdeling nu</b><div class="muted">${(()=>{const sp=spreiding();return `${sp.min}–${sp.max} wedstrijden per speelster`})()}</div></div>${ADMIN?`<button class="btn sm" data-act="verdeel" style="white-space:nowrap;flex:none">Opnieuw verdelen</button>`:""}</div>
   <p class="muted" style="margin:10px 0 0">Een keuze hierboven wordt meteen meegenomen. <i>Opnieuw verdelen</i> zet daarnaast handmatige ruilen in nog niet gespeelde wedstrijden terug, zodat alles vanaf nul eerlijk wordt verdeeld. <i>Los</i> = geen voorwaarde voor die wedstrijd.</p></div>
   <div class="sec">Wisselblokken per helft</div>
@@ -675,7 +676,7 @@ function viewWedstrijd(id){
   </div>`;
   if(ADMIN) h+=`<div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${p.form===k?"on":""}" data-act="wform" data-v="${k}">${f.naam}</button>`).join("")}</div>`;
   else h+=`<p class="muted" style="text-align:center;margin:12px 0 0">Opstelling: ${F.naam}</p>`;
-  { const kl=koppels().filter(k=>kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m)).map(k=>`${esc(naam(k.a))} &amp; ${esc(naam(k.b))} ${kType(k)==="apart"?"niet samen":kMode(k,m)==="hard"?"samen (verplicht)":"samen"}`);
+  if(ADMIN){ const kl=koppels().filter(k=>kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m)).map(k=>`${esc(naam(k.a))} &amp; ${esc(naam(k.b))} ${kType(k)==="apart"?"niet samen":kMode(k,m)==="hard"?"samen (verplicht)":"samen"}`);
     if(kl.length) h+=`<p class="muted" style="text-align:center;margin:8px 0 0">${kl.join(" · ")}</p>`; }
   h+=`<div class="seg ${TEAMSEL}"><button class="b1 ${TEAMSEL==="t1"?"on":""}" data-act="team" data-v="t1">Team 1 · start</button><button class="b2 ${TEAMSEL==="t2"?"on":""}" data-act="team" data-v="t2">Team 2</button></div>
   <div class="court">${courtSVG()}
