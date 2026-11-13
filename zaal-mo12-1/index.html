@@ -909,7 +909,7 @@ async function haalOpnieuw(){
     S.instellingen={form:CFG.standaard.form,maSamen:true,blok:[...CFG.standaard.blok],perWed:{},wedWijz:{},...S.instellingen};
     if(sig()===voor) return;                       // eigen wijziging of niets nieuws
     if(bezig()){ LIVE_WACHT=true; liveTimer=setTimeout(haalOpnieuw,1500); return; }
-    herbereken(); render(); toast("Bijgewerkt door een ander");
+    herbereken(); render(); toast("Bijgewerkt");
   }catch(e){}
 }
 function startLive(){
