@@ -536,6 +536,13 @@ function maakPlan(){
     for(const t of ["t1","t2"]) p[t].forEach((y,i)=>{ if(y&&!dub.includes(y)&&!past(spl(y),grp(i))) fl.add(y); });
     p.flex=[...fl];
   }
+  // 3b. vangnet: niemand in team 1 én team 2 zolang er nog iemand op de tribune zit
+  open.forEach(m=>{ const p=P[m.id], F=FORM[p.form];
+    p.t2.forEach((x,i)=>{ if(!x||!p.t1.includes(x)||!p.tr.length) return;
+      const g=slotGroep(F.slots[i].g), kand=[...p.tr].sort((a,b)=>(past(spl(b),g)-past(spl(a),g))||(beurt[a]-beurt[b]));
+      const y=kand[0]; p.t2[i]=y; p.tr=p.tr.filter(z=>z!==y); beurt[y]++; });
+    p.dubbel=(p.dubbel||[]).filter(x=>p.t1.includes(x)&&p.t2.includes(x));
+  });
   // 4. reserve per wedstrijd: één tribunespeelster die kan invallen bij een blessure (telt niet mee in speeltijd).
   //    Automatisch: wie het minst vaak reserve was, daarna wie het minst speelt. Handmatige keuze in instellingen.reserve.
   const resTel={}; spelers.forEach(p=>resTel[p.id]=0);
