@@ -65,7 +65,7 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 .grid td{padding:4px 1px;text-align:center;border-top:1px solid var(--line)}
 .grid td.nm{font-weight:600;font-size:13.5px;white-space:nowrap}
 .pos{display:inline-block;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;margin-left:4px;vertical-align:1px}
-.pos.V{background:#13385f;color:var(--lb)}.pos.M,.pos.A,.pos.MA{background:#4a2410;color:var(--or2)}.pos.K{background:#2d3a1a;color:#b8e07a}.pos.VMA{background:#2e2a52;color:#c9c2ff}
+.pos.V{background:#13385f;color:var(--lb)}.pos.M,.pos.A,.pos.MA{background:#4a2410;color:var(--or2)}.pos.K{background:#2d3a1a;color:#b8e07a}.pos.VMA{background:#2e2a52;color:#c9c2ff}.pos.INV{background:#3a3a3a;color:#ddd}
 .cell{width:32px;height:30px;border-radius:9px;border:0;font-size:12px;font-weight:700}
 .cell.ja{background:rgba(60,207,122,.16);color:var(--ok)}
 .cell.nee{background:rgba(255,92,92,.16);color:var(--bad)}
@@ -336,8 +336,11 @@ const start2=()=>S.instellingen.start2||(S.instellingen.blok.length%2?2:1);   //
 const volgorde=h=>{ const st=h===1?1:start2(); return S.instellingen.blok.map((_,i)=>i%2?(3-st):st); };
 const minTeam=t=>[1,2].reduce((s,h)=>s+volgorde(h).reduce((x,tt,i)=>x+(tt===t?(+S.instellingen.blok[i]||0):0),0),0);
 const minPerBeurt=()=>S.instellingen.blok.reduce((a,b)=>a+(+b||0),0);
+// invallers: extra spelers die alleen meedoen op dagen waar ze expliciet op aanwezig staan
+const isInv=id=>!!(S.speelsters.find(p=>p.id===id)||{}).invaller;
 function aanwezig(pid,m){
   const s=(S.beschikbaarheid[pid]||{})[m.dag];
+  if(!s&&isInv(pid)) return false;
   if(s==="nee") return false;
   if(s==="w1") return m.ihDag===0;
   if(s==="w2") return m.ihDag===1;
@@ -383,7 +386,7 @@ function maakPlan(){
     beschik.forEach(p=>{ const later=open.slice(oi+1).filter(x=>aanwezig(p.id,x)); moet[p.id]=later.filter(x=>verplicht(p.id,x)).length; toekomst[p.id]=later.length-moet[p.id]; });
     const zus=RW.find(x=>x.dag===m.dag&&x!==m&&x.ihDag<m.ihDag);   // eerdere wedstrijd zelfde dag
     const zatZus=id=>zus&&P[zus.id]&&P[zus.id].tr.includes(id);
-    const score=p=>beurt[p.id]+moet[p.id]+gem*toekomst[p.id]-(zatZus(p.id)?0.6:0)-(p.voorrang?0.3:0)-(moetHier(p.id,m)?50:0)+(hash(p.id+m.id)%100)/1000;
+    const score=p=>beurt[p.id]+moet[p.id]+gem*toekomst[p.id]-(zatZus(p.id)?0.6:0)-(p.voorrang?0.3:0)-(moetHier(p.id,m)?50:0)+(p.invaller?100:0)+(hash(p.id+m.id)%100)/1000;
     const F=FORM[formVan(m)], nodig={};
     F.slots.forEach(s=>{const g=slotGroep(s.g); nodig[g]=(nodig[g]||0)+2;});
     const gekozen={}, flex=[];
@@ -473,7 +476,7 @@ function maakPlan(){
       // a) losse speelsters
       for(const t of ["t1","t2"]) for(let i=0;i<5;i++){
         const x=p[t][i]; if(!x||p.dubbel.includes(x)||verplicht(x,m)) continue;
-        const kand=p.tr.filter(y=>past(spl(y),grp(i))&&(beurt[x]-beurt[y]>=((koppelActief(x,m)||koppelActief(y,m))?3:2)||(beurt[x]-beurt[y]===1&&extraEerst(y,x)&&!koppelActief(x,m)&&!koppelActief(y,m)))&&apartOK(p[t],y,x))
+        const kand=p.tr.filter(y=>past(spl(y),grp(i))&&!spl(y).invaller&&((spl(x).invaller)||beurt[x]-beurt[y]>=((koppelActief(x,m)||koppelActief(y,m))?3:2)||(beurt[x]-beurt[y]===1&&extraEerst(y,x)&&!koppelActief(x,m)&&!koppelActief(y,m)))&&apartOK(p[t],y,x))
           .sort((a,b)=>beurt[a]-beurt[b]);
         for(const y of kand){
           const xZitAl=zus&&P[zus.id]&&P[zus.id].tr.includes(x);
@@ -488,7 +491,7 @@ function maakPlan(){
         for(const tj of ["t1","t2"]) { if(klaar) break; for(let j=0;j<5;j++){
           if(ti===tj&&i===j) continue; const v=p[tj][j];
           if(!v||p.dubbel.includes(v)||koppelActief(v,m)||!past(spl(v),grp(i))||grp(i)===grp(j)) continue;
-          const z=p.tr.filter(y=>!koppelActief(y,m)&&past(spl(y),grp(j))&&(beurt[x]-beurt[y]>=2||(beurt[x]-beurt[y]===1&&extraEerst(y,x)))&&apartOK(p[tj],y,v)&&apartOK(p[ti],v,x)).sort((a,b)=>beurt[a]-beurt[b])[0];
+          const z=p.tr.filter(y=>!koppelActief(y,m)&&!spl(y).invaller&&past(spl(y),grp(j))&&(beurt[x]-beurt[y]>=2||(beurt[x]-beurt[y]===1&&extraEerst(y,x)))&&apartOK(p[tj],y,v)&&apartOK(p[ti],v,x)).sort((a,b)=>beurt[a]-beurt[b])[0];
           if(!z) continue;
           p[ti][i]=v; p[tj][j]=z; p.tr=p.tr.filter(q=>q!==z).concat(x); beurt[x]--; beurt[z]++; geruild=true; klaar=true; break;
         } }
@@ -499,7 +502,7 @@ function maakPlan(){
         const A=waar(k.a), B=waar(k.b);
         if(A&&B&&!p.dubbel.includes(k.a)&&!p.dubbel.includes(k.b)&&!verplicht(k.a,m)&&!verplicht(k.b,m)){
           // paar eruit, twee tribunespeelsters erin
-          const vrij=p.tr.filter(y=>!koppelActief(y,m));
+          const vrij=p.tr.filter(y=>!koppelActief(y,m)&&!spl(y).invaller);
           const y1=vrij.filter(y=>past(spl(y),grp(A.i))&&beurt[k.a]-beurt[y]>=2&&apartOK(p[A.t],y,k.a)).sort((a,b)=>beurt[a]-beurt[b])[0];
           const y2=vrij.filter(y=>y!==y1&&past(spl(y),grp(B.i))&&beurt[k.b]-beurt[y]>=2&&apartOK(p[B.t],y,k.b)).sort((a,b)=>beurt[a]-beurt[b])[0];
           if(y1&&y2){ p[A.t][A.i]=y1; p[B.t][B.i]=y2; p.tr=p.tr.filter(z=>z!==y1&&z!==y2).concat(k.a,k.b);
@@ -539,7 +542,7 @@ function maakPlan(){
   // 3b. vangnet: niemand in team 1 én team 2 zolang er nog iemand op de tribune zit
   open.forEach(m=>{ const p=P[m.id], F=FORM[p.form];
     p.t2.forEach((x,i)=>{ if(!x||!p.t1.includes(x)||!p.tr.length) return;
-      const g=slotGroep(F.slots[i].g), kand=[...p.tr].sort((a,b)=>(past(spl(b),g)-past(spl(a),g))||(beurt[a]-beurt[b]));
+      const g=slotGroep(F.slots[i].g), kand=[...p.tr].sort((a,b)=>(!!spl(a).invaller-!!spl(b).invaller)||(past(spl(b),g)-past(spl(a),g))||(beurt[a]-beurt[b]));
       const y=kand[0]; p.t2[i]=y; p.tr=p.tr.filter(z=>z!==y); beurt[y]++; });
     p.dubbel=(p.dubbel||[]).filter(x=>p.t1.includes(x)&&p.t2.includes(x));
   });
@@ -549,7 +552,7 @@ function maakPlan(){
   RW.forEach(m=>{ const p=P[m.id]; if(!p) return;
     const hand=(S.instellingen.reserve||{})[m.id];
     let r=hand&&p.tr.includes(hand)?hand:null;
-    if(!r&&p.tr.length) r=[...p.tr].sort((a,b)=>(resTel[a]-resTel[b])||(beurt[a]-beurt[b])||((hash(a+m.id)%97)-(hash(b+m.id)%97)))[0];
+    if(!r&&p.tr.length) r=[...p.tr].sort((a,b)=>(isInv(a)-isInv(b))||(resTel[a]-resTel[b])||(beurt[a]-beurt[b])||((hash(a+m.id)%97)-(hash(b+m.id)%97)))[0];
     p.res=r||null; p.resHand=!!(hand&&r===hand); if(r&&r in resTel) resTel[r]++;
   });
   return P;
@@ -646,12 +649,12 @@ function viewStand(){
 const BS=[["ja","✓"],["nee","✗"],["w1","1e"],["w2","2e"]];
 function viewSpeelsters(){
   const dagLab=RDAGEN.map(d=>`<th>${fdat(d)}</th>`).join("");
-  const rij=p=>`<tr><td class="nm"><button class="lnk" data-act="sp" data-p="${p.id}">${esc(p.naam)}</button><span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos==="VMA"?"V/M/A":p.pos}</span></td>${
-    RDAGEN.map(d=>{const st=(S.beschikbaarheid[p.id]||{})[d]||"ja"; const lab=BS.find(b=>b[0]===st)[1];
+  const rij=p=>`<tr><td class="nm"><button class="lnk" data-act="sp" data-p="${p.id}">${esc(p.naam)}</button><span class="pos ${p.invaller?"INV":p.pos}">${p.invaller?"inv":p.pos==="MA"?"M/A":p.pos==="VMA"?"V/M/A":p.pos}</span></td>${
+    RDAGEN.map(d=>{const st=(S.beschikbaarheid[p.id]||{})[d]||(p.invaller?"nee":"ja"); const lab=BS.find(b=>b[0]===st)[1];
       const gesp=RW.filter(m=>m.dag===d).every(m=>S.uitslagen[m.id]);
       return `<td><button class="cell ${st}" data-act="besch" data-p="${p.id}" data-d="${d}" ${(!EDIT||gesp)?"disabled":""}>${lab}</button></td>`}).join("")}</tr>`;
   const abc=l=>l.sort((a,b)=>a.naam.localeCompare(b.naam,"nl"));
-  const groepen=[["Keeper",abc(S.speelsters.filter(p=>p.pos==="K"))],["Verdediging",abc(S.speelsters.filter(p=>p.pos==="V"))],["Middenveld / aanval",abc(S.speelsters.filter(p=>["M","A","MA"].includes(p.pos)))],["Overal inzetbaar",abc(S.speelsters.filter(p=>p.pos==="VMA"))]];
+  const groepen=[["Keeper",abc(S.speelsters.filter(p=>!p.invaller&&p.pos==="K"))],["Verdediging",abc(S.speelsters.filter(p=>!p.invaller&&p.pos==="V"))],["Middenveld / aanval",abc(S.speelsters.filter(p=>!p.invaller&&["M","A","MA"].includes(p.pos)))],["Overal inzetbaar",abc(S.speelsters.filter(p=>!p.invaller&&p.pos==="VMA"))],["Invallers",abc(S.speelsters.filter(p=>p.invaller))]];
   return `<div class="sec">Aanwezigheid per speeldag</div>
   <div class="card grid"><table><thead><tr><th>${WD.Sp}</th>${dagLab}</tr></thead><tbody>${
     groepen.map(([g,ps])=>ps.length?`<tr><td colspan="${RDAGEN.length+1}" class="muted" style="padding-top:12px">${g}</td></tr>`+ps.map(rij).join(""):"").join("")
@@ -662,17 +665,17 @@ function viewSpeelsters(){
 
 /* ---------- Speeltijd ---------- */
 function viewSpeeltijd(){
-  const r=speeltijd(), mpb=minPerBeurt();
+  const alle=speeltijd(), r=alle.filter(x=>!isInv(x.id)), inv=alle.filter(x=>isInv(x.id)), mpb=minPerBeurt();
   const tot=x=>x.gesp+x.gepl, max=Math.max(...r.map(tot),1);
   const tots=r.map(tot), gem=tots.reduce((a,b)=>a+b,0)/r.length;
-  const groep=(t,ps)=>`<div class="sec">${t}</div><div class="card">${ps.sort((a,b)=>tot(b)-tot(a)||a.naam.localeCompare(b.naam)).map(x=>`
+  const groep=(t,ps)=>!ps.length?"":`<div class="sec">${t}</div><div class="card">${ps.sort((a,b)=>tot(b)-tot(a)||a.naam.localeCompare(b.naam)).map(x=>`
     <div class="pl" data-act="sp" data-p="${x.id}" style="cursor:pointer"><span class="n">${esc(x.naam)} <span class="muted">›</span></span>
       <div class="bar"><i class="g" style="width:${x.gesp/max*100}%"></i><i class="p" style="width:${x.gepl/max*100}%"></i></div>
       <span class="m">${tot(x)}'</span>
       <span class="sub">${x.gesp}' gespeeld · ${x.gepl}' gepland · ${x.wGesp+x.wGepl} wedstr. · ${x.trib}× tribune${x.res?` (${x.res}× reserve)`:""}${x.afw?` · ${x.afw}× afwezig`:""}</span></div>`).join("")}</div>`;
   return `<div class="stats"><div><b>${Math.round(gem)}'</b><span>gemiddeld</span></div><div><b>${Math.min(...tots)}–${Math.max(...tots)}'</b><span>laagste – hoogste</span></div><div><b>${mpb}'</b><span>per wedstrijd</span></div></div>
   <div class="legend" style="padding:4px 4px 0"><span><i style="background:var(--or)"></i>gespeeld</span><span><i style="background:var(--lb)"></i>gepland</span></div>
-  ${groep("Verdediging",r.filter(x=>x.pos==="V"))}${groep("Middenveld / aanval",r.filter(x=>["M","A","MA"].includes(x.pos)))}${r.some(x=>x.pos==="VMA")?groep("Overal inzetbaar",r.filter(x=>x.pos==="VMA")):""}
+  ${groep("Verdediging",r.filter(x=>x.pos==="V"))}${groep("Middenveld / aanval",r.filter(x=>["M","A","MA"].includes(x.pos)))}${r.some(x=>x.pos==="VMA")?groep("Overal inzetbaar",r.filter(x=>x.pos==="VMA")):""}${groep("Invallers",inv)}
   <p class="muted" style="margin:10px 4px">Keeper ${esc((keeper()||{}).naam||"")} speelt alle wedstrijden en telt hier niet mee. Een wedstrijd is gespeeld zodra de uitslag is ingevuld.</p>`;
 }
 
@@ -680,7 +683,7 @@ function viewSpeeltijd(){
 function viewSpeelster(id){
   const sp=S.speelsters.find(p=>p.id===id); if(!sp) return "";
   const st=speeltijd().find(x=>x.id===id);
-  const posNm={K:"Keeper",V:"Verdediging",M:"Middenveld",A:"Aanval",MA:"Middenveld / aanval",VMA:"Verdediging / middenveld / aanval"}[sp.pos]||sp.pos;
+  const posNm=({K:"Keeper",V:"Verdediging",M:"Middenveld",A:"Aanval",MA:"Middenveld / aanval",VMA:"Verdediging / middenveld / aanval"}[sp.pos]||sp.pos)+(sp.invaller?" · invaller":"");
   let h=`<button class="back" data-act="terug"><b>‹</b>Terug</button>
   <div class="mhead" style="text-align:center"><div style="font-size:22px;font-weight:800">${esc(sp.naam)}${sp.voorrang?' <span style="color:var(--or2)">★</span>':""}</div><div class="muted">${posNm}</div></div>`;
   if(st) h+=`<div class="stats"><div><b>${st.gesp+st.gepl}'</b><span>${st.gesp}' gespeeld</span></div><div><b>${st.wGesp+st.wGepl}</b><span>wedstrijden</span></div><div><b>${st.trib}×</b><span>tribune</span></div></div>`;
@@ -743,9 +746,10 @@ function viewInstellingen(){
   </div>
   <div class="sec">${WD.Sps}</div>
   <p class="muted" style="margin:-2px 4px 8px">★ = voorrang: valt er binnen een linie een wedstrijd extra te verdelen, dan krijgt ${WD.zij} die het eerst. Gelijk verdelen gaat altijd voor.</p>
-  <div class="card">${[...S.speelsters].sort((a,b)=>({K:0,V:1,VMA:3}[a.pos]??2)-({K:0,V:1,VMA:3}[b.pos]??2)||a.naam.localeCompare(b.naam,"nl")).map(p=>`<div class="sw"><input class="in" value="${esc(p.naam)}" data-act="pnaam" data-p="${p.id}" ${dis} style="flex:1">
-    <select class="in" data-act="ppos" data-p="${p.id}" ${dis} style="flex:1.15;padding-right:4px">${[["K","Keeper"],["V","Verdediger"],["MA","Mid/aanval"],["VMA","Ver/mid/aanval"],...(p.pos==="M"?[["M","Middenveld"]]:p.pos==="A"?[["A","Aanval"]]:[])].map(([k,l])=>`<option value="${k}" ${p.pos===k?"selected":""}>${l}</option>`).join("")}</select>${p.pos==="K"?'<span style="width:36px;flex:none"></span>':`<button class="pvr${p.voorrang?" on":""}" data-act="pvr" data-p="${p.id}" ${dis} aria-label="Voorrang">${p.voorrang?"★":"☆"}</button>`}</div>`).join("")}
-    ${EDIT?`<div class="sw"><input class="in" id="nieuw" placeholder="Naam nieuwe ${WD.sp}" style="max-width:200px"><button class="btn sec2 sm" data-act="padd">+ Toevoegen</button></div>`:""}</div>
+  <div class="card">${[...S.speelsters].sort((a,b)=>(!!a.invaller-!!b.invaller)||({K:0,V:1,VMA:3}[a.pos]??2)-({K:0,V:1,VMA:3}[b.pos]??2)||a.naam.localeCompare(b.naam,"nl")).map(p=>`<div class="sw"><input class="in" value="${esc(p.naam)}" data-act="pnaam" data-p="${p.id}" ${dis} style="flex:1">
+    <select class="in" data-act="ppos" data-p="${p.id}" ${dis} style="flex:1.15;padding-right:4px">${[["K","Keeper"],["V","Verdediger"],["MA","Mid/aanval"],["VMA","Ver/mid/aanval"],...(p.pos==="M"?[["M","Middenveld"]]:p.pos==="A"?[["A","Aanval"]]:[])].map(([k,l])=>`<option value="${k}" ${p.pos===k?"selected":""}>${l}</option>`).join("")}</select>${p.invaller?`<button class="pvr" data-act="pdel" data-p="${p.id}" ${dis} aria-label="Verwijder invaller" style="font-size:${ARM==="pdel"+p.id?"11px":"16px"};width:${ARM==="pdel"+p.id?"58px":"36px"}">${ARM==="pdel"+p.id?"Zeker?":"✕"}</button>`:p.pos==="K"?'<span style="width:36px;flex:none"></span>':`<button class="pvr${p.voorrang?" on":""}" data-act="pvr" data-p="${p.id}" ${dis} aria-label="Voorrang">${p.voorrang?"★":"☆"}</button>`}</div>`).join("")}
+    ${EDIT?`<div class="sw"><input class="in" id="nieuw" placeholder="Naam nieuwe ${WD.sp}" style="max-width:200px"><button class="btn sec2 sm" data-act="padd" style="white-space:nowrap">+ Vast</button><button class="btn sec2 sm" data-act="padd" data-inv="1" style="white-space:nowrap">+ Invaller</button></div>
+    <div class="sw muted" style="font-size:13px">Een invaller doet alleen mee op dagen waar je ${WD.haar} bij ${WD.Sps} op ✓ zet, en speelt alleen als er anders te weinig zijn.</div>`:""}</div>
   ${EDIT?`<div class="sec">Opnieuw verdelen</div><div class="card pad"><p class="muted" style="margin:0 0 10px">Zet alle handmatige wijzigingen in nog niet gespeelde wedstrijden terug naar de automatische verdeling.</p><button class="btn sec2 sm" data-act="reset">${ARM==="reset"?"Zeker? Tik nogmaals":"Alles opnieuw berekenen"}</button>${LIVE?"":` <button class="btn sec2 sm" data-act="wis">${ARM==="wis"?"Zeker? Tik nogmaals":"Voorbeeld wissen"}</button>`}</div>`:""}`;
 }
 
@@ -823,7 +827,7 @@ function sheetScore(id){
    ACTIES
    ===================================================================== */
 async function wijzig(keys,melding){ herbereken(); render(); await bewaar(...keys); if(melding) toast(melding()); }
-function spreiding(){ const r=speeltijd().map(x=>x.wGesp+x.wGepl); return {min:Math.min(...r),max:Math.max(...r)}; }
+function spreiding(){ const r=speeltijd().filter(x=>!isInv(x.id)).map(x=>x.wGesp+x.wGepl); return {min:Math.min(...r),max:Math.max(...r)}; }
 const verdeelMelding=()=>{ const sp=spreiding(); return `Opnieuw verdeeld · ${sp.min}–${sp.max} wedstrijden per ${WD.sp}`; };
 document.addEventListener("click",async e=>{
   const el=e.target.closest("[data-tab],[data-act]"); if(!el) return;
@@ -851,10 +855,11 @@ document.addEventListener("click",async e=>{
   else if(a==="wedorg"){ delete (S.instellingen.wedWijz||{})[d.id]; $("sheet").innerHTML=""; await wijzig(["instellingen"]); }
   else if(a==="scorewis"){ delete S.uitslagen[d.id]; $("sheet").innerHTML=""; await wijzig(["uitslagen"]); }
   else if(a==="besch"){
-    const p=d.p, dag=d.d, cur=(S.beschikbaarheid[p]||{})[dag]||"ja";
-    const nxt=BS[(BS.findIndex(b=>b[0]===cur)+1)%BS.length][0];
+    const p=d.p, dag=d.d, inv=isInv(p), std=inv?"nee":"ja", cur=(S.beschikbaarheid[p]||{})[dag]||std;
+    const volg=inv?["nee","ja","w1","w2"]:BS.map(b=>b[0]);
+    const nxt=volg[(volg.indexOf(cur)+1)%volg.length];
     S.beschikbaarheid[p]=S.beschikbaarheid[p]||{};
-    if(nxt==="ja") delete S.beschikbaarheid[p][dag]; else S.beschikbaarheid[p][dag]=nxt;
+    if(nxt===std) delete S.beschikbaarheid[p][dag]; else S.beschikbaarheid[p][dag]=nxt;
     // handmatig vastgezette, nog niet gespeelde opstellingen op die dag laten vervallen als de speelster er in stond
     RW.filter(m=>m.dag===dag&&!S.uitslagen[m.id]&&S.opstellingen[m.id]).forEach(m=>{ const v=S.opstellingen[m.id];
       if([...v.t1,...v.t2,...v.tr].includes(p)) delete S.opstellingen[m.id]; });
@@ -893,7 +898,12 @@ document.addEventListener("click",async e=>{
   else if(a==="masamen"){ S.instellingen.maSamen=!S.instellingen.maSamen; await wijzig(["instellingen"]); }
   else if(a==="padd"){ const n=($("nieuw")||{}).value; if(!n||!n.trim()) return;
     let id=n.toLowerCase().replace(/[^a-z0-9]/g,"")||"sp"; while(S.speelsters.some(p=>p.id===id)) id+="x";
-    S.speelsters=[...S.speelsters,{id,naam:n.trim(),pos:"MA"}]; await wijzig(["speelsters"]); }
+    S.speelsters=[...S.speelsters,{id,naam:n.trim(),pos:d.inv?"VMA":"MA",...(d.inv?{invaller:true}:{})}]; await wijzig(["speelsters"],()=>`${n.trim()} toegevoegd${d.inv?" als invaller":""}`); }
+  else if(a==="pdel"){ const sp=S.speelsters.find(x=>x.id===d.p); if(!sp||!sp.invaller) return;
+    if(ARM!=="pdel"+d.p){ ARM="pdel"+d.p; render(); return; } ARM=null;
+    S.speelsters=S.speelsters.filter(x=>x.id!==d.p); delete S.beschikbaarheid[d.p];
+    Object.keys(S.opstellingen).forEach(k=>{ const v=S.opstellingen[k]; if(!S.uitslagen[k]&&[...v.t1,...v.t2,...v.tr].includes(d.p)) delete S.opstellingen[k]; });
+    await wijzig(["speelsters","beschikbaarheid","opstellingen"],()=>`${sp.naam} verwijderd`); }
   else if(a==="reset"){ if(ARM!=="reset"){ARM="reset";render();return;} ARM=null;
     Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); S.instellingen.perWed={}; await wijzig(["opstellingen","instellingen"]); }
   else if(a==="pvr"){ const sp=S.speelsters.find(x=>x.id===d.p); if(!sp) return; sp.voorrang=!sp.voorrang; if(!sp.voorrang) delete sp.voorrang;
