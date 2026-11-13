@@ -318,6 +318,8 @@ async function bewaar(...keys){
    ===================================================================== */
 const veld=()=>S.speelsters.filter(p=>p.pos!=="K");
 const keeper=()=>S.speelsters.find(p=>p.pos==="K");
+// teamlijst: verdedigers (positie V) vooraan, verder in volgorde van het veld
+const verdFirst=ids=>ids.filter(Boolean).map((x,i)=>[x,i]).sort((a,b)=>((S.speelsters.find(p=>p.id===a[0])||{}).pos==="V"?0:1)-((S.speelsters.find(p=>p.id===b[0])||{}).pos==="V"?0:1)||a[1]-b[1]).map(a=>a[0]);
 const naam=id=>(S.speelsters.find(p=>p.id===id)||{naam:"?"}).naam;
 const formVan=m=>S.instellingen.form;   // opstelling alleen via Instellingen (geldt voor alle wedstrijden)
 // volgorde van de teams per helft: 1e helft begint team 1, 2e helft team 2, steeds om en om
@@ -488,6 +490,19 @@ function maakPlan(){
       }
     }
     if(!geruild) break;
+  }
+  // 3b. verdedigers altijd achterin: staat er binnen een team een niet-verdediger op een V-plek terwijl een
+  //     verdediger elders in hetzelfde team staat, dan wisselen ze van plek (speeltijd verandert niet).
+  for(const m of open){
+    const p=P[m.id], F=FORM[p.form], grp=i=>slotGroep(F.slots[i].g);
+    for(const t of ["t1","t2"]) for(let i=0;i<p[t].length;i++){
+      const x=p[t][i]; if(grp(i)!=="V"||!x||past(spl(x),"V")) continue;
+      const j=p[t].findIndex((y,q)=>y&&grp(q)!=="V"&&past(spl(y),"V"));
+      if(j>=0) [p[t][i],p[t][j]]=[p[t][j],p[t][i]];
+    }
+    const dub=p.dubbel||[], fl=new Set();
+    for(const t of ["t1","t2"]) p[t].forEach((y,i)=>{ if(y&&!dub.includes(y)&&!past(spl(y),grp(i))) fl.add(y); });
+    p.flex=[...fl];
   }
   // 4. reserve per wedstrijd: één tribunespeelster die kan invallen bij een blessure (telt niet mee in speeltijd).
   //    Automatisch: wie het minst vaak reserve was, daarna wie het minst speelt. Handmatige keuze in instellingen.reserve.
@@ -735,7 +750,7 @@ function viewWedstrijd(id){
   h+=`<div class="sec">Wisselschema</div><div class="card tl">
     <div class="hl">1e helft</div>${seq(volgorde(1))}
     <div class="hl">2e helft</div>${seq(volgorde(2))}
-    <p class="muted" style="margin:10px 0 0">Team 1: ${p.t1.filter(Boolean).map(x=>`<button class="lnk" data-act="sp" data-p="${x}">${esc(naam(x))}</button>`).join(", ")}<br>Team 2: ${p.t2.filter(Boolean).map(x=>`<button class="lnk" data-act="sp" data-p="${x}">${esc(naam(x))}</button>`).join(", ")}</p></div>`;
+    <p class="muted" style="margin:10px 0 0">Team 1: ${verdFirst(p.t1).map(x=>`<button class="lnk" data-act="sp" data-p="${x}">${esc(naam(x))}</button>`).join(", ")}<br>Team 2: ${verdFirst(p.t2).map(x=>`<button class="lnk" data-act="sp" data-p="${x}">${esc(naam(x))}</button>`).join(", ")}</p></div>`;
   if(EDIT) h+=`<p class="muted" style="margin:10px 4px">${u?`Klopt de opstelling niet met wie er echt gespeeld heeft? Tik op een ${WD.sp} om te corrigeren; de speeltijd en de wedstrijden erna worden aangepast.`:`Tik op een ${WD.sp} in het veld om te ruilen. Die wedstrijd wordt daarna vastgezet; de wedstrijden erna worden opnieuw verdeeld.`}</p>`;
   return h;
 }
