@@ -346,12 +346,16 @@ function past(p,grp){
 function hash(s){let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h}
 
 /* Koppels: twee speelsters samen in hetzelfde team. Per wedstrijd: "hard" (verplicht), "zacht" (als het kan, standaard) of "los" */
-const koppels=()=>Array.isArray(S.koppels)?S.koppels:[];
+const koppels=()=>Array.isArray(S.koppels)?S.koppels.filter(k=>k.type!=="moet"):[];
+/* Moet spelen: per wedstrijd aangeven dat iemand er zeker in staat (indien aanwezig). Opgeslagen bij de koppels: alleen admin ziet en wijzigt dit. */
+const moetLijst=()=>Array.isArray(S.koppels)?S.koppels.filter(k=>k.type==="moet"):[];
+const moetGezet=(id,m)=>moetLijst().some(k=>k.a===id&&k.w===m.id);
+const moetHier=(id,m)=>moetGezet(id,m)&&aanwezig(id,m);
 const kType=k=>k.type||"samen";
 const kMode=(k,m)=>(k.per&&k.per[m.id])||"zacht";
 const koppelActief=(id,m)=>koppels().some(k=>kType(k)==="samen"&&(k.a===id||k.b===id)&&kMode(k,m)!=="los"&&aanwezig(k.a,m)&&aanwezig(k.b,m));
 // verplicht samen in deze wedstrijd: speelt sowieso
-const verplicht=(id,m)=>koppels().some(k=>kType(k)==="samen"&&(k.a===id||k.b===id)&&kMode(k,m)==="hard"&&aanwezig(k.a,m)&&aanwezig(k.b,m));
+const verplicht=(id,m)=>moetHier(id,m)||koppels().some(k=>kType(k)==="samen"&&(k.a===id||k.b===id)&&kMode(k,m)==="hard"&&aanwezig(k.a,m)&&aanwezig(k.b,m));
 function maakPlan(){
   const spelers=veld(), P={}, beurt={};
   spelers.forEach(p=>beurt[p.id]=0);
@@ -367,7 +371,7 @@ function maakPlan(){
     beschik.forEach(p=>{ const later=open.slice(oi+1).filter(x=>aanwezig(p.id,x)); moet[p.id]=later.filter(x=>verplicht(p.id,x)).length; toekomst[p.id]=later.length-moet[p.id]; });
     const zus=RW.find(x=>x.dag===m.dag&&x!==m&&x.ihDag<m.ihDag);   // eerdere wedstrijd zelfde dag
     const zatZus=id=>zus&&P[zus.id]&&P[zus.id].tr.includes(id);
-    const score=p=>beurt[p.id]+moet[p.id]+gem*toekomst[p.id]-(zatZus(p.id)?0.6:0)-(p.voorrang?0.3:0)+(hash(p.id+m.id)%100)/1000;
+    const score=p=>beurt[p.id]+moet[p.id]+gem*toekomst[p.id]-(zatZus(p.id)?0.6:0)-(p.voorrang?0.3:0)-(moetHier(p.id,m)?50:0)+(hash(p.id+m.id)%100)/1000;
     const F=FORM[formVan(m)], nodig={};
     F.slots.forEach(s=>{const g=slotGroep(s.g); nodig[g]=(nodig[g]||0)+2;});
     const gekozen={}, flex=[];
@@ -465,7 +469,7 @@ function maakPlan(){
       for(const k of koppels().filter(k=>kType(k)==="samen"&&kMode(k,m)==="zacht"&&aanwezig(k.a,m)&&aanwezig(k.b,m))){
         const waar=id=>{ for(const t of ["t1","t2"]){ const i=p[t].indexOf(id); if(i>=0) return {t,i}; } return null; };
         const A=waar(k.a), B=waar(k.b);
-        if(A&&B&&!p.dubbel.includes(k.a)&&!p.dubbel.includes(k.b)){
+        if(A&&B&&!p.dubbel.includes(k.a)&&!p.dubbel.includes(k.b)&&!verplicht(k.a,m)&&!verplicht(k.b,m)){
           // paar eruit, twee tribunespeelsters erin
           const vrij=p.tr.filter(y=>!koppelActief(y,m));
           const y1=vrij.filter(y=>past(spl(y),grp(A.i))&&beurt[k.a]-beurt[y]>=2&&apartOK(p[A.t],y,k.a)).sort((a,b)=>beurt[a]-beurt[b])[0];
@@ -723,7 +727,7 @@ function viewWedstrijd(id){
   const team=p[TEAMSEL];
   const tok=(sid,s,i)=>{ if(!sid) return `<span class="tok ${TEAMSEL}" style="left:${s.x}%;top:${s.y}%"><i>?</i><b>leeg</b></span>`;
     const sel=RUIL&&RUIL.t===TEAMSEL&&RUIL.i===i;
-    return `<button class="tok ${TEAMSEL}${sel?" sel":""}" style="left:${s.x}%;top:${s.y}%" data-act="ruil" data-t="${TEAMSEL}" data-i="${i}" ${EDIT?"":"disabled"}><i>${s.l}</i><b>${esc(naam(sid))}</b>${p.dubbel&&p.dubbel.includes(sid)?'<span class="d">speelt dubbel</span>':""}${p.flex&&p.flex.includes(sid)?'<span class="d">andere linie</span>':""}</button>`;};
+    return `<button class="tok ${TEAMSEL}${sel?" sel":""}" style="left:${s.x}%;top:${s.y}%" data-act="ruil" data-t="${TEAMSEL}" data-i="${i}" ${EDIT?"":"disabled"}><i>${s.l}</i><b>${esc(naam(sid))}</b>${p.dubbel&&p.dubbel.includes(sid)?'<span class="d">speelt dubbel</span>':""}${p.flex&&p.flex.includes(sid)?'<span class="d">andere linie</span>':""}${ADMIN&&moetGezet(sid,m)?'<span class="d">★ moet spelen</span>':""}</button>`;};
   const b=S.instellingen.blok, eind=b.map((_,i)=>b.slice(0,i+1).reduce((x,y)=>x+(+y),0));
   const seq=(volg)=>`<div class="seq">${volg.map((t,i)=>`<div class="s${t}" style="flex:${b[i]}">Team ${t}<small>${i?eind[i-1]:0}'–${eind[i]}'</small></div>`).join("")}</div>`;
   let h=`<button class="back" data-act="terug"><b>‹</b>Terug</button>
@@ -747,6 +751,10 @@ function viewWedstrijd(id){
     ${weg.map(x=>`<span class="chip weg">${esc(naam(x))} · afwezig</span>`).join("")}</div>
     ${p.tr.length?`<p class="muted" style="margin:0 12px 10px">${p.res?`<b style="color:var(--tx)">${esc(naam(p.res))}</b> is reserve en valt in bij een blessure.`:""}${EDIT&&!RUIL?` Tik op een andere tribune${WD.sp} om ${WD.haar} reserve te maken.`:""}</p>`:""}</div>`;
   if(RUIL) h+=`<div class="sec">Of ruil met team ${ander==="t1"?1:2}</div><div class="card"><div class="chips">${p[ander].filter(Boolean).map((x,i)=>`<button class="chip" data-act="ruilmet" data-v="${ander}:${p[ander].indexOf(x)}">${esc(naam(x))} · ${F.slots[p[ander].indexOf(x)].l}</button>`).join("")}</div></div>`;
+  if(ADMIN&&!u){ const kand=veld().filter(s=>aanwezig(s.id,m)), gezet=kand.filter(s=>moetGezet(s.id,m)), mis=gezet.filter(s=>!p.t1.includes(s.id)&&!p.t2.includes(s.id));
+    h+=`<div class="sec">Moet spelen</div><div class="card"><div class="chips">${kand.map(s=>`<button class="chip${moetGezet(s.id,m)?" kh":""}" data-act="moet" data-v="${s.id}">${moetGezet(s.id,m)?"★ ":""}${esc(s.naam)}</button>`).join("")}</div>
+    <p class="muted" style="margin:0 12px 10px">Tik op een ${WD.sp} die deze wedstrijd zeker moet spelen. De speeltijd wordt over de andere wedstrijden eerlijk bijgesteld. Alleen jij ziet dit.</p>
+    ${mis.length?`<div class="warn" style="margin:0 12px 12px">Lukt niet: ${mis.map(s=>esc(s.naam)).join(", ")} past niet meer in het veld.</div>`:""}</div>`; }
   h+=`<div class="sec">Wisselschema</div><div class="card tl">
     <div class="hl">1e helft</div>${seq(volgorde(1))}
     <div class="hl">2e helft</div>${seq(volgorde(2))}
@@ -822,15 +830,20 @@ document.addEventListener("click",async e=>{
     if(!EDIT) return;
     S.instellingen.reserve=S.instellingen.reserve||{}; S.instellingen.reserve[OPEN]=d.v;
     await wijzig(["instellingen"],()=>`${naam(d.v)} is reserve`); }
+  else if(a==="moet"){ if(!ADMIN) return; const m=RW.find(x=>x.id===OPEN); if(!m) return;
+    const rest=(Array.isArray(S.koppels)?S.koppels:[]).filter(k=>!(k.type==="moet"&&k.a===d.v&&k.w===m.id));
+    const aan=!moetGezet(d.v,m); S.koppels=aan?[...rest,{type:"moet",a:d.v,w:m.id}]:rest;
+    if(S.opstellingen[m.id]&&!S.uitslagen[m.id]) delete S.opstellingen[m.id];
+    await wijzig(["koppels","opstellingen"],()=>`${naam(d.v)} ${aan?"moet spelen":"weer vrij"}`); }
   else if(a==="vrij"){ delete S.opstellingen[d.id]; delete S.instellingen.perWed[d.id]; await wijzig(["opstellingen","instellingen"]); }
   else if(a==="wform"){
     const p=PLAN[OPEN]; S.instellingen.perWed[OPEN]=d.v;
     if(S.opstellingen[OPEN]){ S.opstellingen[OPEN].form=d.v; }
     await wijzig(["instellingen","opstellingen"]);
   }
-  else if(a==="kdel"){ S.koppels=koppels().filter((_,i)=>i!==+d.k); Object.keys(S.opstellingen).forEach(w=>{ if(!S.uitslagen[w]) delete S.opstellingen[w]; }); await wijzig(["koppels","opstellingen"]); }
+  else if(a==="kdel"){ S.koppels=[...koppels().filter((_,i)=>i!==+d.k),...moetLijst()]; Object.keys(S.opstellingen).forEach(w=>{ if(!S.uitslagen[w]) delete S.opstellingen[w]; }); await wijzig(["koppels","opstellingen"]); }
   else if(a==="kadd"){ const x=$("kA").value,y=$("kB").value,t=$("kT").value; if(x===y||koppels().some(k=>(k.a===x&&k.b===y)||(k.a===y&&k.b===x))) return;
-    S.koppels=[...koppels(),{a:x,b:y,type:t,per:{}}];
+    S.koppels=[...koppels(),{a:x,b:y,type:t,per:{}},...moetLijst()];
     Object.keys(S.opstellingen).forEach(w=>{ if(!S.uitslagen[w]) delete S.opstellingen[w]; });
     await wijzig(["koppels","opstellingen"]); }
   else if(a==="form"){ S.instellingen.form=d.v; S.instellingen.perWed={}; Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) S.opstellingen[k].form=d.v; }); await wijzig(["instellingen","opstellingen"]); }
