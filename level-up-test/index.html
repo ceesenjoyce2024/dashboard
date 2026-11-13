@@ -260,8 +260,8 @@ const FORM={
     {g:"A",l:"A1",x:26,y:37},{g:"A",l:"A2",x:76,y:22}]},
   huis:{naam:"Huis",slots:[
     {g:"V",l:"V1",x:24,y:75},{g:"V",l:"V2",x:76,y:75},
-    {g:"M",l:"M1",x:20,y:51},{g:"M",l:"M2",x:80,y:51},
-    {g:"A",l:"A",x:50,y:27}]}
+    {g:"M",l:"A1",x:20,y:51},{g:"M",l:"A2",x:80,y:51},
+    {g:"A",l:"A3",x:50,y:27}]}
 };
 
 /* Speelsters. Posities: V, M, A, MA (middenveld én aanval), K (keeper) */
@@ -834,7 +834,7 @@ function viewInstellingen(){
   return lu+`<div class="sec">Opstelling</div>
   <div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${I.form===k?"on":""}" data-act="form" data-v="${k}" ${dis}>${f.naam}</button>`).join("")}</div>
   <div class="card court" style="max-width:240px;padding:8px">${courtSVG()}${FORM[I.form].slots.map(s=>`<span class="tok t1" style="left:${s.x}%;top:${s.y}%"><i style="width:30px;height:30px;font-size:11px">${s.l}</i></span>`).join("")}</div>
-  <p class="muted" style="margin:8px 4px">Geldt voor alle wedstrijden die nog niet gespeeld zijn.${CFG.basisWed?" Bij Huis: midden → M1, aanval 1 → M2, aanval 2 → A.":""}</p>
+  <p class="muted" style="margin:8px 4px">Geldt voor alle wedstrijden die nog niet gespeeld zijn.${CFG.basisWed?" Bij Huis staan A1 en A2 op de middenlijn; wie in de punt (A3) staat, bepaal je bij de start van de wedstrijd.":""}</p>
   <div class="card" style="margin-top:12px">
     <div class="sw"><div>Middenveld en aanval samen<small>Aan: M/A-${WD.sps} wisselen vrij tussen middenveld en aanval. Uit: iedereen speelt op ${WD.haar} eigen linie (M of A).</small></div><button class="tg ${I.maSamen?"on":""}" data-act="masamen" ${dis}></button></div>
   </div>
