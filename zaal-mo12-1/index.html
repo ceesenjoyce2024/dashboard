@@ -360,7 +360,8 @@ const verplicht=(id,m)=>moetHier(id,m)||koppels().some(k=>kType(k)==="samen"&&(k
 function maakPlan(){
   const spelers=veld(), P={}, beurt={};
   spelers.forEach(p=>beurt[p.id]=0);
-  const tel=(ids,d=1)=>ids.forEach(id=>{ if(id in beurt) beurt[id]+=d; });
+  // telt wedstrijden waarin iemand speelt; dubbel spelen (beide teams, bij te weinig spelers) telt als één wedstrijd
+  const tel=(ids,d=1)=>[...new Set(ids.filter(Boolean))].forEach(id=>{ if(id in beurt) beurt[id]+=d; });
   // 1. vastgezette opstellingen tellen eerst mee
   RW.forEach(m=>{ const v=S.opstellingen[m.id]; if(v){ P[m.id]={...v,vast:true,gespeeld:!!S.uitslagen[m.id]}; tel([...v.t1,...v.t2]); } });
   const open=RW.filter(m=>!P[m.id]);
