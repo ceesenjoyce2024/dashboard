@@ -687,6 +687,17 @@ function viewInstellingen(){
   ${ADMIN?`<div class="card pad"><div class="flex" style="flex-wrap:nowrap"><select class="in" id="kA">${veld().map(p=>`<option value="${p.id}">${esc(p.naam)}</option>`).join("")}</select><select class="in" id="kB">${veld().map((p,i)=>`<option value="${p.id}" ${i===1?"selected":""}>${esc(p.naam)}</option>`).join("")}</select></div>
     <div class="flex" style="margin-top:8px;flex-wrap:nowrap"><select class="in" id="kT"><option value="samen">Samen in één team</option><option value="apart">Niet samen</option></select><button class="btn sm" data-act="kadd">Toevoegen</button></div></div>`:""}
 `:""}
+  ${ADMIN?`<div class="sec">Moet spelen</div>
+  ${(()=>{ const per={}; moetLijst().forEach(k=>{ const m=RW.find(x=>x.id===k.w); if(m&&S.speelsters.some(p=>p.id===k.a)) (per[k.a]=per[k.a]||[]).push(m); });
+    const ids=Object.keys(per).sort((x,y)=>naam(x).localeCompare(naam(y),"nl"));
+    if(!ids.length) return '<div class="card"><div class="sw muted">Nog niemand ingesteld</div></div>';
+    return ids.map(id=>`<div class="card" style="margin-bottom:10px"><div class="sw" style="padding-bottom:4px"><b>${esc(naam(id))}</b></div><div class="chips" style="padding-top:2px">${per[id].sort((x,y)=>x.nr-y.nr).map(m=>{
+      const p=PLAN[m.id], gesp=!!S.uitslagen[m.id], weg=!aanwezig(id,m), mis=!weg&&p&&!p.t1.includes(id)&&!p.t2.includes(id);
+      return `<span class="chip ${weg||mis?"weg":"kh"}" style="display:inline-flex;align-items:center;gap:6px">${fdat(m.datum)} · ${TEAMS[tegen(m)].n}${weg?" · afwezig":mis?" · past niet":""}${gesp?"":`<button data-act="mdel" data-a="${id}" data-w="${m.id}" style="border:0;background:none;color:inherit;font-size:16px;line-height:1;padding:0 0 0 2px" aria-label="Verwijder">✕</button>`}</span>`}).join("")}</div></div>`).join(""); })()}
+  <div class="card pad"><div class="flex" style="flex-wrap:nowrap"><select class="in" id="mA">${[...veld()].sort((x,y)=>x.naam.localeCompare(y.naam,"nl")).map(p=>`<option value="${p.id}">${esc(p.naam)}</option>`).join("")}</select>
+    <select class="in" id="mW">${RW.filter(m=>!S.uitslagen[m.id]).map(m=>`<option value="${m.id}">${fdat(m.datum)} ${m.t} · ${TEAMS[tegen(m)].n}</option>`).join("")}</select></div>
+    <div class="flex" style="margin-top:8px"><button class="btn sm" data-act="madd">Toevoegen</button></div></div>
+  <p class="muted" style="margin:8px 4px">Kies een ${WD.sp} en een wedstrijd die ${WD.ze} zeker moet spelen; herhaal voor meer wedstrijden. De speeltijd wordt over de andere wedstrijden eerlijk bijgesteld. Alleen jij ziet dit.</p>`:""}
   <div class="card pad" style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><b>Verdeling nu</b><div class="muted">${(()=>{const sp=spreiding();return `${sp.min}–${sp.max} wedstrijden per ${WD.sp}`})()}</div></div>${EDIT?`<button class="btn sm" data-act="verdeel" style="white-space:nowrap;flex:none">Opnieuw verdelen</button>`:""}</div>
   <p class="muted" style="margin:10px 0 0">Een keuze hierboven wordt meteen meegenomen. <i>Opnieuw verdelen</i> zet daarnaast handmatige ruilen in nog niet gespeelde wedstrijden terug, zodat alles vanaf nul eerlijk wordt verdeeld. <i>Los</i> = geen voorwaarde voor die wedstrijd.</p></div>
   <div class="sec">Wisselblokken per helft</div>
@@ -752,10 +763,6 @@ function viewWedstrijd(id){
     ${weg.map(x=>`<span class="chip weg">${esc(naam(x))} · afwezig</span>`).join("")}</div>
     ${p.tr.length?`<p class="muted" style="margin:0 12px 10px">${p.res?`<b style="color:var(--tx)">${esc(naam(p.res))}</b> is reserve en valt in bij een blessure.`:""}${EDIT&&!RUIL?` Tik op een andere tribune${WD.sp} om ${WD.haar} reserve te maken.`:""}</p>`:""}</div>`;
   if(RUIL) h+=`<div class="sec">Of ruil met team ${ander==="t1"?1:2}</div><div class="card"><div class="chips">${p[ander].filter(Boolean).map((x,i)=>`<button class="chip" data-act="ruilmet" data-v="${ander}:${p[ander].indexOf(x)}">${esc(naam(x))} · ${F.slots[p[ander].indexOf(x)].l}</button>`).join("")}</div></div>`;
-  if(ADMIN&&!u){ const kand=veld().filter(s=>aanwezig(s.id,m)), gezet=kand.filter(s=>moetGezet(s.id,m)), mis=gezet.filter(s=>!p.t1.includes(s.id)&&!p.t2.includes(s.id));
-    h+=`<div class="sec">Moet spelen</div><div class="card"><div class="chips">${kand.map(s=>`<button class="chip${moetGezet(s.id,m)?" kh":""}" data-act="moet" data-v="${s.id}">${moetGezet(s.id,m)?"★ ":""}${esc(s.naam)}</button>`).join("")}</div>
-    <p class="muted" style="margin:0 12px 10px">Tik op een ${WD.sp} die deze wedstrijd zeker moet spelen. De speeltijd wordt over de andere wedstrijden eerlijk bijgesteld. Alleen jij ziet dit.</p>
-    ${mis.length?`<div class="warn" style="margin:0 12px 12px">Lukt niet: ${mis.map(s=>esc(s.naam)).join(", ")} past niet meer in het veld.</div>`:""}</div>`; }
   h+=`<div class="sec">Wisselschema</div><div class="card tl">
     <div class="hl">1e helft</div>${seq(volgorde(1))}
     <div class="hl">2e helft</div>${seq(volgorde(2))}
@@ -831,11 +838,12 @@ document.addEventListener("click",async e=>{
     if(!EDIT) return;
     S.instellingen.reserve=S.instellingen.reserve||{}; S.instellingen.reserve[OPEN]=d.v;
     await wijzig(["instellingen"],()=>`${naam(d.v)} is reserve`); }
-  else if(a==="moet"){ if(!ADMIN) return; const m=RW.find(x=>x.id===OPEN); if(!m) return;
-    const rest=(Array.isArray(S.koppels)?S.koppels:[]).filter(k=>!(k.type==="moet"&&k.a===d.v&&k.w===m.id));
-    const aan=!moetGezet(d.v,m); S.koppels=aan?[...rest,{type:"moet",a:d.v,w:m.id}]:rest;
-    if(S.opstellingen[m.id]&&!S.uitslagen[m.id]) delete S.opstellingen[m.id];
-    await wijzig(["koppels","opstellingen"],()=>`${naam(d.v)} ${aan?"moet spelen":"weer vrij"}`); }
+  else if(a==="madd"||a==="mdel"){ if(!ADMIN) return;
+    const id=a==="madd"?$("mA").value:d.a, w=a==="madd"?$("mW").value:d.w; if(!id||!w) return;
+    const rest=(Array.isArray(S.koppels)?S.koppels:[]).filter(k=>!(k.type==="moet"&&k.a===id&&k.w===w));
+    S.koppels=a==="madd"?[...rest,{type:"moet",a:id,w}]:rest;
+    if(S.opstellingen[w]&&!S.uitslagen[w]) delete S.opstellingen[w];
+    await wijzig(["koppels","opstellingen"],()=>`${naam(id)} ${a==="madd"?"moet spelen":"weer vrij"}`); }
   else if(a==="vrij"){ delete S.opstellingen[d.id]; delete S.instellingen.perWed[d.id]; await wijzig(["opstellingen","instellingen"]); }
   else if(a==="wform"){
     const p=PLAN[OPEN]; S.instellingen.perWed[OPEN]=d.v;
