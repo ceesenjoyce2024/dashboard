@@ -198,6 +198,16 @@ ol.poule li.me{color:var(--or2);font-weight:800}
 .lunr{font-weight:800;color:var(--navy);font-size:15px}.lunr small{display:block;font-weight:600;color:var(--mut);font-size:12px}
 .luvs{font-size:15px}.luvs i{color:var(--or);font-style:normal;font-weight:800}
 .besel{width:auto;max-width:64%;font-size:14px;padding-right:6px}.besel.uit{border-color:var(--or);background:#fde6d8}
+.ico{width:1.15em;height:1.15em;vertical-align:-.22em;color:var(--navy);flex:none}
+.lusp{padding:11px 12px}.lusp+.lusp{border-top:1px solid var(--line)}
+.lusp1{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.luseg{display:flex;background:var(--card2);border-radius:10px;padding:3px;gap:3px;flex:none}
+.luseg button{border:0;background:none;border-radius:8px;padding:7px 11px;font-size:14px;font-weight:600;color:var(--mut)}
+.luseg button.on{background:var(--navy);color:#fff}.luseg button.on.uit{background:var(--or);color:#fff}
+.lubl{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:9px}
+.lubll{font-size:13px;color:var(--mut);display:inline-flex;align-items:center;gap:5px;margin-right:2px}
+.lubw{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13.5px;font-weight:700;color:var(--navy)}
+.lubw.on{background:#fde6d8;border-color:var(--or);color:#b5490f}
 .warn.bl{background:#fde6d8;color:#8a3d06;border:1px solid #f6c3a5}
 .btn.bles{background:#fff;color:var(--or2);box-shadow:inset 0 0 0 2px var(--or)}
 .opts button small{margin-left:8px}
@@ -300,7 +310,10 @@ const tkort=k=>((S.instellingen||{}).teamNamen||{})[k]||TEAMS[k].n;
 const tijd=m=>m.t||("W"+(m.nr||""));
 const basisN=()=>{ const b=+((S.instellingen||{}).basis)||CFG.basisWed; return Math.max(1,Math.min(CFG.basisWed,b)); };
 // geblesseerd in een wedstrijd: beschikbaarheid "bN" — de reserve valt in die wedstrijd in, daarna speelt ze weer mee
-const blesIn=(pid,m)=>((S.beschikbaarheid[pid]||{})[m.dag])==="b"+m.nr;
+const blesLijst=(pid,dag)=>{ const v=((S.beschikbaarheid[pid]||{})[dag])||""; return v[0]==="b"?v.slice(1).split(",").filter(Boolean).map(Number):[]; };
+const blesIn=(pid,m)=>blesLijst(pid,m.dag).includes(m.nr);
+// pleister-icoon (donkerblauw)
+const ICO='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(-45 12 12)"><rect x="1.5" y="7.5" width="21" height="9" rx="4.5" fill="#fff" stroke="currentColor" stroke-width="1.8"/><rect x="8.5" y="7.5" width="7" height="9" fill="currentColor" opacity=".18"/><circle cx="10.8" cy="10.8" r=".95" fill="currentColor"/><circle cx="13.2" cy="10.8" r=".95" fill="currentColor"/><circle cx="10.8" cy="13.2" r=".95" fill="currentColor"/><circle cx="13.2" cy="13.2" r=".95" fill="currentColor"/></g></svg>';
 
 const MAANDEN=["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
 const DAGNM=["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
@@ -716,15 +729,15 @@ function viewStand(){
 const BS=[["ja","✓"],["nee","✗"],["w1","1e"],["w2","2e"]];
 function viewSpeelsters(){
   if(CFG.eenDag){
-    const dag=DAGEN[0].datum, basis=[["ja","Aanwezig"],["nee","Afwezig"],...RW.map(m=>["b"+m.nr,`🩹 Wedstrijd ${m.nr} geblesseerd`])];
-    const rij=p=>{ const st=(S.beschikbaarheid[p.id]||{})[dag]||"ja";
-      const opties=basis.some(o=>o[0]===st)?basis:[...basis,[st,st[0]==="v"?`Weg vanaf wedstrijd ${st.slice(1)}`:st]];
-      return `<div class="sw"><div><button class="lnk" data-act="sp" data-p="${p.id}">${esc(p.naam)}</button><span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos}</span></div>
-      <select class="in besel${st!=="ja"?" uit":""}" data-act="beschsel" data-p="${p.id}" ${EDIT?"":"disabled"}>${opties.map(([v,l])=>`<option value="${v}" ${v===st?"selected":""}>${l}</option>`).join("")}</select></div>`; };
+    const dag=DAGEN[0].datum;
+    const rij=p=>{ const st=(S.beschikbaarheid[p.id]||{})[dag]||"ja", weg=st==="nee", bl=blesLijst(p.id,dag), dis=EDIT?"":"disabled";
+      return `<div class="lusp"><div class="lusp1"><div><button class="lnk" data-act="sp" data-p="${p.id}">${esc(p.naam)}</button><span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos}</span></div>
+        <div class="luseg"><button class="${!weg?"on":""}" data-act="besaan" data-p="${p.id}" data-v="ja" ${dis}>Aanwezig</button><button class="${weg?"on uit":""}" data-act="besaan" data-p="${p.id}" data-v="nee" ${dis}>Afwezig</button></div></div>
+        ${weg?"":`<div class="lubl"><span class="lubll">${ICO} Geblesseerd in</span>${RW.map(m=>`<button class="lubw${bl.includes(m.nr)?" on":""}" data-act="besbles" data-p="${p.id}" data-n="${m.nr}" ${dis} aria-pressed="${bl.includes(m.nr)}">W${m.nr}</button>`).join("")}</div>`}</div>`; };
     const abc=l=>l.sort((a,b)=>a.naam.localeCompare(b.naam,"nl"));
     const groepen=[["Keeper",abc(S.speelsters.filter(p=>p.pos==="K"))],["Verdediging",abc(S.speelsters.filter(p=>p.pos==="V"))],["Middenveld / aanval",abc(S.speelsters.filter(p=>["M","A","MA"].includes(p.pos)))]];
     return groepen.map(([g,ps])=>ps.length?`<div class="sec">${g}</div><div class="card">${ps.map(rij).join("")}</div>`:"").join("")+
-      `<p class="muted" style="margin:10px 4px">${EDIT?`<b>Afwezig</b>: doet het hele toernooi niet mee; een tribune${WD.sp} neemt ${WD.haar} plekken over. <b>🩹 Wedstrijd … geblesseerd</b>: in die wedstrijd valt de reserve in, de andere wedstrijden speelt ${WD.zij} gewoon. Tijdens een wedstrijd kan dit ook met de knop 🩹 Blessure.`:"Alleen de beheerder kan dit aanpassen."}</p>`;
+      `<p class="muted" style="margin:10px 4px">${EDIT?`<b>Afwezig</b>: doet het hele toernooi niet mee; een tribune${WD.sp} neemt ${WD.haar} plekken over. <b>Geblesseerd in</b>: tik de wedstrijden aan waarin ${WD.zij} niet kan spelen; daar valt de reserve in, de andere wedstrijden speelt ${WD.zij} gewoon. Tijdens een wedstrijd kan dit ook met de knop Blessure.`:"Alleen de beheerder kan dit aanpassen."}</p>`;
   }
   const dagLab=RDAGEN.map(d=>`<th>${fdat(d)}</th>`).join("");
   const rij=p=>`<tr><td class="nm"><button class="lnk" data-act="sp" data-p="${p.id}">${esc(p.naam)}</button><span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos}</span></td>${
@@ -773,8 +786,8 @@ function viewSpeelster(id){
       else if(i1>=0&&i2>=0) lab=`<span class="st1">Team 1 · ${F.slots[i1].l}</span> <span class="st2">Team 2 · ${F.slots[i2].l}</span>`;
       else if(i1>=0) lab=`<span class="st1">Team 1 · ${F.slots[i1].l}</span>`;
       else if(i2>=0) lab=`<span class="st2">Team 2 · ${F.slots[i2].l}</span>`;
-      else if(blesIn(id,m)) lab='<span class="stweg">🩹 Geblesseerd</span>';
-      else if(p.res===id) lab='<span class="stres">🩹 Reserve</span>';
+      else if(blesIn(id,m)) lab=`<span class="stweg">${ICO} Geblesseerd</span>`;
+      else if(p.res===id) lab=`<span class="stres">${ICO} Reserve</span>`;
       else if(p.tr.includes(id)) lab='<span class="sttr">Tribune</span>'; }
     const u=S.uitslagen[m.id];
     return `<button class="sprow" data-act="open" data-id="${m.id}"><span class="dt"><b>${CFG.eenDag?"W"+m.nr:fdat(m.datum)}</b>${CFG.eenDag?(m.t||""):m.t}</span>
@@ -859,7 +872,7 @@ function viewWedstrijd(id){
     <div class="vs"><div class="tm">${badge(m.h)}${tnaam(m.h)}</div>
       ${EDIT?`<button class="sc${u?"":" leeg"}" data-act="score" data-id="${m.id}" style="border:0;background:none;padding:0">${u?`${u[0]} – ${u[1]}`:(m.t||"–")}</button>`:`<div class="sc${u?"":" leeg"}">${u?`${u[0]} – ${u[1]}`:(m.t||"–")}</div>`}
       <div class="tm">${badge(m.a)}${tnaam(m.a)}</div></div>
-    ${EDIT?`<div class="flex" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="score" data-id="${m.id}">${u?"Uitslag wijzigen":"Uitslag invullen"}</button>${!u?`<button class="btn sm bles" data-act="blessure">🩹 Blessure</button>`:""}${p.vast&&!u?`<button class="btn sec2 sm" data-act="vrij" data-id="${m.id}">${CFG.eenDag&&S.instellingen.start!==false?"Terug naar startopstelling":"Terug naar automatisch"}</button>`:""}</div>`:""}
+    ${EDIT?`<div class="flex" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="score" data-id="${m.id}">${u?"Uitslag wijzigen":"Uitslag invullen"}</button>${!u?`<button class="btn sm bles" data-act="blessure">${ICO} Blessure</button>`:""}${p.vast&&!u?`<button class="btn sec2 sm" data-act="vrij" data-id="${m.id}">${CFG.eenDag&&S.instellingen.start!==false?"Terug naar startopstelling":"Terug naar automatisch"}</button>`:""}</div>`:""}
   </div>`;
   h+=`<p class="muted" style="text-align:center;margin:12px 0 0">Opstelling: ${F.naam}</p>`;
   h+=`<div class="seg ${TEAMSEL}"><button class="b1 ${TEAMSEL==="t1"?"on":""}" data-act="team" data-v="t1">Team 1 · start</button><button class="b2 ${TEAMSEL==="t2"?"on":""}" data-act="team" data-v="t2">Team 2</button></div>
@@ -872,8 +885,8 @@ function viewWedstrijd(id){
   if(RUIL) h+=`<div class="warn">Kies hieronder met wie ${esc(naam(p[RUIL.t][RUIL.i]))} ruilt, of tik op een ${WD.sp} in het veld.</div>`;
   const ander=TEAMSEL==="t1"?"t2":"t1";
   const gebl=(p.inval||[]).map(x=>x.wie);
-  (p.inval||[]).forEach(x=>{ h+=`<div class="warn bl">🩹 <b>${esc(naam(x.wie))}</b> geblesseerd${x.door?` — <b>${esc(naam(x.door))}</b> (reserve) valt in.`:". Geen reserve meer: plek blijft leeg."}</div>`; });
-  h+=`<div class="sec">Tribune</div><div class="card"><div class="chips">${p.tr.length?p.tr.map(x=>gebl.includes(x)?`<span class="chip weg">🩹 ${esc(naam(x))} · geblesseerd</span>`:`<button class="chip${x===p.res?" res":""}" data-act="trib" data-v="${x}" ${RUIL||EDIT?"":"disabled"}>${x===p.res?"🩹 ":""}${esc(naam(x))}${x===p.res?" · reserve":""}</button>`).join(""):'<span class="muted">Niemand</span>'}
+  (p.inval||[]).forEach(x=>{ h+=`<div class="warn bl">${ICO} <b>${esc(naam(x.wie))}</b> geblesseerd${x.door?` — <b>${esc(naam(x.door))}</b> (reserve) valt in.`:". Geen reserve meer: plek blijft leeg."}</div>`; });
+  h+=`<div class="sec">Tribune</div><div class="card"><div class="chips">${p.tr.length?p.tr.map(x=>gebl.includes(x)?`<span class="chip weg">${ICO} ${esc(naam(x))} · geblesseerd</span>`:`<button class="chip${x===p.res?" res":""}" data-act="trib" data-v="${x}" ${RUIL||EDIT?"":"disabled"}>${x===p.res?"${ICO} ":""}${esc(naam(x))}${x===p.res?" · reserve":""}</button>`).join(""):'<span class="muted">Niemand</span>'}
     ${weg.map(x=>`<span class="chip weg">${esc(naam(x))} · afwezig</span>`).join("")}</div>
     ${p.tr.length?`<p class="muted" style="margin:0 12px 10px">${p.res?`<b style="color:var(--tx)">${esc(naam(p.res))}</b> is reserve en valt in bij een blessure.`:""}${EDIT&&!RUIL?` Tik op een andere tribune${WD.sp} om ${WD.haar} reserve te maken.`:""}</p>`:""}</div>`;
   if(RUIL) h+=`<div class="sec">Of ruil met team ${ander==="t1"?1:2}</div><div class="card"><div class="chips">${p[ander].filter(Boolean).map((x,i)=>`<button class="chip" data-act="ruilmet" data-v="${ander}:${p[ander].indexOf(x)}">${esc(naam(x))} · ${F.slots[p[ander].indexOf(x)].l}</button>`).join("")}</div></div>`;
@@ -907,7 +920,7 @@ function sheetBlessure(){
   const m=RW.find(x=>x.id===OPEN), p=PLAN[OPEN]; if(!m||!p) return;
   const knop=(t,id,i)=>`<button data-act="blesok" data-t="${t}" data-i="${i}">${esc(naam(id))} <small>Team ${t==="t1"?1:2} · ${FORM[p.form].slots[i].l}</small></button>`;
   $("sheet").innerHTML=`<div class="sheet" data-act="sluit"><div>
-    <h3>🩹 Wie valt geblesseerd uit?</h3>
+    <h3>${ICO} Wie valt geblesseerd uit?</h3>
     <p class="muted">${p.res?`<b>${esc(naam(p.res))}</b> (reserve) neemt ${WD.haar} plek over in deze wedstrijd.`:`Er is geen reserve meer in deze wedstrijd: ${WD.haar} plek blijft leeg.`} De volgende wedstrijden speelt ${WD.zij} gewoon weer mee. Is ${WD.zij} langer uit, zet ${WD.haar} dan bij ${WD.Sps} op Afwezig.</p>
     <div class="opts">${["t1","t2"].map(t=>p[t].map((id,i)=>id?knop(t,id,i):"").join("")).join("")}</div>
     <div class="flex" style="margin-top:12px"><button class="btn sec2" data-act="sluit">Annuleren</button></div>
@@ -975,9 +988,19 @@ document.addEventListener("click",async e=>{
   else if(a==="blessure"){ if(EDIT) sheetBlessure(); }
   else if(a==="blesok"){ if(!EDIT) return;
     const m=RW.find(x=>x.id===OPEN), p=PLAN[OPEN], wie=p[d.t][+d.i], door=p.res;
-    S.beschikbaarheid[wie]=S.beschikbaarheid[wie]||{}; S.beschikbaarheid[wie][m.dag]="b"+m.nr;
+    S.beschikbaarheid[wie]=S.beschikbaarheid[wie]||{}; S.beschikbaarheid[wie][m.dag]="b"+[...new Set([...blesLijst(wie,m.dag),m.nr])].sort((x,y)=>x-y).join(",");
     $("sheet").innerHTML="";
-    await wijzig(["beschikbaarheid"],()=>door?`🩹 ${naam(door)} valt in voor ${naam(wie)}`:`🩹 ${naam(wie)} geblesseerd`); }
+    await wijzig(["beschikbaarheid"],()=>door?`${naam(door)} valt in voor ${naam(wie)}`:`${naam(wie)} geblesseerd`); }
+  else if(a==="besaan"||a==="besbles"){ if(!EDIT) return;
+    const p=d.p, dag=DAGEN[0].datum; S.beschikbaarheid[p]=S.beschikbaarheid[p]||{};
+    if(a==="besaan"){ if(d.v==="nee") S.beschikbaarheid[p][dag]="nee"; else delete S.beschikbaarheid[p][dag]; }
+    else { const n=+d.n, l=blesLijst(p,dag); const nl=l.includes(n)?l.filter(x=>x!==n):[...l,n].sort((x,y)=>x-y);
+      if(nl.length) S.beschikbaarheid[p][dag]="b"+nl.join(","); else delete S.beschikbaarheid[p][dag]; }
+    herbereken();
+    RW.filter(m=>!S.uitslagen[m.id]&&S.opstellingen[m.id]).forEach(m=>{ const o=S.opstellingen[m.id];
+      if([...o.t1,...o.t2].includes(p)&&!aanwezig(p,m)) delete S.opstellingen[m.id];
+      else if(o.tr.includes(p)&&!aanwezig(p,m)) o.tr=o.tr.filter(x=>x!==p); });
+    await wijzig(["beschikbaarheid","opstellingen"]); }
   else if(a==="basis"){ S.instellingen.basis=+d.v; await wijzig(["instellingen"]); }
   else if(a==="extra"){ S.instellingen.extra=+d.v; await wijzig(["instellingen"]); }
   else if(a==="startop"){ S.instellingen.start=S.instellingen.start===false; Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["instellingen","opstellingen"]); }
@@ -1065,7 +1088,7 @@ async function haalOpnieuw(){
     S.instellingen={form:CFG.standaard.form,maSamen:true,blok:[...CFG.standaard.blok],perWed:{},wedWijz:{},...S.instellingen};
     if(sig()===voor) return;                       // eigen wijziging of niets nieuws
     if(bezig()){ LIVE_WACHT=true; liveTimer=setTimeout(haalOpnieuw,1500); return; }
-    herbereken(); render(); toast("Bijgewerkt door een ander");
+    herbereken(); render(); toast("Bijgewerkt");
   }catch(e){}
 }
 function startLive(){
