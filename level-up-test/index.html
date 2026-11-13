@@ -621,6 +621,30 @@ function maakPlan(){
       if(door) p.res=null;
     }));
   });
+  // 6. gelijk trekken: door afwezigheid of blessures kan de speeltijd scheef raken. Ruil in nog niet gespeelde,
+  //    niet handmatig vastgezette wedstrijden een veldspeelster met een tribunespeelster (zelfde linie) zolang
+  //    het verschil 2 wedstrijden of meer is. Zonder uitval blijven de startopstellingen dus ongewijzigd.
+  if(CFG.eenDag){
+    const sp6=id=>S.speelsters.find(x=>x.id===id)||{pos:"MA"};
+    const cnt={}; spelers.forEach(x=>cnt[x.id]=0);
+    RW.forEach(m=>{ const p=P[m.id]; if(p) [...p.t1,...p.t2].forEach(id=>{ if(id in cnt) cnt[id]++; }); });
+    for(let r=0;r<60;r++){
+      let best=null;
+      RW.forEach(m=>{ const p=P[m.id]; if(!p||S.uitslagen[m.id]||S.opstellingen[m.id]) return;
+        const F=FORM[p.form], inv=(p.inval||[]).map(x=>x.door);
+        ["t1","t2"].forEach(t=>p[t].forEach((x,i)=>{
+          if(!x||inv.includes(x)||(p.dubbel||[]).includes(x)||verplicht(x,m)) return;
+          p.tr.forEach(y=>{
+            if(blesIn(y,m)||!aanwezig(y,m)||!past(sp6(y),slotGroep(F.slots[i].g))) return;
+            const v=cnt[x]-cnt[y]; if(v>=2&&(!best||v>best.v)) best={m,p,t,i,x,y,v};
+          });
+        }));
+      });
+      if(!best) break;
+      const {p,t,i,x,y}=best; p[t][i]=y; p.tr=p.tr.filter(z=>z!==y).concat(x); cnt[x]--; cnt[y]++;
+      if(p.res===y){ p.res=x; p.resHand=false; }
+    }
+  }
   return P;
 }
 let PLAN={};
