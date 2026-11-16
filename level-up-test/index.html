@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b4a9e">
 <meta name="apple-mobile-web-app-title" content="Level Up Test">
-<title>Zaalcompetitie</title>
+<title>Level Up Test</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/admin-terug.js?v=1" data-plek="header.top" defer></script>
 <style>
@@ -196,7 +196,10 @@ ol.poule{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
 ol.poule li.me{color:var(--or2);font-weight:800}
 .lurow{grid-template-columns:52px 1fr auto 14px}
 .lunr{font-weight:800;color:var(--navy);font-size:15px}.lunr small{display:block;font-weight:600;color:var(--mut);font-size:12px}
-.luvs{font-size:15px}.luvs i{color:var(--or);font-style:normal;font-weight:800}
+.luvs{font-size:15px}.luvs small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}
+.luwed{display:grid;grid-template-columns:52px 1fr;gap:6px 8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.luwed:first-of-type{border-top:0}
+.luwed2{grid-column:2;display:grid;grid-template-columns:112px 1fr;gap:8px}.luvs i{color:var(--or);font-style:normal;font-weight:800}
 .besel{width:auto;max-width:64%;font-size:14px;padding-right:6px}.besel.uit{border-color:var(--or);background:#fde6d8}
 .ico{width:1.15em;height:1.15em;vertical-align:-.22em;color:var(--navy);flex:none}
 .lusp{padding:11px 12px}.lusp+.lusp{border-top:1px solid var(--line)}
@@ -297,7 +300,7 @@ function bouw(){
   const W=(S.instellingen&&S.instellingen.wedWijz)||{};
   WED=BASIS.map(b=>{ const w=W[b.id]||{}; const datum=w.datum||b.orgDatum, t=w.t||b.orgT;
     return {...b,datum,t,dag:datum,verplaatst:datum!==b.orgDatum||t!==b.orgT}; })
-    .sort((x,y)=>(x.datum+x.t).localeCompare(y.datum+y.t));
+    .sort((x,y)=>CFG.eenDag?0:(x.datum+x.t).localeCompare(y.datum+y.t));
   DAGLIJST=[...new Set(WED.map(m=>m.datum))];
   RW=WED.filter(m=>m.h===WIJ||m.a===WIJ);
   if(CFG.basisWed){ const n=basisN()+Math.min(CFG.maxExtra||0,+((S.instellingen||{}).extra)||0); const aan=new Set(RW.slice(0,n).map(m=>m.id));
@@ -308,6 +311,7 @@ function bouw(){
 const tegen=m=>m.h===WIJ?m.a:m.h;
 const tkort=k=>((S.instellingen||{}).teamNamen||{})[k]||TEAMS[k].n;
 const tijd=m=>m.t||("W"+(m.nr||""));
+const veldVan=m=>((S.instellingen||{}).velden||{})[m.id]||"";
 const basisN=()=>{ const b=+((S.instellingen||{}).basis)||CFG.basisWed; return Math.max(1,Math.min(CFG.basisWed,b)); };
 // geblesseerd in een wedstrijd: beschikbaarheid "bN" — de reserve valt in die wedstrijd in, daarna speelt ze weer mee
 const blesLijst=(pid,dag)=>{ const v=((S.beschikbaarheid[pid]||{})[dag])||""; return v[0]==="b"?v.slice(1).split(",").filter(Boolean).map(Number):[]; };
@@ -711,7 +715,7 @@ function viewProgramma(){
       const u=S.uitslagen[m.id], extra=m.nr>basisN();
       return `<button class="row ros lurow" data-act="open" data-id="${m.id}">
         <span class="lunr">${extra?"Extra":"W"+m.nr}${m.t?`<small>${m.t}</small>`:""}</span>
-        <span class="luvs"><b>${esc(tnaam(WIJ))}</b> <i>–</i> ${esc(tnaam(tegen(m)))}</span>
+        <span class="luvs"><b>${esc(tnaam(WIJ))}</b> <i>–</i> ${esc(tnaam(tegen(m)))}${veldVan(m)?`<small>${esc(veldVan(m))}</small>`:""}</span>
         <span class="t${u?" score":""}">${u?`${u[0]} – ${u[1]}`:""}</span><span class="chev">›</span></button>`;
     }).join("")+`</div>`;
     if(EDIT) h+=`<p class="muted" style="margin:10px 4px">Extra wedstrijden (kruisfinale, plaatsing) zet je aan in Instellingen.</p>`;
@@ -828,7 +832,9 @@ function viewInstellingen(){
   <div class="card pad"><label class="f" style="margin-top:0">Naam van de poule</label><input class="in" data-act="poule" value="${esc(I.poule||CFG.poule)}" ${dis}>
     <label class="f">Poulewedstrijden</label><div class="seg" style="margin:0">${[3,4].map(n=>`<button class="${basisN()===n?"on":""}" data-act="basis" data-v="${n}" ${dis}>${n} wedstrijden</button>`).join("")}</div>
     <label class="f">Extra wedstrijden (kruisfinale, plaatsing)</label><div class="seg" style="margin:0">${[0,1,2].slice(0,(CFG.maxExtra||0)+1).map(n=>`<button class="${(+I.extra||0)===n?"on":""}" data-act="extra" data-v="${n}" ${dis}>${n===0?"Geen":"+"+n}</button>`).join("")}</div>
-    <label class="f">Tegenstanders</label>${RW.map(m=>`<div class="flex" style="flex-wrap:nowrap;margin-bottom:6px"><span class="muted" style="width:52px;flex:none">${m.nr>basisN()?"Extra":"W"+m.nr}</span><input class="in" data-act="tegennaam" data-k="${tegen(m)}" value="${esc(tnaam(tegen(m)))}" ${dis}></div>`).join("")}
+    <label class="f">Wedstrijden</label>${RW.map(m=>`<div class="luwed"><span class="lunr">${m.nr>basisN()?"Extra":"W"+m.nr}</span>
+      <input class="in" data-act="tegennaam" data-k="${tegen(m)}" value="${esc(tnaam(tegen(m)))}" placeholder="Tegenstander" ${dis}>
+      <div class="luwed2"><input class="in" type="time" data-act="wedtijd" data-id="${m.id}" value="${esc(m.t||"")}" aria-label="Tijd" ${dis}><input class="in" data-act="wedveld" data-id="${m.id}" value="${esc(veldVan(m))}" placeholder="Veld" aria-label="Veld" ${dis}></div></div>`).join("")}
   </div>
   <div class="card" style="margin-top:10px"><div class="sw"><div>Startopstellingen gebruiken<small>Aan: de afgesproken opstellingen blijven staan; bij uitval neemt een tribune${WD.sp} precies die plek over. Uit: de app verdeelt alles zelf.</small></div><button class="tg ${I.start!==false?"on":""}" data-act="startop" ${dis}></button></div></div>`:"";
   return lu+`<div class="sec">Opstelling</div>
@@ -903,7 +909,7 @@ function viewWedstrijd(id){
   const b=S.instellingen.blok, eind=b.map((_,i)=>b.slice(0,i+1).reduce((x,y)=>x+(+y),0));
   const seq=(volg)=>`<div class="seq">${volg.map((t,i)=>`<div class="s${t}" style="flex:${b[i]}">Team ${t}<small>${i?eind[i-1]:0}'–${eind[i]}'</small></div>`).join("")}</div>`;
   let h=`<button class="back" data-act="terug"><b>‹</b>Terug</button>
-  <div class="mhead"><div class="meta">${CFG.eenDag?`Wedstrijd ${m.nr}${m.nr>basisN()?" (extra)":""}${m.t?" · "+m.t:""}`:`Wedstrijd ${m.nr} van ${RW.length} · ${fdat(m.datum,1)} · ${m.t} · ${thuis?"Thuis":"Uit"}`}</div>
+  <div class="mhead"><div class="meta">${CFG.eenDag?`Wedstrijd ${m.nr}${m.nr>basisN()?" (extra)":""}${m.t?" · "+m.t:""}${veldVan(m)?" · "+esc(veldVan(m)):""}`:`Wedstrijd ${m.nr} van ${RW.length} · ${fdat(m.datum,1)} · ${m.t} · ${thuis?"Thuis":"Uit"}`}</div>
     <div class="vs"><div class="tm">${badge(m.h)}${tnaam(m.h)}</div>
       ${EDIT?`<button class="sc${u?"":" leeg"}" data-act="score" data-id="${m.id}" style="border:0;background:none;padding:0">${u?`${u[0]} – ${u[1]}`:(m.t||"–")}</button>`:`<div class="sc${u?"":" leeg"}">${u?`${u[0]} – ${u[1]}`:(m.t||"–")}</div>`}
       <div class="tm">${badge(m.a)}${tnaam(m.a)}</div></div>
@@ -1076,6 +1082,10 @@ document.addEventListener("change",async e=>{
       else if(o.tr.includes(p)&&!aanwezig(p,m)) o.tr=o.tr.filter(x=>x!==p); });
     await wijzig(["beschikbaarheid","opstellingen","instellingen"]); }
   else if(d.act==="poule"){ S.instellingen.poule=el.value.trim()||CFG.poule; await wijzig(["instellingen"]); }
+  else if(d.act==="wedtijd"){ const b=BASIS.find(x=>x.id===d.id); const v=el.value.trim(); S.instellingen.wedWijz=S.instellingen.wedWijz||{};
+    if(!v||v===b.orgT) delete S.instellingen.wedWijz[d.id]; else S.instellingen.wedWijz[d.id]={datum:b.orgDatum,t:v}; await wijzig(["instellingen"]); }
+  else if(d.act==="wedveld"){ S.instellingen.velden=S.instellingen.velden||{}; const v=el.value.trim();
+    if(v) S.instellingen.velden[d.id]=v; else delete S.instellingen.velden[d.id]; await wijzig(["instellingen"]); }
   else if(d.act==="tegennaam"){ S.instellingen.teamNamen=S.instellingen.teamNamen||{}; const v=el.value.trim();
     if(v) S.instellingen.teamNamen[d.k]=v; else delete S.instellingen.teamNamen[d.k]; await wijzig(["instellingen"]); }
   else if(d.act==="blok"){ S.instellingen.blok[+d.i]=Math.max(1,Math.min(20,+el.value||1)); await wijzig(["instellingen"]); }
