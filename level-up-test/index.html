@@ -199,6 +199,9 @@ ol.poule li.me{color:var(--or2);font-weight:800}
 .luvs{font-size:15px}.luvs small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}
 .luwed{display:grid;grid-template-columns:52px 1fr;gap:6px 8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .luwed:first-of-type{border-top:0}
+.luwed3{grid-column:2;display:grid;grid-template-columns:1fr 1fr}
+.luhu{display:inline-block;font-style:normal;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:1px 7px;border-radius:999px;margin-left:6px;vertical-align:2px}
+.luhu.th{background:#dbe7fb;color:var(--lb)}.luhu.ui{background:#fde6d8;color:#b5490f}
 .luwed2{grid-column:2;display:grid;grid-template-columns:112px 1fr;gap:8px}.luvs i{color:var(--or);font-style:normal;font-weight:800}
 .besel{width:auto;max-width:64%;font-size:14px;padding-right:6px}.besel.uit{border-color:var(--or);background:#fde6d8}
 .ico{width:1.15em;height:1.15em;vertical-align:-.22em;color:var(--navy);flex:none}
@@ -299,7 +302,8 @@ let WED=[], RW=[], RDAGEN=[], DAGLIJST=[];
 function bouw(){
   const W=(S.instellingen&&S.instellingen.wedWijz)||{};
   WED=BASIS.map(b=>{ const w=W[b.id]||{}; const datum=w.datum||b.orgDatum, t=w.t||b.orgT;
-    return {...b,datum,t,dag:datum,verplaatst:datum!==b.orgDatum||t!==b.orgT}; })
+    const omg=((S.instellingen||{}).uit||{})[b.id];   // Level Up: thuis/uit omdraaien
+    return {...b,...(omg?{h:b.a,a:b.h}:{}),datum,t,dag:datum,verplaatst:datum!==b.orgDatum||t!==b.orgT}; })
     .sort((x,y)=>CFG.eenDag?0:(x.datum+x.t).localeCompare(y.datum+y.t));
   DAGLIJST=[...new Set(WED.map(m=>m.datum))];
   RW=WED.filter(m=>m.h===WIJ||m.a===WIJ);
@@ -715,7 +719,7 @@ function viewProgramma(){
       const u=S.uitslagen[m.id], extra=m.nr>basisN();
       return `<button class="row ros lurow" data-act="open" data-id="${m.id}">
         <span class="lunr">${extra?"Extra":"W"+m.nr}${m.t?`<small>${m.t}</small>`:""}</span>
-        <span class="luvs"><b>${esc(tnaam(WIJ))}</b> <i>–</i> ${esc(tnaam(tegen(m)))}${veldVan(m)?`<small>${esc(veldVan(m))}</small>`:""}</span>
+        <span class="luvs">${m.h===WIJ?`<b>${esc(tnaam(WIJ))}</b> <i>–</i> ${esc(tnaam(m.a))}`:`${esc(tnaam(m.h))} <i>–</i> <b>${esc(tnaam(WIJ))}</b>`}<em class="luhu ${m.h===WIJ?"th":"ui"}">${m.h===WIJ?"Thuis":"Uit"}</em>${veldVan(m)?`<small>${esc(veldVan(m))}</small>`:""}</span>
         <span class="t${u?" score":""}">${u?`${u[0]} – ${u[1]}`:""}</span><span class="chev">›</span></button>`;
     }).join("")+`</div>`;
     if(EDIT) h+=`<p class="muted" style="margin:10px 4px">Extra wedstrijden (kruisfinale, plaatsing) zet je aan in Instellingen.</p>`;
@@ -834,6 +838,7 @@ function viewInstellingen(){
     <label class="f">Extra wedstrijden (kruisfinale, plaatsing)</label><div class="seg" style="margin:0">${[0,1,2].slice(0,(CFG.maxExtra||0)+1).map(n=>`<button class="${(+I.extra||0)===n?"on":""}" data-act="extra" data-v="${n}" ${dis}>${n===0?"Geen":"+"+n}</button>`).join("")}</div>
     <label class="f">Wedstrijden</label>${RW.map(m=>`<div class="luwed"><span class="lunr">${m.nr>basisN()?"Extra":"W"+m.nr}</span>
       <input class="in" data-act="tegennaam" data-k="${tegen(m)}" value="${esc(tnaam(tegen(m)))}" placeholder="Tegenstander" ${dis}>
+      <div class="luwed3 seg" style="margin:0">${["thuis","uit"].map(v=>`<button class="${(v==="uit")===(m.a===WIJ)?"on":""}" data-act="wedthuis" data-id="${m.id}" data-v="${v}" ${dis}>${v==="thuis"?"Thuis":"Uit"}</button>`).join("")}</div>
       <div class="luwed2"><input class="in" type="time" data-act="wedtijd" data-id="${m.id}" value="${esc(m.t||"")}" aria-label="Tijd" ${dis}><input class="in" data-act="wedveld" data-id="${m.id}" value="${esc(veldVan(m))}" placeholder="Veld" aria-label="Veld" ${dis}></div></div>`).join("")}
   </div>
   <div class="card" style="margin-top:10px"><div class="sw"><div>Startopstellingen gebruiken<small>Aan: de afgesproken opstellingen blijven staan; bij uitval neemt een tribune${WD.sp} precies die plek over. Uit: de app verdeelt alles zelf.</small></div><button class="tg ${I.start!==false?"on":""}" data-act="startop" ${dis}></button></div></div>`:"";
@@ -909,7 +914,7 @@ function viewWedstrijd(id){
   const b=S.instellingen.blok, eind=b.map((_,i)=>b.slice(0,i+1).reduce((x,y)=>x+(+y),0));
   const seq=(volg)=>`<div class="seq">${volg.map((t,i)=>`<div class="s${t}" style="flex:${b[i]}">Team ${t}<small>${i?eind[i-1]:0}'–${eind[i]}'</small></div>`).join("")}</div>`;
   let h=`<button class="back" data-act="terug"><b>‹</b>Terug</button>
-  <div class="mhead"><div class="meta">${CFG.eenDag?`Wedstrijd ${m.nr}${m.nr>basisN()?" (extra)":""}${m.t?" · "+m.t:""}${veldVan(m)?" · "+esc(veldVan(m)):""}`:`Wedstrijd ${m.nr} van ${RW.length} · ${fdat(m.datum,1)} · ${m.t} · ${thuis?"Thuis":"Uit"}`}</div>
+  <div class="mhead"><div class="meta">${CFG.eenDag?`Wedstrijd ${m.nr}${m.nr>basisN()?" (extra)":""} · ${m.h===WIJ?"Thuis":"Uit"}${m.t?" · "+m.t:""}${veldVan(m)?" · "+esc(veldVan(m)):""}`:`Wedstrijd ${m.nr} van ${RW.length} · ${fdat(m.datum,1)} · ${m.t} · ${thuis?"Thuis":"Uit"}`}</div>
     <div class="vs"><div class="tm">${badge(m.h)}${tnaam(m.h)}</div>
       ${EDIT?`<button class="sc${u?"":" leeg"}" data-act="score" data-id="${m.id}" style="border:0;background:none;padding:0">${u?`${u[0]} – ${u[1]}`:(m.t||"–")}</button>`:`<div class="sc${u?"":" leeg"}">${u?`${u[0]} – ${u[1]}`:(m.t||"–")}</div>`}
       <div class="tm">${badge(m.a)}${tnaam(m.a)}</div></div>
@@ -1039,6 +1044,11 @@ document.addEventListener("click",async e=>{
       if([...o.t1,...o.t2].includes(p)&&!aanwezig(p,m)) delete S.opstellingen[m.id];
       else if(o.tr.includes(p)&&!aanwezig(p,m)) o.tr=o.tr.filter(x=>x!==p); });
     await wijzig(["beschikbaarheid","opstellingen"]); }
+  else if(a==="wedthuis"){ if(!EDIT) return; const m=RW.find(x=>x.id===d.id); const nuUit=m.a===WIJ, wilUit=d.v==="uit";
+    if(nuUit!==wilUit){ S.instellingen.uit=S.instellingen.uit||{};
+      if(S.instellingen.uit[d.id]) delete S.instellingen.uit[d.id]; else S.instellingen.uit[d.id]=true;
+      const u=S.uitslagen[d.id]; if(u) S.uitslagen[d.id]=[u[1],u[0]];
+      await wijzig(["instellingen","uitslagen"]); } }
   else if(a==="basis"){ S.instellingen.basis=+d.v; await wijzig(["instellingen"]); }
   else if(a==="extra"){ S.instellingen.extra=+d.v; await wijzig(["instellingen"]); }
   else if(a==="startop"){ S.instellingen.start=S.instellingen.start===false; Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["instellingen","opstellingen"]); }
