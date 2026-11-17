@@ -231,7 +231,7 @@ async function laadAlleData() {
 async function saveWedstrijd(w) {
   var res = await sbClient.from('mo12_wedstrijden').upsert({
     id:w.id, competitie:w.competitie, datum:w.datum,
-    thu:w.thu, teg:w.teg, dv:w.dv, dt:w.dt, goals:w.goals
+    thu:w.thu, teg:w.teg, dv:w.dv, dt:w.dt, goals:w.goals, tijd:w.tijd||null
   }, { onConflict:'id' });
   if (res.error) console.error('saveWedstrijd:', res.error);
 }
@@ -399,9 +399,10 @@ function htmlAlleWedstrijden(compId) {
   var eigen = wedstrijdenVoor(compId);
   var poule = getPoulewedstrijden(compId);
   var alles = [];
-  eigen.forEach(function(w){alles.push({datum:w.datum||'',soort:'eigen',data:w});});
-  poule.forEach(function(w){alles.push({datum:w.datum||'',soort:'poule',data:w});});
-  alles.sort(function(a,b){return b.datum.localeCompare(a.datum);});
+  eigen.forEach(function(w){alles.push({datum:w.datum||'',tijd:w.tijd||'',soort:'eigen',data:w});});
+  poule.forEach(function(w){alles.push({datum:w.datum||'',tijd:w.tijd||'',soort:'poule',data:w});});
+  // nieuwste bovenaan; op dezelfde dag de latere aanvangstijd bovenaan
+  alles.sort(function(a,b){return b.datum.localeCompare(a.datum) || b.tijd.localeCompare(a.tijd);});
   if(!alles.length) return '<p class="empty">Nog geen wedstrijden ingevoerd.</p>';
   return '<table><thead><tr><th>Datum</th><th>Wedstrijd</th><th></th></tr></thead><tbody>' +
     alles.map(function(item) {
@@ -419,7 +420,7 @@ function htmlAlleWedstrijden(compId) {
             (g.a?'<span style="color:var(--text-faint);font-size:11px"> ▸'+g.a+'</span>':'');
         }).join(', ');
         return '<tr>' +
-          '<td style="font-size:12px;white-space:nowrap;vertical-align:top;padding-top:10px">' + (w.datum||'–') + '</td>' +
+          '<td style="font-size:12px;white-space:nowrap;vertical-align:top;padding-top:10px">' + (w.datum||'–') + (w.tijd ? '<div style="color:var(--text-muted);font-size:11px">' + w.tijd + '</div>' : '') + '</td>' +
           '<td style="font-size:13px;vertical-align:top">' +
             '<div>' + matchLabel + '</div>' +
             '<div style="margin-top:3px"><span class="score" style="font-size:15px">' + uitslag + '</span></div>' +
@@ -596,6 +597,7 @@ function renderInvoer() {
     '<div class="form-grid">' +
     '<div class="form-group"><label>Competitie</label><select id="f_comp" onchange="updateTegenstanders()">'+compOpts+'</select></div>' +
     '<div class="form-group"><label>Datum</label><input type="date" id="f_datum" value="'+today+'"></div>' +
+    '<div class="form-group"><label>Tijd</label><input type="time" id="f_tijd"></div>' +
     '<div class="form-group"><label>Thuis / Uit</label><select id="f_thu"><option value="T">Thuis</option><option value="U">Uit</option></select></div>' +
     '<div class="form-group"><label>Tegenstander</label><select id="f_teg" onchange="updateTegenstander()"><option value="">– selecteer tegenstander –</option></select></div>' +
     '<div class="form-group"><label>Doelpunten voor</label><input type="number" id="f_dv" min="0" value="0"></div>' +
@@ -633,7 +635,7 @@ window.slaOp = async function() {
     if(sp) goals.push({s:sp,sc:sc,sb:sb,a:as_||null});
   });
   var id = 'w_'+Date.now();
-  var w = {id:id,competitie:document.getElementById('f_comp').value,datum:document.getElementById('f_datum').value,thu:document.getElementById('f_thu').value,teg:teg,dv:parseInt(document.getElementById('f_dv').value)||0,dt:parseInt(document.getElementById('f_dt').value)||0,goals:goals};
+  var w = {id:id,competitie:document.getElementById('f_comp').value,datum:document.getElementById('f_datum').value,tijd:document.getElementById('f_tijd').value||null,thu:document.getElementById('f_thu').value,teg:teg,dv:parseInt(document.getElementById('f_dv').value)||0,dt:parseInt(document.getElementById('f_dt').value)||0,goals:goals};
   state.wedstrijden[id] = w;
   await saveWedstrijd(w);
   toast('Wedstrijd opgeslagen ✓');
