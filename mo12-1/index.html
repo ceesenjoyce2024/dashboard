@@ -69,11 +69,15 @@
   .comp-sub{font-size:13px;color:var(--text-muted);margin-bottom:3px;}
   .form-section{margin-bottom:1.5rem;}
   .form-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--sand-dark);}
-  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;}
-  .form-group{display:flex;flex-direction:column;gap:5px;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:12px;}
+  .form-group{display:flex;flex-direction:column;gap:5px;min-width:0;}
   .form-group label{font-size:12px;font-weight:500;color:var(--text-muted);}
   .form-group input,.form-group select{font-family:var(--sans);font-size:14px;padding:9px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text);outline:none;transition:border-color .15s;}
   .form-group input:focus,.form-group select:focus{border-color:var(--olive-mid);}
+  /* iOS: datum/tijd-velden even breed, hoog en links uitgelijnd als de andere velden */
+  .form-group input,.form-group select,.edit-modal-form .form-group input,.edit-modal-form .form-group select{width:100%;min-width:0;box-sizing:border-box;height:40px;}
+  .form-group input[type=date],.form-group input[type=time]{-webkit-appearance:none;appearance:none;display:block;text-align:left;line-height:normal;}
+  .form-group input::-webkit-date-and-time-value{text-align:left;margin:0;}
   .btn-primary{font-family:var(--sans);font-weight:500;background:var(--olive);color:var(--sand-light);border:none;padding:11px 24px;border-radius:var(--radius-sm);font-size:15px;cursor:pointer;transition:background .15s;}
   .btn-primary:hover{background:var(--olive-mid);}
   .btn-sm{font-family:var(--sans);font-size:12px;padding:6px 12px;border:1px solid var(--sand-dark);border-radius:var(--radius-sm);background:var(--sand-light);color:var(--text-muted);cursor:pointer;}
@@ -114,7 +118,7 @@
   @media(max-width:600px){
     .metric-grid{grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1rem;}
     .metric{padding:8px;}.metric-label{font-size:10px;}.metric-value{font-size:18px;}
-    .form-grid{grid-template-columns:1fr 1fr;}
+    .form-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
     th.hide-mob,td.hide-mob{display:none;}
     .totaal-ranglijst td,.totaal-ranglijst th{padding:4px 3px;}
   }
