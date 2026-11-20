@@ -164,6 +164,8 @@ input.in,select.in{background:var(--card2);color:var(--tx);border:1px solid var(
 html,body{background:var(--bg) var(--tri)}
 header.top{background:linear-gradient(135deg,#0b4a9e,#083a7e);color:#fff;margin:0 -14px;padding:14px 14px 12px;border-radius:0 0 18px 18px;box-shadow:0 6px 18px rgba(11,74,158,.25)}
 .crest{background:#fff;border-color:var(--or);color:var(--navy);font-size:13px}
+.crest:has(img){width:50px;height:50px;border:0;background:none;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.crest img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 .ttl b{color:#fff;text-transform:uppercase;letter-spacing:.02em;font-size:19px}.ttl span{color:#d6e4fa}
 .comp{border-color:var(--or);box-shadow:0 2px 8px rgba(11,42,91,.08)}
 .comp .klasse{background:var(--or);color:#fff}
@@ -235,7 +237,7 @@ ol.poule li.me{color:var(--or2);font-weight:800}
 <!-- ================= TEAM-BLOK — alleen dit deel verschilt per team ================= -->
 <script>
 const CFG={
-  titel:"Level Up toernooi MO12-1", sub:"Zaalhockey · 29 nov 2026", crest:"LU",
+  titel:"Level Up toernooi MO12-1", sub:"Zaalhockey · 29 nov 2026", crest:"LU", logo:"logo.png",
   klasse:"MO12-1", poule:"Poule", teamSuffix:"MO12-1",
   tabel:"zaal_levelup_data", rpc:"zaal_levelup", kanaal:"zaal-levelup",
   lsKey:"levelup-voorbeeld", coachKey:"levelup-coach",
@@ -291,7 +293,7 @@ const START={"d1-1": {"t1": ["veerle", "elise", "bo", "annemijn", "rosalie"], "t
    team: vervang alles vanaf deze regel tot het einde van het bestand.
    ===================================================================== */
 document.title=CFG.titel;
-document.getElementById("cfgCrest").textContent=CFG.crest;
+if(CFG.logo) document.getElementById("cfgCrest").innerHTML=`<img src="${CFG.logo}" alt="MHC Rosmalen">`; else document.getElementById("cfgCrest").textContent=CFG.crest;
 document.getElementById("cfgTitel").textContent=CFG.titel;
 document.getElementById("cfgSub").textContent=CFG.sub;
 document.getElementById("cfgKlasse").textContent=CFG.klasse;
