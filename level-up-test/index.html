@@ -242,7 +242,7 @@ const CFG={
   standaard:{form:"dobbel",blok:[6,5,5,6]},
   voorbeeldKoppels:[],
   // Level Up: één toernooidag, één periode van 22 min, 4 poulewedstrijden + max. 2 extra (kruisfinale/plaatsing)
-  eenDag:true, helften:1, duur:22, basisWed:4, maxExtra:2, geenStand:true
+  coachBeperkt:true, eenDag:true, helften:1, duur:22, basisWed:4, maxExtra:2, geenStand:true
 };
 /* Woorden in de app */
 const WD={sp:"speelster",sps:"speelsters",Sp:"Speelster",Sps:"Speelsters",haar:"haar",zij:"zij",ze:"ze"};
@@ -360,7 +360,7 @@ async function laad(){
       if(s.data&&s.data.session){ const q=await sb.rpc("mijn_rol"); ADMIN=q.data==="admin"; }
       if(!ADMIN&&CODE){ const c=await sb.rpc(CFG.rpc+"_code_ok",{p_code:CODE}); COACH=c.data===true;
         if(COACH){ const k=await sb.rpc(CFG.rpc+"_koppels",{p_code:CODE}); if(!k.error&&Array.isArray(k.data)) S.koppels=k.data; } }
-      EDIT=ADMIN||COACH;
+      EDIT=ADMIN||(COACH&&!CFG.coachBeperkt);
     }catch(e){}
   }else{
     try{ const raw=localStorage.getItem(LS); if(raw){ const o=JSON.parse(raw); KEYS.forEach(k=>{ if(o[k]) S[k]=o[k]; }); } }catch(e){}
@@ -380,7 +380,7 @@ function toast(t,fout){ let el=document.getElementById("toast"); if(!el){ el=doc
 function planFoto(){ const w={}; RW.forEach(m=>{ const p=PLAN[m.id]; if(p) w[m.id]={form:p.form,t1:p.t1,t2:p.t2,tr:p.tr,res:p.res||null,flex:p.flex||[],dubbel:p.dubbel||[]}; }); return {w}; }
 async function bewaar(...keys){
   if(LIVE){
-    if(!sb||!EDIT) return;
+    if(!sb||!(EDIT||COACH)) return;
     const stil=keys[0]==="__stil"; if(stil) keys=keys.slice(1);
     S.plan=planFoto(); if(!keys.includes("plan")) keys.push("plan");
     let r;
@@ -698,8 +698,7 @@ function renderNav(){
   $("nav").innerHTML=TABS.map(([k,l])=>`<button class="${TAB===k?"on":""}" data-tab="${k}">${ICON[k]}${l}</button>`).join("");
 }
 function renderBanner(){
-  $("banner").innerHTML=LIVE?(ADMIN?"":COACH?`<div class="banner" style="background:#12301f;border-color:#2f6b45;color:#9fe0b8">Coach-modus: je kunt wijzigen.</div>`:`<div class="banner">Alleen lezen. <a href="/?next=${encodeURIComponent(location.pathname)}" style="color:inherit">Inloggen als beheerder</a> om te wijzigen.</div>`)
-    :`<div class="banner"><b>Voorbeeld.</b> Wijzigingen blijven alleen in deze browser; er is nog niets in Supabase.</div>`;
+  $("banner").innerHTML=LIVE?(ADMIN?"":COACH?`<div class="banner" style="background:#e6f6ec;border-color:#9fd9b4;color:#1f6b3c">Coach: je kunt uitslagen, het aantal wedstrijden en posities aanpassen.</div>`:""):`<div class="banner"><b>Voorbeeld.</b> Wijzigingen blijven alleen in deze browser; er is nog niets in Supabase.</div>`;
 }
 function render(){
   renderNav(); renderBanner();
@@ -831,17 +830,25 @@ function viewSpeelster(id){
 
 /* ---------- Instellingen ---------- */
 function viewInstellingen(){
-  const I=S.instellingen, b=I.blok, dis=EDIT?"":"disabled";
+  const I=S.instellingen, b=I.blok, dis=EDIT?"":"disabled", cdis=(EDIT||COACH)?"":"disabled";
   const lu=CFG.basisWed?`<div class="sec">Toernooi</div>
   <div class="card pad"><label class="f" style="margin-top:0">Naam van de poule</label><input class="in" data-act="poule" value="${esc(I.poule||CFG.poule)}" ${dis}>
-    <label class="f">Poulewedstrijden</label><div class="seg" style="margin:0">${[3,4].map(n=>`<button class="${basisN()===n?"on":""}" data-act="basis" data-v="${n}" ${dis}>${n} wedstrijden</button>`).join("")}</div>
-    <label class="f">Extra wedstrijden (kruisfinale, plaatsing)</label><div class="seg" style="margin:0">${[0,1,2].slice(0,(CFG.maxExtra||0)+1).map(n=>`<button class="${(+I.extra||0)===n?"on":""}" data-act="extra" data-v="${n}" ${dis}>${n===0?"Geen":"+"+n}</button>`).join("")}</div>
+    <label class="f">Poulewedstrijden</label><div class="seg" style="margin:0">${[3,4].map(n=>`<button class="${basisN()===n?"on":""}" data-act="basis" data-v="${n}" ${cdis}>${n} wedstrijden</button>`).join("")}</div>
+    <label class="f">Extra wedstrijden (kruisfinale, plaatsing)</label><div class="seg" style="margin:0">${[0,1,2].slice(0,(CFG.maxExtra||0)+1).map(n=>`<button class="${(+I.extra||0)===n?"on":""}" data-act="extra" data-v="${n}" ${cdis}>${n===0?"Geen":"+"+n}</button>`).join("")}</div>
     <label class="f">Wedstrijden</label>${RW.map(m=>`<div class="luwed"><span class="lunr">${m.nr>basisN()?"Extra":"W"+m.nr}</span>
       <input class="in" data-act="tegennaam" data-k="${tegen(m)}" value="${esc(tnaam(tegen(m)))}" placeholder="Tegenstander" ${dis}>
       <div class="luwed3 seg" style="margin:0">${["thuis","uit"].map(v=>`<button class="${(v==="uit")===(m.a===WIJ)?"on":""}" data-act="wedthuis" data-id="${m.id}" data-v="${v}" ${dis}>${v==="thuis"?"Thuis":"Uit"}</button>`).join("")}</div>
       <div class="luwed2"><input class="in" type="time" data-act="wedtijd" data-id="${m.id}" value="${esc(m.t||"")}" aria-label="Tijd" ${dis}><input class="in" data-act="wedveld" data-id="${m.id}" value="${esc(veldVan(m))}" placeholder="Veld" aria-label="Veld" ${dis}></div></div>`).join("")}
   </div>
-  <div class="card" style="margin-top:10px"><div class="sw"><div>Startopstellingen gebruiken<small>Aan: de afgesproken opstellingen blijven staan; bij uitval neemt een tribune${WD.sp} precies die plek over. Uit: de app verdeelt alles zelf.</small></div><button class="tg ${I.start!==false?"on":""}" data-act="startop" ${dis}></button></div></div>`:"";
+  ${ADMIN||!LIVE?`<div class="card" style="margin-top:10px"><div class="sw"><div>Startopstellingen gebruiken<small>Aan: de afgesproken opstellingen blijven staan; bij uitval neemt een tribune${WD.sp} precies die plek over. Uit: de app verdeelt alles zelf.</small></div><button class="tg ${I.start!==false?"on":""}" data-act="startop" ${dis}></button></div></div>`:""}`:"";
+  if(CFG.coachBeperkt&&LIVE&&!ADMIN){
+    const pd=COACH?"":"disabled";
+    return lu+`<div class="sec">Opstelling</div><div class="card pad"><b>${FORM[I.form].naam}</b>
+      <div class="card court" style="max-width:220px;padding:8px;margin-top:8px;box-shadow:none">${courtSVG()}${FORM[I.form].slots.map(s=>`<span class="tok t1" style="left:${s.x}%;top:${s.y}%"><i style="width:30px;height:30px;font-size:11px">${s.l}</i></span>`).join("")}</div></div>
+    <div class="sec">${WD.Sps}</div>
+    <div class="card">${[...S.speelsters].filter(p=>p.pos!=="K").sort((a,b)=>({V:1}[a.pos]??2)-({V:1}[b.pos]??2)||a.naam.localeCompare(b.naam,"nl")).map(p=>`<div class="sw"><span style="flex:1">${esc(p.naam)}</span>
+      <select class="in" data-act="ppos" data-p="${p.id}" ${pd} style="flex:1.1">${[["V","Verdediger"],["MA","Mid/aanval"]].map(([k,l])=>`<option value="${k}" ${(p.pos===k||(k==="MA"&&["M","A","MA"].includes(p.pos)))?"selected":""}>${l}</option>`).join("")}</select></div>`).join("")}</div>`;
+  }
   return lu+`<div class="sec">Opstelling</div>
   <div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${I.form===k?"on":""}" data-act="form" data-v="${k}" ${dis}>${f.naam}</button>`).join("")}</div>
   <div class="card court" style="max-width:240px;padding:8px">${courtSVG()}${FORM[I.form].slots.map(s=>`<span class="tok t1" style="left:${s.x}%;top:${s.y}%"><i style="width:30px;height:30px;font-size:11px">${s.l}</i></span>`).join("")}</div>
@@ -916,9 +923,9 @@ function viewWedstrijd(id){
   let h=`<button class="back" data-act="terug"><b>‹</b>Terug</button>
   <div class="mhead"><div class="meta">${CFG.eenDag?`Wedstrijd ${m.nr}${m.nr>basisN()?" (extra)":""} · ${m.h===WIJ?"Thuis":"Uit"}${m.t?" · "+m.t:""}${veldVan(m)?" · "+esc(veldVan(m)):""}`:`Wedstrijd ${m.nr} van ${RW.length} · ${fdat(m.datum,1)} · ${m.t} · ${thuis?"Thuis":"Uit"}`}</div>
     <div class="vs"><div class="tm">${badge(m.h)}${tnaam(m.h)}</div>
-      ${EDIT?`<button class="sc${u?"":" leeg"}" data-act="score" data-id="${m.id}" style="border:0;background:none;padding:0">${u?`${u[0]} – ${u[1]}`:(m.t||"–")}</button>`:`<div class="sc${u?"":" leeg"}">${u?`${u[0]} – ${u[1]}`:(m.t||"–")}</div>`}
+      ${EDIT||COACH?`<button class="sc${u?"":" leeg"}" data-act="score" data-id="${m.id}" style="border:0;background:none;padding:0">${u?`${u[0]} – ${u[1]}`:(m.t||"–")}</button>`:`<div class="sc${u?"":" leeg"}">${u?`${u[0]} – ${u[1]}`:(m.t||"–")}</div>`}
       <div class="tm">${badge(m.a)}${tnaam(m.a)}</div></div>
-    ${EDIT?`<div class="flex" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="score" data-id="${m.id}">${u?"Uitslag wijzigen":"Uitslag invullen"}</button>${!u?`<button class="btn sm bles" data-act="blessure">${ICO} Blessure</button>`:""}${p.vast&&!u?`<button class="btn sec2 sm" data-act="vrij" data-id="${m.id}">${CFG.eenDag&&S.instellingen.start!==false?"Terug naar startopstelling":"Terug naar automatisch"}</button>`:""}</div>`:""}
+    ${EDIT||COACH?`<div class="flex" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="score" data-id="${m.id}">${u?"Uitslag wijzigen":"Uitslag invullen"}</button>${!u&&EDIT?`<button class="btn sm bles" data-act="blessure">${ICO} Blessure</button>`:""}${p.vast&&!u?`<button class="btn sec2 sm" data-act="vrij" data-id="${m.id}">${CFG.eenDag&&S.instellingen.start!==false?"Terug naar startopstelling":"Terug naar automatisch"}</button>`:""}</div>`:""}
   </div>`;
   h+=`<p class="muted" style="text-align:center;margin:12px 0 0">Opstelling: ${F.naam}</p>`;
   h+=`<div class="seg ${TEAMSEL}"><button class="b1 ${TEAMSEL==="t1"?"on":""}" data-act="team" data-v="t1">Team 1 · start</button><button class="b2 ${TEAMSEL==="t2"?"on":""}" data-act="team" data-v="t2">Team 2</button></div>
@@ -927,7 +934,7 @@ function viewWedstrijd(id){
     ${kp?`<span class="tok k" style="left:50%;top:91%"><i>K</i><b>${esc(kp.naam)}</b></span>`:""}
   </div>`;
   if(kpWeg) h+=`<div class="warn">${esc(kp.naam)} is afwezig. Regel een vervangende keeper.</div>`;
-  if(p.vast&&!u) h+=`<div class="warn">Handmatig aangepast. Deze opstelling blijft staan bij herberekenen.</div>`;
+  if(p.vast&&!u&&ADMIN) h+=`<div class="warn">Handmatig aangepast. Deze opstelling blijft staan bij herberekenen.</div>`;
   if(RUIL) h+=`<div class="warn">Kies hieronder met wie ${esc(naam(p[RUIL.t][RUIL.i]))} ruilt, of tik op een ${WD.sp} in het veld.</div>`;
   const ander=TEAMSEL==="t1"?"t2":"t1";
   const gebl=(p.inval||[]).map(x=>x.wie);
@@ -984,7 +991,7 @@ document.addEventListener("click",async e=>{
   else if(a==="sp"){ ga("s-"+d.p); }
   else if(a==="terug"){ terug(); }
   else if(a==="team"){ TEAMSEL=d.v; render(); }
-  else if(a==="score"){ if(EDIT) sheetScore(d.id); }
+  else if(a==="score"){ if(EDIT||COACH) sheetScore(d.id); }
   else if(a==="sluit"){ if(e.target===el) $("sheet").innerHTML=""; }
   else if(a==="scoreok"){
     const x=$("sH").value, y=$("sA").value, id=d.id, keys=["instellingen"];
