@@ -377,6 +377,11 @@ function maakPlan(){
   const tel=(ids,d=1)=>[...new Set(ids.filter(Boolean))].forEach(id=>{ if(id in beurt) beurt[id]+=d; });
   // 1. vastgezette opstellingen tellen eerst mee
   RW.forEach(m=>{ const v=S.opstellingen[m.id]; if(v){ P[m.id]={...v,vast:true,gespeeld:!!S.uitslagen[m.id]}; tel([...v.t1,...v.t2]); } });
+  // 1b. handmatige ruil telt als bewuste keuze: wie eruit gehaald is, krijgt in de rest niet automatisch een wedstrijd terug
+  //     (en wie erin gezet is, levert er later niet automatisch een in). Vervalt als die opstelling weer automatisch wordt.
+  const bij=S.instellingen.bijstel||{};
+  Object.keys(bij).forEach(w=>{ if(!S.opstellingen[w]) { delete bij[w]; return; }
+    Object.entries(bij[w]).forEach(([id,dl])=>{ if(id in beurt) beurt[id]+=dl; }); });
   const open=RW.filter(m=>!P[m.id]);
   const gem=open.length? open.reduce((s,m)=>s+10/Math.max(10,spelers.filter(p=>aanwezig(p.id,m)).length),0)/open.length : 0.77;
   // 2. open wedstrijden chronologisch vullen
@@ -863,7 +868,7 @@ document.addEventListener("click",async e=>{
     // handmatig vastgezette, nog niet gespeelde opstellingen op die dag laten vervallen als de speelster er in stond
     RW.filter(m=>m.dag===dag&&!S.uitslagen[m.id]&&S.opstellingen[m.id]).forEach(m=>{ const v=S.opstellingen[m.id];
       if([...v.t1,...v.t2,...v.tr].includes(p)) delete S.opstellingen[m.id]; });
-    await wijzig(["beschikbaarheid","opstellingen"]);
+    await wijzig(["beschikbaarheid","opstellingen","instellingen"]);
   }
   else if(a==="ruil"){
     const t=d.t,i=+d.i;
@@ -911,7 +916,7 @@ document.addEventListener("click",async e=>{
   else if(a==="start2"){ S.instellingen.start2=+d.v; await wijzig(["instellingen"]); }
   else if(a==="blokplus"||a==="blokmin"){ const b=S.instellingen.blok;
     if(a==="blokplus"&&b.length<6) b.push(5); if(a==="blokmin"&&b.length>2) b.pop(); delete S.instellingen.start2; await wijzig(["instellingen"]); }
-  else if(a==="verdeel"){ Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["opstellingen"],verdeelMelding); }
+  else if(a==="verdeel"){ Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["opstellingen","instellingen"],verdeelMelding); }
   else if(a==="wis"){ if(ARM!=="wis"){ARM="wis";render();return;} ARM=null; try{localStorage.removeItem(LS)}catch(_){} location.reload(); }
 });
 document.addEventListener("change",async e=>{
@@ -929,7 +934,17 @@ async function doeRuil(doel){
   const [t,ix]=doel.split(":");
   if(t==="tr"){ const b=ix; v[RUIL.t][RUIL.i]=b; v.tr=v.tr.filter(x=>x!==b).concat(a); }
   else { const i=+ix, b=v[t][i]; v[t][i]=a; v[RUIL.t][RUIL.i]=b; }
-  S.opstellingen[OPEN]=v; RUIL=null; await wijzig(["opstellingen"]);
+  // bij een nog niet gespeelde wedstrijd: onthoud wie er bewust uit of in is gezet (zie maakPlan 1b)
+  const keys=["opstellingen"];
+  if(!S.uitslagen[OPEN]){
+    const voor=new Set([...p.t1,...p.t2].filter(Boolean)), na=new Set([...v.t1,...v.t2].filter(Boolean));
+    const bij=S.instellingen.bijstel=S.instellingen.bijstel||{}, w=bij[OPEN]=bij[OPEN]||{};
+    voor.forEach(x=>{ if(!na.has(x)) w[x]=(w[x]||0)+1; });
+    na.forEach(x=>{ if(!voor.has(x)) w[x]=(w[x]||0)-1; });
+    Object.keys(w).forEach(x=>{ if(!w[x]) delete w[x]; }); if(!Object.keys(w).length) delete bij[OPEN];
+    keys.push("instellingen");
+  }
+  S.opstellingen[OPEN]=v; RUIL=null; await wijzig(keys);
 }
 
 /* ---------- Navigatie via #hash: browser-terug en iPhone-veegbeweging werken ---------- */
