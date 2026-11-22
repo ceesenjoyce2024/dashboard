@@ -207,6 +207,8 @@ ol.poule li.me{color:var(--or2);font-weight:800}
 .luwed2{grid-column:2;display:grid;grid-template-columns:112px 1fr;gap:8px}.luvs i{color:var(--or);font-style:normal;font-weight:800}
 .besel{width:auto;max-width:64%;font-size:14px;padding-right:6px}.besel.uit{border-color:var(--or);background:#fde6d8}
 .ico{width:1.15em;height:1.15em;vertical-align:-.22em;color:var(--navy);flex:none}
+.cell.bl{background:#fde6d8;color:#b5490f}.cell .ico{width:17px;height:17px;vertical-align:-3px}
+.cell.ja{background:rgba(31,154,85,.14)}.cell.nee{background:rgba(214,59,59,.13)}
 .lusp{padding:11px 12px}.lusp+.lusp{border-top:1px solid var(--line)}
 .lusp1{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .luseg{display:flex;background:var(--card2);border-radius:10px;padding:3px;gap:3px;flex:none}
@@ -325,7 +327,16 @@ const veldVan=m=>((S.instellingen||{}).velden||{})[m.id]||"";
 const basisN=()=>{ const b=+((S.instellingen||{}).basis)||CFG.basisWed; return Math.max(1,Math.min(CFG.basisWed,b)); };
 // geblesseerd in een wedstrijd: beschikbaarheid "bN" — de reserve valt in die wedstrijd in, daarna speelt ze weer mee
 const blesLijst=(pid,dag)=>{ const v=((S.beschikbaarheid[pid]||{})[dag])||""; return v[0]==="b"?v.slice(1).split(",").filter(Boolean).map(Number):[]; };
-const blesIn=(pid,m)=>blesLijst(pid,m.dag).includes(m.nr);
+// status per wedstrijd: "j" aanwezig, "a" afwezig (tribunespeelster valt in), "b" geblesseerd (reserve valt in)
+// opslag: "s" + één teken per wedstrijd, bv. "sjjba"; oudere vormen ("nee", "b2,3", "v3") blijven werken
+const statusVan=(pid,m)=>{ const v=((S.beschikbaarheid[pid]||{})[m.dag])||"";
+  if(v==="nee") return "a"; if(v[0]==="s") return v[m.nr]||"j";
+  if(v[0]==="b") return blesLijst(pid,m.dag).includes(m.nr)?"b":"j";
+  if(v[0]==="v") return m.nr>=+v.slice(1)?"a":"j"; return "j"; };
+const blesIn=(pid,m)=>statusVan(pid,m)==="b";
+function zetStatus(pid,dag,nr,c){ const tekens=[]; for(let i=1;i<=6;i++) tekens.push(i===nr?c:statusVan(pid,{dag,nr:i}));
+  S.beschikbaarheid[pid]=S.beschikbaarheid[pid]||{};
+  if(tekens.every(t=>t==="j")) delete S.beschikbaarheid[pid][dag]; else S.beschikbaarheid[pid][dag]="s"+tekens.join(""); }
 // pleister-icoon (donkerblauw)
 const ICO='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(-45 12 12)"><rect x="1.5" y="7.5" width="21" height="9" rx="4.5" fill="#fff" stroke="currentColor" stroke-width="1.8"/><rect x="8.5" y="7.5" width="7" height="9" fill="currentColor" opacity=".18"/><circle cx="10.8" cy="10.8" r=".95" fill="currentColor"/><circle cx="13.2" cy="10.8" r=".95" fill="currentColor"/><circle cx="10.8" cy="13.2" r=".95" fill="currentColor"/><circle cx="13.2" cy="13.2" r=".95" fill="currentColor"/></g></svg>';
 
@@ -415,6 +426,7 @@ const minTeam=t=>(HELFTEN===1?[1]:[1,2]).reduce((s,h)=>s+volgorde(h).reduce((x,t
 const minPerBeurt=()=>S.instellingen.blok.reduce((a,b)=>a+(+b||0),0);
 function aanwezig(pid,m){
   const s=(S.beschikbaarheid[pid]||{})[m.dag];
+  if(s&&s[0]==="s") return (s[m.nr]||"j")!=="a";
   if(s==="nee") return false;
   if(s&&s[0]==="v") return (m.nr||0) < +s.slice(1);
   if(s==="w1") return m.ihDag===0;
@@ -766,15 +778,18 @@ function viewStand(){
 const BS=[["ja","✓"],["nee","✗"],["w1","1e"],["w2","2e"]];
 function viewSpeelsters(){
   if(CFG.eenDag){
-    const dag=DAGEN[0].datum;
-    const rij=p=>{ const st=(S.beschikbaarheid[p.id]||{})[dag]||"ja", weg=st==="nee", bl=blesLijst(p.id,dag), dis=(EDIT||COACH)?"":"disabled";
-      return `<div class="lusp"><div class="lusp1"><div><button class="lnk" data-act="sp" data-p="${p.id}">${esc(p.naam)}</button><span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos}</span></div>
-        <div class="luseg"><button class="${!weg?"on":""}" data-act="besaan" data-p="${p.id}" data-v="ja" ${dis}>Aanwezig</button><button class="${weg?"on uit":""}" data-act="besaan" data-p="${p.id}" data-v="nee" ${dis}>Afwezig</button></div></div>
-        ${weg?"":`<div class="lubl"><span class="lubll">${ICO} Geblesseerd in</span>${RW.map(m=>`<button class="lubw${bl.includes(m.nr)?" on":""}" data-act="besbles" data-p="${p.id}" data-n="${m.nr}" ${dis} aria-pressed="${bl.includes(m.nr)}">W${m.nr}</button>`).join("")}</div>`}</div>`; };
+    const kan=EDIT||COACH;
+    const rij=p=>`<tr><td class="nm"><button class="lnk" data-act="sp" data-p="${p.id}">${esc(p.naam)}</button> <span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos}</span></td>${RW.map(m=>{
+      const st=statusVan(p.id,m), gesp=!!S.uitslagen[m.id], cls=st==="a"?"nee":st==="b"?"bl":"ja", lab=st==="a"?"✗":st==="b"?ICO:"✓";
+      return `<td><button class="cell ${cls}" data-act="bescel" data-p="${p.id}" data-n="${m.nr}" aria-label="${esc(p.naam)} wedstrijd ${m.nr}: ${st==="a"?"afwezig":st==="b"?"geblesseerd":"aanwezig"}" ${(!kan||gesp)?"disabled":""}>${lab}</button></td>`; }).join("")}</tr>`;
     const abc=l=>l.sort((a,b)=>a.naam.localeCompare(b.naam,"nl"));
     const groepen=[["Keeper",abc(S.speelsters.filter(p=>p.pos==="K"))],["Verdediging",abc(S.speelsters.filter(p=>p.pos==="V"))],["Middenveld / aanval",abc(S.speelsters.filter(p=>["M","A","MA"].includes(p.pos)))]];
-    return groepen.map(([g,ps])=>ps.length?`<div class="sec">${g}</div><div class="card">${ps.map(rij).join("")}</div>`:"").join("")+
-      `<p class="muted" style="margin:10px 4px">${EDIT||COACH?`<b>Afwezig</b>: doet het hele toernooi niet mee; een tribune${WD.sp} neemt ${WD.haar} plekken over. <b>Geblesseerd in</b>: tik de wedstrijden aan waarin ${WD.zij} niet kan spelen; daar valt de reserve in, de andere wedstrijden speelt ${WD.zij} gewoon. Tijdens een wedstrijd kan dit ook met de knop Blessure.`:"Alleen de beheerder kan dit aanpassen."}</p>`;
+    return `<div class="sec">Aanwezigheid per wedstrijd</div>
+    <div class="card grid"><table><thead><tr><th>${WD.Sp}</th>${RW.map(m=>`<th>${m.nr>basisN()?"Extra":"W"+m.nr}${m.t?`<br><span style="font-weight:500">${m.t}</span>`:""}</th>`).join("")}</tr></thead><tbody>${
+      groepen.map(([g,ps])=>ps.length?`<tr><td colspan="${RW.length+1}" class="muted" style="padding-top:12px">${g}</td></tr>`+ps.map(rij).join(""):"").join("")
+    }</tbody></table>
+    <div class="legend"><span><i style="background:rgba(31,154,85,.25)"></i>✓ aanwezig</span><span><i style="background:rgba(214,59,59,.25)"></i>✗ afwezig</span><span><i style="background:#fde6d8"></i>${ICO} geblesseerd</span></div></div>
+    <p class="muted" style="margin:10px 4px">${kan?`Tik op een vakje om te wisselen: ✓ → ✗ → geblesseerd → ✓. Bij <b>afwezig</b> neemt een tribune${WD.sp} ${WD.haar} plek over; bij <b>geblesseerd</b> valt de reserve in. Gespeelde wedstrijden liggen vast.`:""}</p>`;
   }
   const dagLab=RDAGEN.map(d=>`<th>${fdat(d)}</th>`).join("");
   const rij=p=>`<tr><td class="nm"><button class="lnk" data-act="sp" data-p="${p.id}">${esc(p.naam)}</button><span class="pos ${p.pos}">${p.pos==="MA"?"M/A":p.pos}</span></td>${
@@ -1044,9 +1059,17 @@ document.addEventListener("click",async e=>{
   else if(a==="blessure"){ if(EDIT||COACH) sheetBlessure(); }
   else if(a==="blesok"){ if(!(EDIT||COACH)) return;
     const m=RW.find(x=>x.id===OPEN), p=PLAN[OPEN], wie=p[d.t][+d.i], door=p.res;
-    S.beschikbaarheid[wie]=S.beschikbaarheid[wie]||{}; S.beschikbaarheid[wie][m.dag]="b"+[...new Set([...blesLijst(wie,m.dag),m.nr])].sort((x,y)=>x-y).join(",");
+    zetStatus(wie,m.dag,m.nr,"b");
     $("sheet").innerHTML="";
     await wijzig(["beschikbaarheid"],()=>door?`${naam(door)} valt in voor ${naam(wie)}`:`${naam(wie)} geblesseerd`); }
+  else if(a==="bescel"){ if(!(EDIT||COACH)) return;
+    const p=d.p, dag=DAGEN[0].datum, nr=+d.n, m=RW.find(x=>x.nr===nr); const nu=statusVan(p,m);
+    zetStatus(p,dag,nr,nu==="j"?"a":nu==="a"?"b":"j");
+    herbereken();
+    RW.filter(x=>!S.uitslagen[x.id]&&S.opstellingen[x.id]).forEach(x=>{ const o=S.opstellingen[x.id];
+      if([...o.t1,...o.t2].includes(p)&&!aanwezig(p,x)) delete S.opstellingen[x.id];
+      else if(o.tr.includes(p)&&!aanwezig(p,x)) o.tr=o.tr.filter(y=>y!==p); });
+    await wijzig(["beschikbaarheid","opstellingen"]); }
   else if(a==="besaan"||a==="besbles"){ if(!(EDIT||COACH)) return;
     const p=d.p, dag=DAGEN[0].datum; S.beschikbaarheid[p]=S.beschikbaarheid[p]||{};
     if(a==="besaan"){ if(d.v==="nee") S.beschikbaarheid[p][dag]="nee"; else delete S.beschikbaarheid[p][dag]; }
