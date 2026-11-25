@@ -422,7 +422,9 @@ const formVan=m=>S.instellingen.form;   // opstelling alleen via Instellingen (g
 const start2=()=>S.instellingen.start2||(S.instellingen.blok.length%2?2:1);   // 2e helft: even aantal blokken → team 1 (uitgerust), oneven → team 2 (gelijke minuten)
 const HELFTEN=CFG.helften||2, DUUR=CFG.duur||20;
 // per wedstrijd kan team 2 beginnen (Instellingen.startT2 = {wedstrijdId:true})
-const startT2=m=>!!(m&&((S.instellingen||{}).startT2||{})[m.id]);
+const startT2=m=>false;
+// spelers van team 1 en team 2 omwisselen per wedstrijd (Instellingen.teamWissel = {wedstrijdId:true}); geldt voor niet-vastgezette opstellingen
+const teamWissel=m=>!!(m&&((S.instellingen||{}).teamWissel||{})[m.id]);
 const volgorde=(h,m)=>{ const st=h===1?(startT2(m)?2:1):start2(); return S.instellingen.blok.map((_,i)=>i%2?(3-st):st); };
 const minTeam=(t,m)=>(HELFTEN===1?[1]:[1,2]).reduce((s,h)=>s+volgorde(h,m).reduce((x,tt,i)=>x+(tt===t?(+S.instellingen.blok[i]||0):0),0),0);
 const minPerBeurt=()=>S.instellingen.blok.reduce((a,b)=>a+(+b||0),0);
@@ -673,6 +675,8 @@ function maakPlan(){
       if(p.res===y){ p.res=x; p.resHand=false; }
     }
   }
+  // 7. teams omwisselen: team 1 krijgt de spelers van team 2 en andersom
+  RW.forEach(m=>{ const p=P[m.id]; if(p&&!p.vast&&teamWissel(m)){ const t=p.t1; p.t1=p.t2; p.t2=t; } });
   return P;
 }
 let PLAN={};
@@ -951,7 +955,7 @@ function viewWedstrijd(id){
     ${EDIT||COACH?`<div class="flex" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="score" data-id="${m.id}">${u?"Uitslag wijzigen":"Uitslag invullen"}</button>${!u&&(EDIT||COACH)?`<button class="btn sm bles" data-act="blessure">${ICO} Blessure</button>`:""}${p.vast&&!u?`<button class="btn sec2 sm" data-act="vrij" data-id="${m.id}">${CFG.eenDag&&S.instellingen.start!==false?"Terug naar startopstelling":"Terug naar automatisch"}</button>`:""}</div>`:""}
   </div>`;
   h+=`<p class="muted" style="text-align:center;margin:12px 0 0">Opstelling: ${F.naam}</p>`;
-  h+=`<div class="seg ${TEAMSEL}"><button class="b1 ${TEAMSEL==="t1"?"on":""}" data-act="team" data-v="t1">Team 1${startT2(m)?"":" · start"}</button><button class="b2 ${TEAMSEL==="t2"?"on":""}" data-act="team" data-v="t2">Team 2${startT2(m)?" · start":""}</button></div>${EDIT&&!u?`<div style="text-align:center;margin:-2px 0 10px"><button class="btn sec2 sm" data-act="startwissel" data-id="${m.id}">⇄ ${startT2(m)?"Team 1":"Team 2"} laten beginnen</button></div>`:""}
+  h+=`<div class="seg ${TEAMSEL}"><button class="b1 ${TEAMSEL==="t1"?"on":""}" data-act="team" data-v="t1">Team 1${startT2(m)?"":" · start"}</button><button class="b2 ${TEAMSEL==="t2"?"on":""}" data-act="team" data-v="t2">Team 2${startT2(m)?" · start":""}</button></div>${EDIT&&!u?`<div style="text-align:center;margin:-2px 0 10px"><button class="btn sec2 sm" data-act="teamwissel" data-id="${m.id}">⇄ Spelers team 1 en team 2 wisselen</button></div>`:""}
   <div class="court">${courtSVG()}
     ${F.slots.map((s,i)=>tok(team[i],s,i)).join("")}
     ${kp?`<span class="tok k" style="left:50%;top:91%"><i>K</i><b>${esc(kp.naam)}</b></span>`:""}
@@ -1014,10 +1018,12 @@ document.addEventListener("click",async e=>{
   else if(a==="sp"){ ga("s-"+d.p); }
   else if(a==="terug"){ terug(); }
   else if(a==="team"){ TEAMSEL=d.v; render(); }
-  else if(a==="startwissel"){ if(!EDIT) return; S.instellingen.startT2=S.instellingen.startT2||{};
-    if(S.instellingen.startT2[d.id]) delete S.instellingen.startT2[d.id]; else S.instellingen.startT2[d.id]=true;
-    TEAMSEL=S.instellingen.startT2[d.id]?"t2":"t1";
-    await wijzig(["instellingen"],()=>S.instellingen.startT2[d.id]?"Team 2 begint deze wedstrijd":"Team 1 begint deze wedstrijd"); }
+  else if(a==="teamwissel"){ if(!EDIT) return; const id=d.id;
+    if(S.opstellingen[id]){ const o=S.opstellingen[id], t=o.t1; o.t1=o.t2; o.t2=t; }   // vastgezet: direct omwisselen
+    else { S.instellingen.teamWissel=S.instellingen.teamWissel||{};
+      if(S.instellingen.teamWissel[id]) delete S.instellingen.teamWissel[id]; else S.instellingen.teamWissel[id]=true; }
+    delete S.instellingen.startT2;
+    await wijzig(["opstellingen","instellingen"],()=>"Spelers van team 1 en team 2 gewisseld"); }
   else if(a==="score"){ if(EDIT||COACH) sheetScore(d.id); }
   else if(a==="sluit"){ if(e.target===el) $("sheet").innerHTML=""; }
   else if(a==="scoreok"){
@@ -1028,7 +1034,7 @@ document.addEventListener("click",async e=>{
     if(nd===b.orgDatum&&nt===b.orgT) delete S.instellingen.wedWijz[id]; else S.instellingen.wedWijz[id]={datum:nd,t:nt};
     if(x===""||y===""){ $("sheet").innerHTML=""; await wijzig(keys); return; }
     S.uitslagen[id]=[+x,+y]; keys.push("uitslagen");
-    if(PLAN[id]&&!S.opstellingen[id]){ const p=PLAN[id]; S.opstellingen[id]={form:p.form,t1:p.t1,t2:p.t2,tr:p.tr}; keys.push("opstellingen"); }
+    if(PLAN[id]&&!S.opstellingen[id]){ const p=PLAN[id]; S.opstellingen[id]={form:p.form,t1:p.t1,t2:p.t2,tr:p.tr}; keys.push("opstellingen"); if(S.instellingen.teamWissel) delete S.instellingen.teamWissel[id]; }
     if(PLAN[id]&&PLAN[id].res&&!(S.instellingen.reserve||{})[id]){ S.instellingen.reserve=S.instellingen.reserve||{}; S.instellingen.reserve[id]=PLAN[id].res; }
     $("sheet").innerHTML=""; await wijzig(keys);
   }
@@ -1150,7 +1156,7 @@ async function doeRuil(doel){
   const [t,ix]=doel.split(":");
   if(t==="tr"){ const b=ix; v[RUIL.t][RUIL.i]=b; v.tr=v.tr.filter(x=>x!==b).concat(a); }
   else { const i=+ix, b=v[t][i]; v[t][i]=a; v[RUIL.t][RUIL.i]=b; }
-  S.opstellingen[OPEN]=v; RUIL=null; await wijzig(["opstellingen"]);
+  S.opstellingen[OPEN]=v; RUIL=null; if(S.instellingen.teamWissel) delete S.instellingen.teamWissel[OPEN]; await wijzig(["opstellingen","instellingen"]);
 }
 
 /* ---------- Navigatie via #hash: browser-terug en iPhone-veegbeweging werken ---------- */
