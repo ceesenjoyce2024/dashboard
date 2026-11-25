@@ -338,7 +338,9 @@ async function bewaar(...keys){
    VERDELING — wie speelt wanneer, zo gelijk mogelijk
    ===================================================================== */
 const veld=()=>S.speelsters.filter(p=>p.pos!=="K");
-const keeper=()=>S.speelsters.find(p=>p.pos==="K");
+const keeper=()=>S.speelsters.find(p=>p.pos==="K"&&!p.invaller)||S.speelsters.find(p=>p.pos==="K");
+// keeper voor een wedstrijd: vaste keeper als die er is, anders een aanwezige invaller-keeper, anders niemand (vraagteken)
+const keeperVoor=m=>{ const ks=S.speelsters.filter(p=>p.pos==="K"&&aanwezig(p.id,m)); return ks.find(p=>!p.invaller)||ks[0]||null; };
 // teamlijst: verdedigers (positie V) vooraan, verder in volgorde van het veld
 const verdFirst=ids=>ids.filter(Boolean).map((x,i)=>[x,i]).sort((a,b)=>((S.speelsters.find(p=>p.id===a[0])||{}).pos==="V"?0:1)-((S.speelsters.find(p=>p.id===b[0])||{}).pos==="V"?0:1)||a[1]-b[1]).map(a=>a[0]);
 const naam=id=>(S.speelsters.find(p=>p.id===id)||{naam:"?"}).naam;
@@ -720,7 +722,7 @@ function viewSpeelster(id){
   h+=`<div class="sec">Wedstrijden</div><div class="card">`+RW.map(m=>{
     const p=PLAN[m.id]; let lab='<span class="stweg">Afwezig</span>';
     if(p){ const i1=p.t1.indexOf(id), i2=p.t2.indexOf(id), F=FORM[p.form];
-      if(sp.pos==="K") lab=aanwezig(id,m)?'<span class="st1" style="background:#b8e07a;color:#1d2a0c">Keeper</span>':lab;
+      if(sp.pos==="K") lab=(keeperVoor(m)||{}).id===id?'<span class="st1" style="background:#b8e07a;color:#1d2a0c">Keeper</span>':aanwezig(id,m)?'<span class="sttr">Reserve-keeper</span>':lab;
       else if(i1>=0&&i2>=0) lab=`<span class="st1">Team 1 · ${F.slots[i1].l}</span><span class="st2">Team 2 · ${F.slots[i2].l}</span>`;
       else if(i1>=0) lab=`<span class="st1">Team 1 · ${F.slots[i1].l}</span>`;
       else if(i2>=0) lab=`<span class="st2">Team 2 · ${F.slots[i2].l}</span>`;
@@ -800,8 +802,8 @@ function courtSVG(){
 /* ---------- Wedstrijd ---------- */
 function viewWedstrijd(id){
   const m=RW.find(x=>x.id===id), p=PLAN[id], u=S.uitslagen[id], F=FORM[p.form];
-  const thuis=m.h===WIJ, kp=keeper();
-  const kpWeg=kp&&!aanwezig(kp.id,m);
+  const thuis=m.h===WIJ, vast=keeper(), kp=keeperVoor(m);
+  const kpWeg=vast&&!aanwezig(vast.id,m);
   const weg=veld().filter(s=>!aanwezig(s.id,m)).map(s=>s.id);
   const team=p[TEAMSEL];
   const tok=(sid,s,i)=>{ if(!sid) return `<span class="tok ${TEAMSEL}" style="left:${s.x}%;top:${s.y}%"><i>?</i><b>leeg</b></span>`;
@@ -820,9 +822,10 @@ function viewWedstrijd(id){
   h+=`<div class="seg ${TEAMSEL}"><button class="b1 ${TEAMSEL==="t1"?"on":""}" data-act="team" data-v="t1">Team 1 · start</button><button class="b2 ${TEAMSEL==="t2"?"on":""}" data-act="team" data-v="t2">Team 2</button></div>
   <div class="court">${courtSVG()}
     ${F.slots.map((s,i)=>tok(team[i],s,i)).join("")}
-    ${kp?`<span class="tok k" style="left:50%;top:91%"><i>K</i><b>${esc(kp.naam)}</b></span>`:""}
+    ${kp?`<span class="tok k" style="left:50%;top:91%"><i>K</i><b>${esc(kp.naam)}</b>${kp.invaller?'<span class="d">invaller</span>':""}</span>`:`<span class="tok k" style="left:50%;top:91%"><i style="background:#ffe066;color:#1d2a0c">?</i><b>Keeper?</b></span>`}
   </div>`;
-  if(kpWeg) h+=`<div class="warn">${esc(kp.naam)} is afwezig. Regel een vervangende keeper.</div>`;
+  if(kpWeg) h+=kp?`<div class="warn">${esc(vast.naam)} is afwezig; ${esc(kp.naam)} keept.</div>`:`<div class="warn">${esc(vast.naam)} is afwezig en er is nog geen vervangende keeper. Voeg bij Instellingen een invaller met positie Keeper toe en zet ${WD.haar} bij ${WD.Sps} op ✓.</div>`;
+  else if(!kp) h+=`<div class="warn">Er is nog geen keeper voor deze wedstrijd.</div>`;
   if(p.vast&&!u) h+=`<div class="warn">Handmatig aangepast. Deze opstelling blijft staan bij herberekenen.</div>`;
   if(RUIL) h+=`<div class="warn">Kies hieronder met wie ${esc(naam(p[RUIL.t][RUIL.i]))} ruilt, of tik op een ${WD.sp} in het veld.</div>`;
   const ander=TEAMSEL==="t1"?"t2":"t1";
