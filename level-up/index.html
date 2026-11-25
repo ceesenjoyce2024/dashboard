@@ -421,8 +421,10 @@ const formVan=m=>S.instellingen.form;   // opstelling alleen via Instellingen (g
 // volgorde van de teams per helft: 1e helft begint team 1, 2e helft team 2, steeds om en om
 const start2=()=>S.instellingen.start2||(S.instellingen.blok.length%2?2:1);   // 2e helft: even aantal blokken → team 1 (uitgerust), oneven → team 2 (gelijke minuten)
 const HELFTEN=CFG.helften||2, DUUR=CFG.duur||20;
-const volgorde=h=>{ const st=h===1?1:start2(); return S.instellingen.blok.map((_,i)=>i%2?(3-st):st); };
-const minTeam=t=>(HELFTEN===1?[1]:[1,2]).reduce((s,h)=>s+volgorde(h).reduce((x,tt,i)=>x+(tt===t?(+S.instellingen.blok[i]||0):0),0),0);
+// per wedstrijd kan team 2 beginnen (Instellingen.startT2 = {wedstrijdId:true})
+const startT2=m=>!!(m&&((S.instellingen||{}).startT2||{})[m.id]);
+const volgorde=(h,m)=>{ const st=h===1?(startT2(m)?2:1):start2(); return S.instellingen.blok.map((_,i)=>i%2?(3-st):st); };
+const minTeam=(t,m)=>(HELFTEN===1?[1]:[1,2]).reduce((s,h)=>s+volgorde(h,m).reduce((x,tt,i)=>x+(tt===t?(+S.instellingen.blok[i]||0):0),0),0);
 const minPerBeurt=()=>S.instellingen.blok.reduce((a,b)=>a+(+b||0),0);
 function aanwezig(pid,m){
   const s=(S.beschikbaarheid[pid]||{})[m.dag];
@@ -685,7 +687,7 @@ function speeltijd(){
   RW.forEach(m=>{
     const p=PLAN[m.id]; if(!p) return;
     const gespeeld=!!S.uitslagen[m.id];
-    [["t1",minTeam(1)],["t2",minTeam(2)]].forEach(([t,mn])=>p[t].filter(Boolean).forEach(id=>{ if(!r[id])return;
+    [["t1",minTeam(1,m)],["t2",minTeam(2,m)]].forEach(([t,mn])=>p[t].filter(Boolean).forEach(id=>{ if(!r[id])return;
       if(gespeeld){r[id].gesp+=mn;} else {r[id].gepl+=mn;} }));
     new Set([...p.t1,...p.t2].filter(Boolean)).forEach(id=>{ if(!r[id])return; gespeeld?r[id].wGesp++:r[id].wGepl++; });
     p.tr.forEach(id=>{ if(r[id]) r[id].trib++; });
@@ -949,7 +951,7 @@ function viewWedstrijd(id){
     ${EDIT||COACH?`<div class="flex" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="score" data-id="${m.id}">${u?"Uitslag wijzigen":"Uitslag invullen"}</button>${!u&&(EDIT||COACH)?`<button class="btn sm bles" data-act="blessure">${ICO} Blessure</button>`:""}${p.vast&&!u?`<button class="btn sec2 sm" data-act="vrij" data-id="${m.id}">${CFG.eenDag&&S.instellingen.start!==false?"Terug naar startopstelling":"Terug naar automatisch"}</button>`:""}</div>`:""}
   </div>`;
   h+=`<p class="muted" style="text-align:center;margin:12px 0 0">Opstelling: ${F.naam}</p>`;
-  h+=`<div class="seg ${TEAMSEL}"><button class="b1 ${TEAMSEL==="t1"?"on":""}" data-act="team" data-v="t1">Team 1 · start</button><button class="b2 ${TEAMSEL==="t2"?"on":""}" data-act="team" data-v="t2">Team 2</button></div>
+  h+=`<div class="seg ${TEAMSEL}"><button class="b1 ${TEAMSEL==="t1"?"on":""}" data-act="team" data-v="t1">Team 1${startT2(m)?"":" · start"}</button><button class="b2 ${TEAMSEL==="t2"?"on":""}" data-act="team" data-v="t2">Team 2${startT2(m)?" · start":""}</button></div>${EDIT&&!u?`<div style="text-align:center;margin:-2px 0 10px"><button class="btn sec2 sm" data-act="startwissel" data-id="${m.id}">⇄ ${startT2(m)?"Team 1":"Team 2"} laten beginnen</button></div>`:""}
   <div class="court">${courtSVG()}
     ${F.slots.map((s,i)=>tok(team[i],s,i)).join("")}
     ${kp?`<span class="tok k" style="left:50%;top:91%"><i>K</i><b>${esc(kp.naam)}</b></span>`:""}
@@ -965,7 +967,7 @@ function viewWedstrijd(id){
     ${p.tr.length?`<p class="muted" style="margin:0 12px 10px">${p.res?`<b style="color:var(--tx)">${esc(naam(p.res))}</b> is reserve en valt in bij een blessure.`:""}${EDIT&&!RUIL?` Tik op een andere tribune${WD.sp} om ${WD.haar} reserve te maken.`:""}</p>`:""}</div>`;
   if(RUIL) h+=`<div class="sec">Of ruil met team ${ander==="t1"?1:2}</div><div class="card"><div class="chips">${p[ander].filter(Boolean).map((x,i)=>`<button class="chip" data-act="ruilmet" data-v="${ander}:${p[ander].indexOf(x)}">${esc(naam(x))} · ${F.slots[p[ander].indexOf(x)].l}</button>`).join("")}</div></div>`;
   h+=`<div class="sec">Wisselschema</div><div class="card tl">
-    ${HELFTEN===1?`<div class="hl">${DUUR} minuten</div>${seq(volgorde(1))}`:`<div class="hl">1e helft</div>${seq(volgorde(1))}
+    ${HELFTEN===1?`<div class="hl">${DUUR} minuten</div>${seq(volgorde(1,m))}`:`<div class="hl">1e helft</div>${seq(volgorde(1))}
     <div class="hl">2e helft</div>${seq(volgorde(2))}`}
     <p class="muted" style="margin:10px 0 0">Team 1: ${verdFirst(p.t1).map(x=>`<button class="lnk" data-act="sp" data-p="${x}">${esc(naam(x))}</button>`).join(", ")}<br>Team 2: ${verdFirst(p.t2).map(x=>`<button class="lnk" data-act="sp" data-p="${x}">${esc(naam(x))}</button>`).join(", ")}</p></div>`;
   if(EDIT) h+=`<p class="muted" style="margin:10px 4px">${u?`Klopt de opstelling niet met wie er echt gespeeld heeft? Tik op een ${WD.sp} om te corrigeren; de speeltijd en de wedstrijden erna worden aangepast.`:`Tik op een ${WD.sp} in het veld om te ruilen. Die wedstrijd wordt daarna vastgezet; de wedstrijden erna worden opnieuw verdeeld.`}</p>`;
@@ -1012,6 +1014,10 @@ document.addEventListener("click",async e=>{
   else if(a==="sp"){ ga("s-"+d.p); }
   else if(a==="terug"){ terug(); }
   else if(a==="team"){ TEAMSEL=d.v; render(); }
+  else if(a==="startwissel"){ if(!EDIT) return; S.instellingen.startT2=S.instellingen.startT2||{};
+    if(S.instellingen.startT2[d.id]) delete S.instellingen.startT2[d.id]; else S.instellingen.startT2[d.id]=true;
+    TEAMSEL=S.instellingen.startT2[d.id]?"t2":"t1";
+    await wijzig(["instellingen"],()=>S.instellingen.startT2[d.id]?"Team 2 begint deze wedstrijd":"Team 1 begint deze wedstrijd"); }
   else if(a==="score"){ if(EDIT||COACH) sheetScore(d.id); }
   else if(a==="sluit"){ if(e.target===el) $("sheet").innerHTML=""; }
   else if(a==="scoreok"){
@@ -1151,7 +1157,7 @@ async function doeRuil(doel){
 function leesHash(){
   const h=decodeURIComponent(location.hash.slice(1));
   OPEN=null; OPENSP=null; RUIL=null;
-  if(h.startsWith("w-")&&RW.some(m=>m.id===h.slice(2))){ OPEN=h.slice(2); TEAMSEL="t1"; }
+  if(h.startsWith("w-")&&RW.some(m=>m.id===h.slice(2))){ OPEN=h.slice(2); TEAMSEL=startT2(RW.find(m=>m.id===OPEN))?"t2":"t1"; }
   else if(h.startsWith("s-")&&S.speelsters.some(p=>p.id===h.slice(2))){ OPENSP=h.slice(2); }
   else if(TABS.some(t=>t[0]===h)){ TAB=h; }
 }
