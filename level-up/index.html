@@ -464,7 +464,9 @@ function maakPlan(){
   spelers.forEach(p=>beurt[p.id]=0);
   const tel=(ids,d=1)=>ids.forEach(id=>{ if(id in beurt) beurt[id]+=d; });
   // 1. vastgezette opstellingen tellen eerst mee
-  RW.forEach(m=>{ const v=S.opstellingen[m.id]; if(v){ P[m.id]={...v,vast:true,gespeeld:!!S.uitslagen[m.id]}; tel([...v.t1,...v.t2]); } });
+  RW.forEach(m=>{ const v=S.opstellingen[m.id]; if(v){ const in_=new Set([...v.t1,...v.t2,...(v.tr||[])]);
+    const tr=[...(v.tr||[]),...spelers.filter(s=>!in_.has(s.id)&&aanwezig(s.id,m)).map(s=>s.id)]; // aanwezige speelster die nergens staat → tribune
+    P[m.id]={...v,tr,vast:true,gespeeld:!!S.uitslagen[m.id]}; tel([...v.t1,...v.t2]); } });
   // 1b. startopstellingen: afwezige speelsters vervangen door een tribunespeelster op precies dezelfde plek
   if(typeof START!=="undefined"&&S.instellingen.start!==false){
     const sp1=id=>S.speelsters.find(s=>s.id===id)||{pos:"MA"};
@@ -1080,7 +1082,8 @@ document.addEventListener("click",async e=>{
     herbereken();
     RW.filter(x=>!S.uitslagen[x.id]&&S.opstellingen[x.id]).forEach(x=>{ const o=S.opstellingen[x.id];
       if([...o.t1,...o.t2].includes(p)&&!aanwezig(p,x)) delete S.opstellingen[x.id];
-      else if(o.tr.includes(p)&&!aanwezig(p,x)) o.tr=o.tr.filter(y=>y!==p); });
+      else if(o.tr.includes(p)&&!aanwezig(p,x)) o.tr=o.tr.filter(y=>y!==p);
+      else if(aanwezig(p,x)&&![...o.t1,...o.t2,...o.tr].includes(p)) o.tr.push(p); });
     await wijzig(["beschikbaarheid","opstellingen"]); }
   else if(a==="besaan"||a==="besbles"){ if(!(EDIT||COACH)) return;
     const p=d.p, dag=DAGEN[0].datum; S.beschikbaarheid[p]=S.beschikbaarheid[p]||{};
