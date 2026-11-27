@@ -710,7 +710,7 @@ function viewSpeelsters(){
 function viewSpeeltijd(){
   const alle=speeltijd(), r=alle.filter(x=>!isInv(x.id)), inv=alle.filter(x=>isInv(x.id)), mpb=minPerBeurt();
   const tot=x=>x.wGesp+x.wGepl, max=Math.max(...r.map(tot),1);   // telt wedstrijden, niet minuten
-  const tots=r.map(tot), gem=tots.reduce((a,b)=>a+b,0)/r.length;
+  const tots0=r.map(tot).filter(n=>n>0), tots=tots0.length?tots0:[0], gem=tots.reduce((a,b)=>a+b,0)/tots.length;   // wie 0 wedstrijden heeft telt niet mee
   const groep=(t,ps)=>!ps.length?"":`<div class="sec">${t}</div><div class="card">${ps.sort((a,b)=>tot(b)-tot(a)||a.naam.localeCompare(b.naam)).map(x=>`
     <div class="pl" data-act="sp" data-p="${x.id}" style="cursor:pointer"><span class="n">${esc(x.naam)} <span class="muted">›</span></span>
       <div class="bar"><i class="g" style="width:${x.wGesp/max*100}%"></i><i class="p" style="width:${x.wGepl/max*100}%"></i></div>
@@ -888,7 +888,7 @@ function sheetScore(id){
    ACTIES
    ===================================================================== */
 async function wijzig(keys,melding){ herbereken(); render(); await bewaar(...keys); if(melding) toast(melding()); }
-function spreiding(){ const r=speeltijd().filter(x=>!isInv(x.id)).map(x=>x.wGesp+x.wGepl); return {min:Math.min(...r),max:Math.max(...r)}; }
+function spreiding(){ let r=speeltijd().filter(x=>!isInv(x.id)).map(x=>x.wGesp+x.wGepl).filter(n=>n>0); if(!r.length) r=[0]; return {min:Math.min(...r),max:Math.max(...r)}; }
 const verdeelMelding=()=>{ const sp=spreiding(); return `Opnieuw verdeeld · ${sp.min}–${sp.max} wedstrijden per ${WD.sp}`; };
 document.addEventListener("click",async e=>{
   const el=e.target.closest("[data-tab],[data-act]"); if(!el) return;
