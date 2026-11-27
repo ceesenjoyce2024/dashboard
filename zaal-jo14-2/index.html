@@ -364,7 +364,7 @@ function aanwezig(pid,m){
   return true;
 }
 // welke groep vult een slot? Bij M+A samen worden M en A één groep "MA"
-const slotGroep=g=>S.instellingen.maSamen&&g!=="V"?"MA":g;
+const slotGroep=g=>g!=="V"?"MA":g;   // middenveld en aanval zijn altijd één groep; de coach kiest de plek
 // posities: K keeper, V verdediging, MA middenveld/aanval, VMA overal inzetbaar (verdediging én middenveld/aanval)
 function past(p,grp){
   const all=p.pos==="VMA";
@@ -759,9 +759,6 @@ function viewInstellingen(){
   <div class="seg">${Object.entries(FORM).map(([k,f])=>`<button class="${I.form===k?"on":""}" data-act="form" data-v="${k}" ${dis}>${f.naam}</button>`).join("")}</div>
   <div class="card court" style="max-width:240px;padding:8px">${courtSVG()}${FORM[I.form].slots.map(s=>`<span class="tok t1" style="left:${s.x}%;top:${s.y}%"><i style="width:30px;height:30px;font-size:11px">${s.l}</i></span>`).join("")}</div>
   <p class="muted" style="margin:8px 4px">Geldt voor alle wedstrijden die nog niet gespeeld zijn.</p>
-  <div class="card" style="margin-top:12px">
-    <div class="sw"><div>Middenveld en aanval samen<small>Aan: M/A-${WD.sps} wisselen vrij tussen middenveld en aanval. Uit: iedereen speelt op ${WD.haar} eigen linie (M of A).</small></div><button class="tg ${I.maSamen?"on":""}" data-act="masamen" ${dis}></button></div>
-  </div>
   ${ADMIN?`  <div class="sec">Samen / niet samen in één team</div>
   ${koppels().map((k,i)=>{const sam=kType(k)==="samen";
     const opties=sam?[["zacht","Als het kan"],["hard","Verplicht"],["los","Los"]]:[["zacht","Niet samen"],["los","Los"]];
