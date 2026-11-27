@@ -618,7 +618,7 @@ function renderNav(){
   $("nav").innerHTML=TABS.map(([k,l])=>`<button class="${TAB===k?"on":""}" data-tab="${k}">${ICON[k]}${l}</button>`).join("");
 }
 function renderBanner(){
-  $("banner").innerHTML=LIVE?(ADMIN?"":COACH?`<div class="banner" style="background:#12301f;border-color:#2f6b45;color:#9fe0b8">Coach-modus: je kunt wijzigen.</div>`:`<div class="banner">Alleen lezen. <a href="/?next=${encodeURIComponent(location.pathname)}" style="color:inherit">Inloggen als beheerder</a> om te wijzigen.</div>`)
+  $("banner").innerHTML=LIVE?(ADMIN?"":COACH?"":`<div class="banner">Alleen lezen. <a href="/?next=${encodeURIComponent(location.pathname)}" style="color:inherit">Inloggen als beheerder</a> om te wijzigen.</div>`)
     :`<div class="banner"><b>Voorbeeld.</b> Wijzigingen blijven alleen in deze browser; er is nog niets in Supabase.</div>`;
 }
 function render(){
