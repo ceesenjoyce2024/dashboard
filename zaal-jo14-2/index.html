@@ -128,6 +128,9 @@ table.st tr.me td{color:var(--or2);font-weight:700}
 .st1,.st2,.sttr,.stres,.stweg{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
 .st1{background:var(--lb);color:var(--navy)}.st2{background:var(--or);color:#fff}.sttr{background:var(--card2);color:var(--mut)}
 .stres{background:rgba(255,107,26,.18);color:var(--or2);box-shadow:inset 0 0 0 1.5px var(--or)}.stweg{background:rgba(255,92,92,.14);color:var(--bad)}
+.crrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;border-top:1px solid var(--line)}
+.crrow span{font-size:14px;line-height:1.25}.crrow b{font-size:15px;white-space:nowrap}
+.crsel{width:auto;max-width:48%;flex:none;padding:7px 8px}
 .chip.kz{background:rgba(143,198,238,.15);color:var(--lb)}.chip.kh{background:var(--or);color:#fff}.chip.kl{background:var(--card2);color:var(--mut)}
 .chip.res{background:rgba(255,107,26,.18);color:var(--or2);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--or)}
 .chip.weg{color:var(--bad);background:rgba(255,92,92,.12)}
@@ -800,6 +803,25 @@ function courtSVG(){
 }
 
 /* ---------- Wedstrijd ---------- */
+/* ---------- Strafcorners: per wedstrijd en per team wie wat doet ---------- */
+const CORNER={
+  aan:{naam:"Aanvallende corner",rollen:["Aangever","Kort","Kop","Afschuif","Backup"],std:[4,3,2,1,0]},
+  ver:{naam:"Verdedigende corner",rollen:["Uitloper 1 · lijnstop links","Uitloper 2 · 1e uitloper naast keeper","Uitloper 3 · lijnstop rechts","Uitloper 4 · 2e uitloper tot strafbalstip","Uitloper 5 · extra"],std:[0,2,1,3,4]}
+};
+// opgeslagen keuze; alleen spelers die nu in dit team staan
+function cornerLijst(m,t,soort){
+  const team=(PLAN[m.id]||{})[t]||[], inTeam=[...new Set(team.filter(Boolean))];
+  const opg=((((S.instellingen.corners||{})[m.id]||{})[t]||{})[soort])||[];
+  const uit=[], gebruikt=new Set();
+  for(let i=0;i<5;i++){ const x=opg[i]; if(x&&inTeam.includes(x)&&!gebruikt.has(x)){ uit[i]=x; gebruikt.add(x); } }
+  for(let i=0;i<5;i++) if(!uit[i]) uit[i]=null;   // niet vooraf invullen: leeg tot iemand gekozen is
+  return uit;
+}
+function cornerHTML(m,t){
+  const team=[...new Set(((PLAN[m.id]||{})[t]||[]).filter(Boolean))];
+  return `<div class="sec">Strafcorner · Team ${t==="t1"?1:2}</div>`+["aan","ver"].map(soort=>{ const L=cornerLijst(m,t,soort);
+    return `<div class="card" style="margin-bottom:10px"><div class="sw" style="padding-bottom:6px"><b>${CORNER[soort].naam}</b></div>${CORNER[soort].rollen.map((r,i)=>`<div class="crrow"><span>${r}</span>${EDIT?`<select class="in crsel" data-act="corner" data-w="${m.id}" data-t="${t}" data-s="${soort}" data-i="${i}"><option value="" ${L[i]?"":"selected"}>— kies —</option>${team.map(x=>`<option value="${x}" ${x===L[i]?"selected":""}>${esc(naam(x))}</option>`).join("")}</select>`:`<b>${L[i]?esc(naam(L[i])):"–"}</b>`}</div>`).join("")}</div>`; }).join("");
+}
 function viewWedstrijd(id){
   const m=RW.find(x=>x.id===id), p=PLAN[id], u=S.uitslagen[id], F=FORM[p.form];
   const thuis=m.h===WIJ, vast=keeper(), kp=keeperVoor(m);
@@ -833,6 +855,7 @@ function viewWedstrijd(id){
     ${weg.map(x=>`<span class="chip weg">${esc(naam(x))} · afwezig</span>`).join("")}</div>
     ${p.tr.length?`<p class="muted" style="margin:0 12px 10px">${p.res?`<b style="color:var(--tx)">${esc(naam(p.res))}</b> is reserve en valt in bij een blessure.`:""}${EDIT&&!RUIL?` Tik op een andere tribune${WD.sp} om ${WD.haar} reserve te maken.`:""}</p>`:""}</div>`;
   if(RUIL) h+=`<div class="sec">Of ruil met team ${ander==="t1"?1:2}</div><div class="card"><div class="chips">${p[ander].filter(Boolean).map((x,i)=>`<button class="chip" data-act="ruilmet" data-v="${ander}:${p[ander].indexOf(x)}">${esc(naam(x))} · ${F.slots[p[ander].indexOf(x)].l}</button>`).join("")}</div></div>`;
+  h+=cornerHTML(m,TEAMSEL);
   h+=`<div class="sec">Wisselschema</div><div class="card tl">
     <div class="hl">1e helft</div>${seq(volgorde(1))}
     <div class="hl">2e helft</div>${seq(volgorde(2))}
@@ -951,6 +974,11 @@ document.addEventListener("change",async e=>{
   if(d.act==="kmode"){ const k=koppels()[+d.k], w=d.w; k.per=k.per||{};
     if(el.value==="zacht") delete k.per[w]; else k.per[w]=el.value;
     if(S.opstellingen[w]&&!S.uitslagen[w]) delete S.opstellingen[w]; await wijzig(["koppels","opstellingen"],verdeelMelding); }
+  else if(d.act==="corner"){ if(!EDIT) return; const m=RW.find(x=>x.id===d.w); if(!m) return;
+    const L=cornerLijst(m,d.t,d.s), i=+d.i, nieuw=el.value||null, j=nieuw?L.indexOf(nieuw):-1;
+    if(j>=0&&j!==i) L[j]=L[i]; L[i]=nieuw;   // al gekozen voor een andere rol: rollen wisselen
+    const C=S.instellingen.corners=S.instellingen.corners||{}; C[d.w]=C[d.w]||{}; C[d.w][d.t]=C[d.w][d.t]||{}; C[d.w][d.t][d.s]=L;
+    await wijzig(["instellingen"],()=>"Corner opgeslagen"); }
   else if(d.act==="blok"){ S.instellingen.blok[+d.i]=Math.max(1,Math.min(20,+el.value||1)); await wijzig(["instellingen"]); }
   else if(d.act==="pnaam"){ const p=S.speelsters.find(x=>x.id===d.p); if(p&&el.value.trim()){ p.naam=el.value.trim(); await wijzig(["speelsters"]); } }
   else if(d.act==="ppos"){ const p=S.speelsters.find(x=>x.id===d.p); if(p){ p.pos=el.value; Object.keys(S.opstellingen).forEach(k=>{ if(!S.uitslagen[k]) delete S.opstellingen[k]; }); await wijzig(["speelsters","opstellingen"]); } }
