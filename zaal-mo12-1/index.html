@@ -404,7 +404,7 @@ function maakPlan(){
     beschik.forEach(p=>{ const later=open.slice(oi+1).filter(x=>aanwezig(p.id,x)); moet[p.id]=later.filter(x=>verplicht(p.id,x)).length; toekomst[p.id]=later.length-moet[p.id]; });
     const zus=RW.find(x=>x.dag===m.dag&&x!==m&&x.ihDag<m.ihDag);   // eerdere wedstrijd zelfde dag
     const zatZus=id=>zus&&P[zus.id]&&P[zus.id].tr.includes(id);
-    const score=p=>beurt[p.id]+moet[p.id]+gem*toekomst[p.id]-(zatZus(p.id)?0.6:0)-(p.voorrang?0.3:0)-(moetHier(p.id,m)?50:0)+(p.invaller?100:0)+(hash(p.id+m.id)%100)/1000;
+    const score=p=>beurt[p.id]+moet[p.id]+gem*toekomst[p.id]-(zatZus(p.id)?3:0)-(p.voorrang?0.3:0)-(moetHier(p.id,m)?50:0)+(p.invaller?100:0)+(hash(p.id+m.id)%100)/1000;
     const F=FORM[formVan(m)], nodig={};
     F.slots.forEach(s=>{const g=slotGroep(s.g); nodig[g]=(nodig[g]||0)+2;});
     const gekozen={}, flex=[];
@@ -485,6 +485,8 @@ function maakPlan(){
   const spl=id=>S.speelsters.find(s=>s.id===id);
   const apartOK=(team,y,weg)=>!koppels().some(k=>kType(k)==="apart"&&kMode(k,cur)!=="los"&&(k.a===y||k.b===y)&&team.some(z=>z&&z!==weg&&z===(k.a===y?k.b:k.a)));
   let cur=null;
+  // zit iemand al op de tribune in een andere wedstrijd van dezelfde speeldag? Dan niet nóg een keer.
+  const zitZus=(id,m)=>RW.some(x=>x.dag===m.dag&&x!==m&&P[x.id]&&P[x.id].tr.includes(id));
   for(let ronde=0;ronde<80;ronde++){
     let geruild=false;
     for(const m of open){
@@ -496,15 +498,14 @@ function maakPlan(){
         const x=p[t][i]; if(!x||p.dubbel.includes(x)||verplicht(x,m)) continue;
         const kand=p.tr.filter(y=>past(spl(y),grp(i))&&!spl(y).invaller&&((spl(x).invaller)||beurt[x]-beurt[y]>=((koppelActief(x,m)||koppelActief(y,m))?3:2)||(beurt[x]-beurt[y]===1&&extraEerst(y,x)&&!koppelActief(x,m)&&!koppelActief(y,m)))&&apartOK(p[t],y,x))
           .sort((a,b)=>beurt[a]-beurt[b]);
+        if(zitZus(x,m)) continue;
         for(const y of kand){
-          const xZitAl=zus&&P[zus.id]&&P[zus.id].tr.includes(x);
-          if(xZitAl&&kand.length>1&&y!==kand[kand.length-1]) continue;
           p[t][i]=y; p.tr=p.tr.filter(z=>z!==y).concat(x); beurt[x]--; beurt[y]++; geruild=true; break;
         }
       }
       // a2) via een overal inzetbare speler: x eruit, v schuift naar de plek van x, z van de tribune neemt de plek van v
       for(const ti of ["t1","t2"]) for(let i=0;i<5;i++){
-        const x=p[ti][i]; if(!x||p.dubbel.includes(x)||verplicht(x,m)||koppelActief(x,m)) continue;
+        const x=p[ti][i]; if(!x||p.dubbel.includes(x)||verplicht(x,m)||koppelActief(x,m)||zitZus(x,m)) continue;
         let klaar=false;
         for(const tj of ["t1","t2"]) { if(klaar) break; for(let j=0;j<5;j++){
           if(ti===tj&&i===j) continue; const v=p[tj][j];
@@ -518,7 +519,7 @@ function maakPlan(){
       for(const k of koppels().filter(k=>kType(k)==="samen"&&kMode(k,m)==="zacht"&&aanwezig(k.a,m)&&aanwezig(k.b,m))){
         const waar=id=>{ for(const t of ["t1","t2"]){ const i=p[t].indexOf(id); if(i>=0) return {t,i}; } return null; };
         const A=waar(k.a), B=waar(k.b);
-        if(A&&B&&!p.dubbel.includes(k.a)&&!p.dubbel.includes(k.b)&&!verplicht(k.a,m)&&!verplicht(k.b,m)){
+        if(A&&B&&!p.dubbel.includes(k.a)&&!p.dubbel.includes(k.b)&&!verplicht(k.a,m)&&!verplicht(k.b,m)&&!zitZus(k.a,m)&&!zitZus(k.b,m)){
           // paar eruit, twee tribunespeelsters erin
           const vrij=p.tr.filter(y=>!koppelActief(y,m)&&!spl(y).invaller);
           const y1=vrij.filter(y=>past(spl(y),grp(A.i))&&beurt[k.a]-beurt[y]>=2&&apartOK(p[A.t],y,k.a)).sort((a,b)=>beurt[a]-beurt[b])[0];
@@ -530,7 +531,7 @@ function maakPlan(){
           let best=null;
           for(const t of ["t1","t2"]) for(let i=0;i<5;i++) for(let j=0;j<5;j++){
             if(i===j) continue; const x1=p[t][i], x2=p[t][j];
-            if(!x1||!x2||p.dubbel.includes(x1)||p.dubbel.includes(x2)||koppelActief(x1,m)||koppelActief(x2,m)) continue;
+            if(!x1||!x2||p.dubbel.includes(x1)||p.dubbel.includes(x2)||koppelActief(x1,m)||koppelActief(x2,m)||zitZus(x1,m)||zitZus(x2,m)) continue;
             if(!past(spl(k.a),grp(i))||!past(spl(k.b),grp(j))) continue;
             if(beurt[x1]-beurt[k.a]<2||beurt[x2]-beurt[k.b]<2) continue;
             const rest=p[t].filter((z,q)=>q!==i&&q!==j);
@@ -540,6 +541,18 @@ function maakPlan(){
           if(best){ const {t,i,j,x1,x2}=best; p[t][i]=k.a; p[t][j]=k.b; p.tr=p.tr.filter(z=>z!==k.a&&z!==k.b).concat(x1,x2);
             beurt[k.a]++;beurt[k.b]++;beurt[x1]--;beurt[x2]--; geruild=true; }
         }
+      }
+    }
+    // c) niemand twee keer op de tribune op dezelfde speeldag: haal haar erin voor iemand die die dag nog niet zat
+    for(const m of open){
+      cur=m; const p=P[m.id], F=FORM[p.form], grp=i=>slotGroep(F.slots[i].g);
+      for(const y of [...p.tr]){
+        if(!zitZus(y,m)||spl(y).invaller||koppelActief(y,m)) continue;
+        let best=null;
+        for(const t of ["t1","t2"]) for(let i=0;i<5;i++){ const x=p[t][i];
+          if(!x||p.dubbel.includes(x)||verplicht(x,m)||koppelActief(x,m)||zitZus(x,m)||!past(spl(y),grp(i))||!apartOK(p[t],y,x)) continue;
+          if(!best||beurt[x]>beurt[best.x]) best={t,i,x}; }
+        if(best){ const {t,i,x}=best; p[t][i]=y; p.tr=p.tr.filter(z=>z!==y).concat(x); beurt[y]++; beurt[x]--; geruild=true; }
       }
     }
     if(!geruild) break;
